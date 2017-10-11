@@ -1,0 +1,7 @@
+[package]
+name = "rusty-pin"
+version = "0.1.0"
+authors = ["Hamid Ghadyani <hamid@hamid.cc>"]
+
+[dependencies]
+url = "1.5.1"
