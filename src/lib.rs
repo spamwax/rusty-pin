@@ -57,7 +57,6 @@ mod tests {
         let tags = vec!["tag1", "tag2"];
         p.set_tags_str(&tags);
         assert_eq!(p.tags, tags);
-        p.title = "fuck".to_string();
 
         let tags = vec![String::from("tag3"), "tag4".to_string()];
         p.set_tags_str(
