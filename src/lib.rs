@@ -32,8 +32,8 @@ impl Pin {
     }
 
     pub fn contains(&self, q: &str) -> bool {
-        self.url.as_ref().contains(q) || self.title.contains(q)
-            || self.tags.iter().any(|t| t.contains(q))
+        self.url.as_ref().contains(q) || self.title.contains(q) ||
+            self.tags.iter().any(|t| t.contains(q))
     }
 
     pub fn set_tags_str(&mut self, tags: &[&str]) -> () {
@@ -51,7 +51,7 @@ mod tests {
 
     #[test]
     fn set_tags() {
-        let url = Url::parse("https://githubуй.com/Здравствуйтеу").unwrap();
+        let url = Url::parse("https://githuуй.com/Здравствуйт?q=13#fragment").unwrap();
         let mut p = Pin::new(url, "title".to_string(), vec![], true, false, None);
 
         let tags = vec!["tag1", "tag2"];
