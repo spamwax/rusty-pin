@@ -1,15 +1,20 @@
 extern crate url;
+extern crate chrono;
 
 use url::Url;
+use chrono::prelude::*;
 
 #[derive(Debug)]
 pub struct Pin {
-    url: Url,
-    title: String,
-    tags: Vec<String>,
-    private: bool,
-    read: bool,
-    desc: Option<String>,
+    pub href: Url,
+    pub description: String,
+    pub tags: Vec<String>,
+    pub private: bool,
+    pub read: bool,
+    pub extended: Option<String>,
+    time: DateTime<Utc>,
+    meta: Option<String>,
+    hash: Option<String>
 }
 
 impl Pin {
@@ -22,17 +27,20 @@ impl Pin {
         desc: Option<String>,
     ) -> Pin {
         Pin {
-            url,
-            title,
+            href: url,
+            description: title,
             tags,
             private,
             read,
-            desc,
+            extended: desc,
+            time: Utc::now(),
+            meta: None,
+            hash: None,
         }
     }
 
     pub fn contains(&self, q: &str) -> bool {
-        self.url.as_ref().contains(q) || self.title.contains(q) ||
+        self.href.as_ref().contains(q) || self.description.contains(q) ||
             self.tags.iter().any(|t| t.contains(q))
     }
 

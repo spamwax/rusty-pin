@@ -5,3 +5,4 @@ authors = ["Hamid Ghadyani <hamid@hamid.cc>"]
 
 [dependencies]
 url = "1.5.1"
+chrono = { version = "0.4", features = ["serde"] }
