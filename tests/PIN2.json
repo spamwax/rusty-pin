@@ -1,0 +1,11 @@
+{
+    "href": "http:\/\/tbaggery.com\/2011\/08\/08\/effortless-ctags-with-git.html",
+    "description": "tbaggery - Effortless Ctags with Git",
+    "extended": "hooks post-hooks",
+    "meta": "13e4adfc4aa8b91298a449f39f8b20d3",
+    "hash": "57d682ef7930560011958b5836575a30",
+    "time": "2017-10-09T07:59:36Z",
+    "shared": "no",
+    "toread": "no",
+    "tags": "git ctags vim"
+}
