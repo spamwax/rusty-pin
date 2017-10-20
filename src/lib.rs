@@ -136,11 +136,14 @@ mod tests {
         }
         assert!(pins.is_ok());
         let pins = pins.unwrap();
+        assert_eq!(pins.len(),2);
         println!("{:?}", pins);
 
         let input = include_str!("../sample.json");
         let pins: Result<Vec<Pin>, _> = serde_json::from_str(input);
-        assert_eq!(pins.unwrap().len(), 472);
+        assert!(pins.is_ok());
+        let pins = pins.unwrap();
+        assert_eq!(pins.len(), 472);
     }
 
 }
