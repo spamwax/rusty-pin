@@ -1,5 +1,5 @@
-extern crate url;
 extern crate chrono;
+extern crate url;
 
 #[macro_use]
 extern crate serde_derive;
@@ -37,8 +37,7 @@ impl Pin {
         private: bool,
         read: bool,
         desc: Option<String>,
-        ) -> Pin {
-
+    ) -> Pin {
         let shared;
         let toread;
         if private {
@@ -94,10 +93,10 @@ mod tests {
         let tags = vec![String::from("tag3"), "tag4".to_string()];
         p.set_tags_str(
             tags.iter()
-            .map(|s| s.as_str())
-            .collect::<Vec<&str>>()
-            .as_slice(),
-            );
+                .map(|s| s.as_str())
+                .collect::<Vec<&str>>()
+                .as_slice(),
+        );
         assert_eq!(p.tag_list, tags);
 
         let tags = vec![String::from("tag5"), "tag6".to_string()];
@@ -107,20 +106,28 @@ mod tests {
 
     #[test]
     fn deserialize_a_pin() {
-        let pin: Result<Pin, _> = serde_json::from_str(PIN1);
+        let pin: Result<Pin, _> = serde_json::from_str(include_str!("../tests/PIN1.json"));
         assert!(pin.is_ok());
         let pin: Pin = pin.unwrap();
         println!("{:?}", pin);
-        assert_eq!(pin.url, Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap());
+        assert_eq!(
+            pin.url,
+            Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap()
+        );
         assert_eq!(pin.title, "The Little Book of Rust Macros");
         assert_eq!(pin.time, Utc.ymd(2017, 5, 22).and_hms(17, 46, 54));
         assert_eq!(pin.tags, "Rust macros");
 
-        let pin: Result<Pin, _> = serde_json::from_str(PIN2);
+        let pin: Result<Pin, _> = serde_json::from_str(include_str!("../tests/PIN2.json"));
         assert!(pin.is_ok());
         let pin: Pin = pin.unwrap();
         println!("{:?}", pin);
-        assert_eq!(pin.url, Url::parse("http://tbaggery.com/2011/08/08/effortless-ctags-with-git.html").unwrap());
+        assert_eq!(
+            pin.url,
+            Url::parse(
+                "http://tbaggery.com/2011/08/08/effortless-ctags-with-git.html",
+            ).unwrap()
+        );
         assert_eq!(pin.title, "tbaggery - Effortless Ctags with Git");
         assert_eq!(pin.time, Utc.ymd(2017, 10, 9).and_hms(7, 59, 36));
         assert_eq!(pin.tags, "git ctags vim");
@@ -128,15 +135,19 @@ mod tests {
 
     #[test]
     fn deserialize_pins() {
-        let input = format!("[{},{}]", PIN1, PIN2);
-        let pins: Result<Vec<Pin>,_> = serde_json::from_str(&input);
+        let input = format!(
+            "[{},{}]",
+            include_str!("../tests/PIN1.json"),
+            include_str!("../tests/PIN2.json")
+        );
+        let pins: Result<Vec<Pin>, _> = serde_json::from_str(&input);
         if let Err(e) = pins {
             println!("{:?}", e);
-            return
+            return;
         }
         assert!(pins.is_ok());
         let pins = pins.unwrap();
-        assert_eq!(pins.len(),2);
+        assert_eq!(pins.len(), 2);
         println!("{:?}", pins);
 
         let input = include_str!("../sample.json");
@@ -147,22 +158,3 @@ mod tests {
     }
 
 }
-pub const PIN1: &'static str =
-r#"{"href":"https:\/\/danielkeep.github.io\/tlborm\/book\/README.html",
-        "description":"The Little Book of Rust Macros",
-        "meta":"96ddd6f754f51fcc3276fac9f0729048",
-        "hash":"ee3af01ce27b23229374ae036e202b7a",
-        "time":"2017-05-22T17:46:54Z",
-        "shared":"no",
-        "toread":"no",
-        "tags":"Rust macros"}"#;
-pub const PIN2: &'static str =
-r#"{"href":"http:\/\/tbaggery.com\/2011\/08\/08\/effortless-ctags-with-git.html",
-        "description":"tbaggery - Effortless Ctags with Git",
-        "extended":"hooks post-hooks",
-        "meta":"13e4adfc4aa8b91298a449f39f8b20d3",
-        "hash":"57d682ef7930560011958b5836575a30",
-        "time":"2017-10-09T07:59:36Z",
-        "shared":"no",
-        "toread":"no",
-        "tags":"git ctags vim"}"#;
