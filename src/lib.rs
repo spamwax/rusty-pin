@@ -110,27 +110,27 @@ mod tests {
         assert!(pin.is_ok());
         let pin: Pin = pin.unwrap();
         println!("{:?}", pin);
+        assert_eq!(pin.title, "The Little Book of Rust Macros");
+        assert_eq!(pin.time, Utc.ymd(2017, 5, 22).and_hms(17, 46, 54));
+        assert_eq!(pin.tags, "Rust macros");
         assert_eq!(
             pin.url,
             Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap()
         );
-        assert_eq!(pin.title, "The Little Book of Rust Macros");
-        assert_eq!(pin.time, Utc.ymd(2017, 5, 22).and_hms(17, 46, 54));
-        assert_eq!(pin.tags, "Rust macros");
 
         let pin: Result<Pin, _> = serde_json::from_str(include_str!("../tests/PIN2.json"));
         assert!(pin.is_ok());
         let pin: Pin = pin.unwrap();
         println!("{:?}", pin);
+        assert_eq!(pin.title, "tbaggery - Effortless Ctags with Git");
+        assert_eq!(pin.time, Utc.ymd(2017, 10, 9).and_hms(7, 59, 36));
+        assert_eq!(pin.tags, "git ctags vim");
         assert_eq!(
             pin.url,
             Url::parse(
                 "http://tbaggery.com/2011/08/08/effortless-ctags-with-git.html",
             ).unwrap()
         );
-        assert_eq!(pin.title, "tbaggery - Effortless Ctags with Git");
-        assert_eq!(pin.time, Utc.ymd(2017, 10, 9).and_hms(7, 59, 36));
-        assert_eq!(pin.tags, "git ctags vim");
     }
 
     #[test]
