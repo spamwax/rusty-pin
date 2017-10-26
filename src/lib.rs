@@ -88,10 +88,8 @@ mod tests {
 
     #[test]
     fn set_tags_from_vec() {
-        let mut p = create_pin(
-            "https://githuуй.com/Здравствуйт?q=13#fragment",
-            "title",
-        );
+        let mut p =
+            create_pin("https://githuуй.com/Здравствуйт?q=13#fragment", "title");
 
         let tags = vec!["tag1", "tag2"];
         p.set_tags_str(&tags);
@@ -100,10 +98,8 @@ mod tests {
 
     #[test]
     fn set_tags_from_vec_string() {
-        let mut p = create_pin(
-            "https://githuуй.com/Здравствуйт?q=13#fragment",
-            "title",
-        );
+        let mut p =
+            create_pin("https://githuуй.com/Здравствуйт?q=13#fragment", "title");
 
         let tags = vec![String::from("tag3"), "tag4".to_string()];
         p.set_tags_str(
@@ -117,10 +113,8 @@ mod tests {
 
     #[test]
     fn set_tags_from_vec_clone() {
-        let mut p = create_pin(
-            "https://githuуй.com/Здравствуйт?q=13#fragment",
-            "title",
-        );
+        let mut p =
+            create_pin("https://githuуй.com/Здравствуйт?q=13#fragment", "title");
 
         let tags = vec![String::from("tag5"), "tag6".to_string()];
         p.set_tags(tags.clone());
@@ -150,9 +144,7 @@ mod tests {
         assert_eq!(pin.tags, "git ctags vim");
         assert_eq!(
             pin.url,
-            Url::parse(
-                "http://tbaggery.com/2011/08/08/effortless-ctags-with-git.html",
-            ).unwrap()
+            Url::parse("http://tbaggery.com/2011/08/08/effortless-ctags-with-git.html").unwrap()
         );
     }
 
