@@ -81,14 +81,29 @@ impl Pin {
 mod tests {
     use super::*;
 
+    fn create_pin(url: &str, title: &str) -> Pin {
+        let url = Url::parse(url).unwrap();
+        Pin::new(url, title.to_string(), vec![], true, false, None)
+    }
+
     #[test]
-    fn set_tags() {
-        let url = Url::parse("https://githuуй.com/Здравствуйт?q=13#fragment").unwrap();
-        let mut p = Pin::new(url, "title".to_string(), vec![], true, false, None);
+    fn set_tags_from_vec() {
+        let mut p = create_pin(
+            "https://githuуй.com/Здравствуйт?q=13#fragment",
+            "title",
+        );
 
         let tags = vec!["tag1", "tag2"];
         p.set_tags_str(&tags);
         assert_eq!(p.tag_list, tags);
+    }
+
+    #[test]
+    fn set_tags_from_vec_string() {
+        let mut p = create_pin(
+            "https://githuуй.com/Здравствуйт?q=13#fragment",
+            "title",
+        );
 
         let tags = vec![String::from("tag3"), "tag4".to_string()];
         p.set_tags_str(
@@ -98,6 +113,14 @@ mod tests {
                 .as_slice(),
         );
         assert_eq!(p.tag_list, tags);
+    }
+
+    #[test]
+    fn set_tags_from_vec_clone() {
+        let mut p = create_pin(
+            "https://githuуй.com/Здравствуйт?q=13#fragment",
+            "title",
+        );
 
         let tags = vec![String::from("tag5"), "tag6".to_string()];
         p.set_tags(tags.clone());
@@ -134,7 +157,7 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_pins() {
+    fn deserialize_two_pins() {
         let input = format!(
             "[{},{}]",
             include_str!("../tests/PIN1.json"),
@@ -149,7 +172,10 @@ mod tests {
         let pins = pins.unwrap();
         assert_eq!(pins.len(), 2);
         println!("{:?}", pins);
+    }
 
+    #[test]
+    fn deserialize_lots_pins() {
         let input = include_str!("../sample.json");
         let pins: Result<Vec<Pin>, _> = serde_json::from_str(input);
         assert!(pins.is_ok());
