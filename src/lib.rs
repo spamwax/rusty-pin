@@ -20,10 +20,13 @@ pub struct Pin {
     pub tags: String,
     pub shared: String,
     pub toread: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub extended: Option<String>,
     #[serde(default = "Utc::now")]
     time: DateTime<Utc>,
+    #[serde(skip)]
     meta: Option<String>,
+    #[serde(skip)]
     hash: Option<String>,
     #[serde(skip)]
     tag_list: Vec<String>,
@@ -65,7 +68,7 @@ impl Pin {
     }
 
     pub fn contains(&self, q: &str) -> bool {
-        self.url.as_ref().contains(q) || self.title.contains(q) || self.tags.contains(q)
+        self.title.contains(q) || self.url.as_ref().contains(q) || self.tags.contains(q)
     }
 
     pub fn set_tags_str(&mut self, tags: &[&str]) -> () {
@@ -175,4 +178,20 @@ mod tests {
         assert_eq!(pins.len(), 472);
     }
 
+    #[test]
+    fn serialize_a_pin() {
+        let mut pin = create_pin(
+            "https://danielkeep.github.io/tlborm/book/README.html",
+            "The Little Book of Rust Macros",
+        );
+        pin.toread = "no".to_string();
+        pin.shared = "no".to_string();
+        pin.tags = "Rust macros".to_string();
+        pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
+        let s = serde_json::to_string(&pin).unwrap();
+        assert_eq!(
+            r#"{"href":"https://danielkeep.github.io/tlborm/book/README.html","description":"The Little Book of Rust Macros","tags":"Rust macros","shared":"no","toread":"no","time":"2017-05-22T17:46:54Z"}"#,
+            s
+        );
+    }
 }
