@@ -11,6 +11,8 @@ extern crate url_serde;
 use url::Url;
 use chrono::prelude::*;
 
+mod pinboard;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Pin {
     #[serde(with = "url_serde", rename = "href")]
