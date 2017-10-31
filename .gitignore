@@ -5,3 +5,4 @@ all.json
 cmake-build-debug
 CMakeLists.txt
 auth_token.txt
+.rustfmt.toml
