@@ -193,7 +193,9 @@ mod tests {
         pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
         let s = serde_json::to_string(&pin).unwrap();
         assert_eq!(
-            r#"{"href":"https://danielkeep.github.io/tlborm/book/README.html","description":"The Little Book of Rust Macros","tags":"Rust macros","shared":"no","toread":"no","time":"2017-05-22T17:46:54Z"}"#,
+            r#"{"href":"https://danielkeep.github.io/tlborm/book/README.html",
+"description":"The Little Book of Rust Macros","tags":"Rust macros","shared":"no"
+,"toread":"no","time":"2017-05-22T17:46:54Z"}"#,
             s
         );
     }
