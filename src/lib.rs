@@ -7,6 +7,7 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 extern crate url_serde;
+extern crate reqwest;
 
 use url::Url;
 use chrono::prelude::*;
