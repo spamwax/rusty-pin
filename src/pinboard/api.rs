@@ -58,10 +58,10 @@ pub fn delete<T: IntoUrl>(url: T) -> Result<(), String> {
     let resp = get_api_response("https://api.pinboard.in/v1/posts/delete", map)?;
 
     let resp: Result<ApiResult, _> = serde_json::from_str(&resp);
-    print!("{:?}", resp);
     match resp {
         Ok(ref r) if r.result_code == "done" => Ok(()),
-        Ok(_) | Err(_) => Err(format!("Couldn't delete {:?}", url)),
+        Ok(r) => Err(r.result_code),
+        Err(e) => Err(format!("Unrecognized response from server: {:?}", e)),
     }
 }
 
@@ -85,7 +85,7 @@ fn get_api_response<T: IntoUrl>(endpoint: T,
     }
     let res = client.get(api_url).send();
 
-    println!("{:?}", res);
+    // println!("{:?}", res);
     let mut resp = match res {
         Ok(msg) => msg,
         Err(e) => return Err(e.to_string()),
