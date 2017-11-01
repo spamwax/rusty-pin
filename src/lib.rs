@@ -36,6 +36,7 @@ pub struct Pin {
 }
 
 impl Pin {
+    // TODO: Add a 'builder' to construcet a new Pin //
     pub fn new(
         url: Url,
         title: String,
@@ -132,7 +133,7 @@ mod tests {
         let pin: Result<Pin, _> = serde_json::from_str(include_str!("../tests/PIN1.json"));
         assert!(pin.is_ok());
         let pin: Pin = pin.unwrap();
-        println!("{:?}", pin);
+        // println!("{:?}", pin);
         assert_eq!(pin.title, "The Little Book of Rust Macros");
         assert_eq!(pin.time, Utc.ymd(2017, 5, 22).and_hms(17, 46, 54));
         assert_eq!(pin.tags, "Rust macros");
@@ -144,7 +145,7 @@ mod tests {
         let pin: Result<Pin, _> = serde_json::from_str(include_str!("../tests/PIN2.json"));
         assert!(pin.is_ok());
         let pin: Pin = pin.unwrap();
-        println!("{:?}", pin);
+        // println!("{:?}", pin);
         assert_eq!(pin.title, "tbaggery - Effortless Ctags with Git");
         assert_eq!(pin.time, Utc.ymd(2017, 10, 9).and_hms(7, 59, 36));
         assert_eq!(pin.tags, "git ctags vim");
@@ -163,13 +164,13 @@ mod tests {
         );
         let pins: Result<Vec<Pin>, _> = serde_json::from_str(&input);
         if let Err(e) = pins {
-            println!("{:?}", e);
+            // println!("{:?}", e);
             return;
         }
         assert!(pins.is_ok());
         let pins = pins.unwrap();
         assert_eq!(pins.len(), 2);
-        println!("{:?}", pins);
+        // println!("{:?}", pins);
     }
 
     #[test]
