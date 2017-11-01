@@ -195,7 +195,7 @@ mod tests {
         assert_eq!(
             r#"{"href":"https://danielkeep.github.io/tlborm/book/README.html",
 "description":"The Little Book of Rust Macros","tags":"Rust macros","shared":"no"
-,"toread":"no","time":"2017-05-22T17:46:54Z"}"#,
+,"toread":"no","time":"2017-05-22T17:46:54Z"}"#.replace("\n", ""),
             s
         );
     }

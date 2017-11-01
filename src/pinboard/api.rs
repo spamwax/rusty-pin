@@ -22,10 +22,9 @@ struct UpdateTime {
 }
 
 fn add_auth_token<T: IntoUrl>(url: T) -> Url {
-    Url::parse_with_params(
-        url.into_url().unwrap().as_ref(),
-        &[("format", "json"), ("auth_token", TOKEN)],
-    ).unwrap()
+    Url::parse_with_params(url.into_url().unwrap().as_ref(),
+                           &[("format", "json"), ("auth_token", TOKEN)])
+        .unwrap()
 }
 
 pub fn delete<T: IntoUrl>(url: T) -> Result<(), String> {
@@ -42,10 +41,9 @@ pub fn delete<T: IntoUrl>(url: T) -> Result<(), String> {
     }
 }
 
-fn get_api_response<T: IntoUrl>(
-    endpoint: T,
-    params: HashMap<String, String>,
-) -> Result<String, String> {
+fn get_api_response<T: IntoUrl>(endpoint: T,
+                                params: HashMap<String, String>)
+                                -> Result<String, String> {
     let client = reqwest::Client::new();
     let mut api_url = add_auth_token(endpoint);
 
@@ -60,7 +58,7 @@ fn get_api_response<T: IntoUrl>(
         Err(e) => return Err(e.to_string()),
     };
 
-    //TODO: check for error status codes and return them instead of panicking.
+    // TODO: check for error status codes and return them instead of panicking.
     assert!(resp.status().is_success());
 
     let mut content = String::new();
@@ -71,22 +69,7 @@ fn get_api_response<T: IntoUrl>(
 }
 
 pub fn recent_update() -> Result<DateTime<Utc>, String> {
-
-
-    let res = reqwest::get(add_auth_token("https://api.pinboard.in/v1/posts/update"));
-    let mut resp = match res {
-        Ok(resp) => resp,
-        Err(e) => return Err(e.to_string()),
-    };
-
-    //TODO: check for error status codes and return them instead of panicking.
-    assert!(resp.status().is_success());
-
-    let mut content = String::new();
-    if let Err(e) = resp.read_to_string(&mut content) {
-        return Err(e.to_string());
-    }
-
+    let content = get_api_response("https://api.pinboard.in/v1/posts/update", HashMap::new())?;
     let date: Result<UpdateTime, _> = serde_json::from_str(&content);
     match date {
         Ok(date) => Ok(date.datetime),
