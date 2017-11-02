@@ -24,9 +24,36 @@ struct UpdateTime {
 }
 
 fn add_auth_token<T: IntoUrl>(url: T) -> Url {
-    Url::parse_with_params(url.into_url().unwrap().as_ref(),
-                           &[("format", "json"), ("auth_token", TOKEN)])
-        .unwrap()
+    Url::parse_with_params(
+        url.into_url().unwrap().as_ref(),
+        &[("format", "json"), ("auth_token", TOKEN)],
+    ).unwrap()
+}
+
+pub fn suggest_tags<T: IntoUrl>(url: T) -> Result<Vec<String>, String> {
+    let mut query = HashMap::new();
+    query.insert("url", url.into_url().unwrap().to_string());
+
+    let res = get_api_response("https://api.pinboard.in/v1/posts/suggest", query)?;
+    let res: Result<Vec<serde_json::Value>, _> = serde_json::from_str(&res);
+
+    if let Err(e) = res {
+        return Err(format!("Unrecognized response from server: {:?}", e));
+    }
+    let res = res.unwrap();
+    for item in res {
+        if !item["popular"].is_null() {
+            return Ok(
+                item["popular"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|v| v.as_str().unwrap().to_string())
+                    .collect::<Vec<String>>(),
+            );
+        }
+    }
+    Err("Unrecognized response from server".to_string())
 }
 
 pub fn add_url(p: Pin) -> Result<(), String> {
@@ -74,9 +101,10 @@ pub fn recent_update() -> Result<DateTime<Utc>, String> {
     }
 }
 
-fn get_api_response<T: IntoUrl>(endpoint: T,
-                                params: HashMap<&str, String>)
-                                -> Result<String, String> {
+fn get_api_response<T: IntoUrl>(
+    endpoint: T,
+    params: HashMap<&str, String>,
+) -> Result<String, String> {
     let client = reqwest::Client::new();
     let mut api_url = add_auth_token(endpoint);
 
@@ -124,5 +152,13 @@ mod tests {
         let p = Pin::new(url, "what".to_string(), vec![], true, false, None);
         let res = add_url(p);
         res.expect("Error in adding");
+    }
+
+    #[test]
+    fn suggest_tags() {
+        let url = "http://blog.com/";
+        let res = super::suggest_tags(url);
+        println!("{:?}", res);
+        assert_eq!(res.unwrap(), vec!["blog", "blogging", "free", "hosting"]);
     }
 }
