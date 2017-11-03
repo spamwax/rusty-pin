@@ -78,6 +78,25 @@ pub fn add_url(p: Pin) -> Result<(), String> {
     }
 }
 
+pub fn tags_frequency() -> Result<HashMap<String, usize>, String> {
+    let res = get_api_response("https://api.pinboard.in/v1/tags/get", HashMap::new())?;
+
+    let res: Result<HashMap<String, String>, _> = serde_json::from_str(&res);
+    if let Err(e) = res {
+        return Err(format!("Unrecognized server response: {:?}", e));
+    }
+
+    return Ok(
+        res.unwrap()
+            .into_iter()
+            .map(|(k, v)| {
+                let freq = v.parse::<usize>().unwrap_or_default();
+                (k, freq)
+            })
+            .collect(),
+    );
+}
+
 pub fn delete<T: IntoUrl>(url: T) -> Result<(), String> {
     let mut map = HashMap::new();
     let url = url.into_url().unwrap().to_string();
@@ -160,5 +179,11 @@ mod tests {
         let res = super::suggest_tags(url);
         println!("{:?}", res);
         assert_eq!(res.unwrap(), vec!["blog", "blogging", "free", "hosting"]);
+    }
+
+    #[test]
+    fn test_tag_freq() {
+        let res = tags_frequency();
+        assert!(res.is_ok());
     }
 }
