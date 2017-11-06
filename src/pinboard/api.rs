@@ -40,8 +40,7 @@ pub fn suggest_tags<T: IntoUrl>(url: T) -> Result<Vec<String>, String> {
     if let Err(e) = res {
         return Err(format!("Unrecognized response from server: {:?}", e));
     }
-    let res = res.unwrap();
-    for item in res {
+    for item in res.unwrap() {
         if !item["popular"].is_null() {
             return Ok(
                 item["popular"]
