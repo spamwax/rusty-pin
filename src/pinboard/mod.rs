@@ -9,7 +9,7 @@ mod api;
 
 #[derive(Debug)]
 pub struct Pinboard {
-    auth_token: String,
+    api: api::Api,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -96,7 +96,11 @@ impl Pin {
 
 impl Pinboard {
     pub fn new(auth_token: String) -> Self {
-        Pinboard { auth_token }
+        Pinboard { api: api::Api::new(auth_token) }
+    }
+
+    pub fn add(self, p: Pin) -> Result<(), String> {
+       self.api.add_url(p)
     }
 }
 
