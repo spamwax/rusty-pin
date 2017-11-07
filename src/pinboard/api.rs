@@ -10,7 +10,7 @@ use url::Url;
 use std::io::Read;
 use std::collections::HashMap;
 
-use Pin;
+use super::Pin;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ApiResult {
@@ -151,6 +151,8 @@ fn get_api_response<T: IntoUrl>(
 mod tests {
     use super::*;
 
+    use pinboard::PinBuilder;
+
     #[test]
     fn get_latest_update_time() {
         let r = recent_update();
@@ -166,8 +168,10 @@ mod tests {
 
     #[test]
     fn add_a_url() {
-        let url = Url::parse("https://githuуй.com/Здравствуйт?q=13#fragment").unwrap();
-        let p = Pin::new(url, "what".to_string(), vec![], true, false, None);
+        let p = PinBuilder::new(
+            "https://githuуй.com/Здравствуйт?q=13#fragment",
+            "what".to_string(),
+        ).into_pin();
         let res = add_url(p);
         res.expect("Error in adding");
     }
