@@ -121,4 +121,19 @@ mod tests {
         assert_eq!(p.tags, "tag1 tag2".to_string());
         assert_eq!(p.tag_list, vec!["tag1", "tag2"]);
     }
+
+    #[test]
+    fn test_pin_contain() {
+        let p = PinBuilder::new(
+            "http://правительство.рф",
+            "An open source ecosystem for IoT development · PlatformIO".to_string(),
+        ).tags("tag1 tag2".to_string())
+            .into_pin();
+
+        assert!(p.contains("·"));
+        assert!(p.contains("· PlatformIO"));
+        assert!(p.contains("IoT"));
+        assert!(p.contains("tag"));
+        assert!(p.contains("tag1"));
+    }
 }
