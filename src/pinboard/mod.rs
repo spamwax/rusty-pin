@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+use std::path::{Path, PathBuf};
+
 use url_serde;
 use reqwest::IntoUrl;
 
@@ -6,6 +8,55 @@ use chrono::prelude::*;
 use url::Url;
 
 mod api;
+
+pub struct Config{
+    pub cache_dir: PathBuf,
+    pub tag_only_search: bool,
+    pub enable_fuzzy_search: bool,
+    tags_cache_file: PathBuf,
+    pins_cache_file: PathBuf,
+}
+
+impl Config {
+    pub fn new() -> Result<Self, String> {
+        let cache_dir = PathBuf::from("~/.cache/rusty-pin");
+        let cache_dir = Config::create_cache_dir(cache_dir)?;
+        Ok(Config {
+            tag_only_search: false,
+            enable_fuzzy_search: false,
+            tags_cache_file: cache_dir.join("tags.cache"),
+            pins_cache_file: cache_dir.join("pins.cache"),
+            cache_dir,
+        })
+    }
+
+    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: P) -> Result<(), String>{
+        self.cache_dir = Config::create_cache_dir(p)?;
+        self.tags_cache_file = self.cache_dir.join("tags.cache");
+        self.pins_cache_file = self.cache_dir.join("pins.cache");
+        Ok(())
+    }
+
+    pub fn enable_tag_only_search(&mut self, v: bool) {
+        self.tag_only_search = v;
+    }
+
+    pub fn enable_fuzzy_search(&mut self, v: bool) {
+        self.enable_fuzzy_search = v;
+    }
+
+    fn create_cache_dir<P: AsRef<Path>>(cache_dir: P) -> Result<PathBuf, String> {
+        use std::fs;
+        if cache_dir.as_ref().exists() {
+            Ok(cache_dir.as_ref().to_path_buf())
+        } else {
+           match fs::create_dir_all(&cache_dir) {
+               Err(e) => Err(format!("{}", e)),
+               Ok(_) => Ok(PathBuf::from(cache_dir.as_ref())),
+           }
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct Pinboard {
