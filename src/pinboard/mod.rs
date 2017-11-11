@@ -173,6 +173,39 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_config() {
+        let mut h = env::home_dir().unwrap();
+        h.push(".cache");
+        h.push("rusty-pin");
+        let c = Config::new().expect("Can't initiate 'Config'.");
+        assert_eq!(c.cache_dir, h);
+    }
+
+    #[test]
+    fn test_set_cache_dir() {
+        let mut h = env::home_dir().unwrap();
+        h.push("tags");
+        h.set_extension("cache");
+        let mut c = Config::new().expect("Can't initiate 'Config'.");
+        assert_eq!(c.tags_cache_file, h);
+
+        h.set_file_name("pins");
+        h.set_extension("cache");
+        println!("{:?}", h);
+        assert_eq!(c.pins_cache_file, h);
+
+        h = env::home_dir().unwrap();
+        h.push(".cache"); h.push("rustypin");
+        c.set_cache_dir(&h).expect("Can't change cache path.");
+
+        h.push("tags.cache");
+        assert_eq!(c.tags_cache_file, h);
+
+        h.set_file_name("pins.cache");
+        assert_eq!(c.pins_cache_file, h);
+    }
+
+    #[test]
     fn test_builder() {
         let p = PinBuilder::new(
             "https://githuуй.com/Здравствуйт?q=13#fragment",
