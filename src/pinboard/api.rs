@@ -44,7 +44,10 @@ impl Api {
         let mut query = HashMap::new();
         query.insert("url", url.into_url().unwrap().to_string());
 
-        let res = self.get_api_response("https://api.pinboard.in/v1/posts/suggest", query)?;
+        let res = self.get_api_response(
+            "https://api.pinboard.in/v1/posts/suggest",
+            query,
+        )?;
         let res: Result<Vec<serde_json::Value>, _> = serde_json::from_str(&res);
 
         if let Err(e) = res {
@@ -76,7 +79,10 @@ impl Api {
         map.insert("shared", p.shared);
         map.insert("replace", "yes".to_string());
 
-        let res = self.get_api_response("https://api.pinboard.in/v1/posts/add", map)?;
+        let res = self.get_api_response(
+            "https://api.pinboard.in/v1/posts/add",
+            map,
+        )?;
         let res: Result<ApiResult, _> = serde_json::from_str(&res);
 
         println!("{:?}", res);
@@ -88,7 +94,10 @@ impl Api {
     }
 
     pub fn tags_frequency(self) -> Result<HashMap<String, usize>, String> {
-        let res = self.get_api_response("https://api.pinboard.in/v1/tags/get", HashMap::new())?;
+        let res = self.get_api_response(
+            "https://api.pinboard.in/v1/tags/get",
+            HashMap::new(),
+        )?;
 
         let res: Result<HashMap<String, String>, _> = serde_json::from_str(&res);
         if let Err(e) = res {
@@ -110,7 +119,10 @@ impl Api {
         let mut map = HashMap::new();
         let url = url.into_url().unwrap().to_string();
         map.insert("url", url.clone());
-        let resp = self.get_api_response("https://api.pinboard.in/v1/posts/delete", map)?;
+        let resp = self.get_api_response(
+            "https://api.pinboard.in/v1/posts/delete",
+            map,
+        )?;
 
         let resp: Result<ApiResult, _> = serde_json::from_str(&resp);
         match resp {
@@ -121,7 +133,10 @@ impl Api {
     }
 
     pub fn recent_update(self) -> Result<DateTime<Utc>, String> {
-        let content = self.get_api_response("https://api.pinboard.in/v1/posts/update", HashMap::new())?;
+        let content = self.get_api_response(
+            "https://api.pinboard.in/v1/posts/update",
+            HashMap::new(),
+        )?;
         let date: Result<UpdateTime, _> = serde_json::from_str(&content);
         match date {
             Ok(date) => Ok(date.datetime),
