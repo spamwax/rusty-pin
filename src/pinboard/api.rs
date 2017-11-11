@@ -175,9 +175,10 @@ mod tests {
 
     #[test]
     fn delete_a_pin() {
+        add_a_url();
         let api = Api::new(include_str!("auth_token.txt").to_string());
-        let r = api.delete("http://git.hamid.cc");
-        println!("{:?}", r);
+        let r = api.delete("https://githuуй.com/Здравствуйт?q=13#fragment");
+        r.expect("Error in deleting a pin.");
     }
 
     #[test]
@@ -185,10 +186,10 @@ mod tests {
         let api = Api::new(include_str!("auth_token.txt").to_string());
         let p = PinBuilder::new(
             "https://githuуй.com/Здравствуйт?q=13#fragment",
-            "what".to_string(),
+            "test bookmark/pin".to_string(),
         ).into_pin();
         let res = api.add_url(p);
-        res.expect("Error in adding");
+        res.expect("Error in adding.");
     }
 
     #[test]
