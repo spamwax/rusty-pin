@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 use std::path::{Path, PathBuf};
+use std::env;
 
 use url_serde;
 use reqwest::IntoUrl;
@@ -19,7 +20,18 @@ pub struct Config{
 
 impl Config {
     pub fn new() -> Result<Self, String> {
-        let cache_dir = PathBuf::from("~/.cache/rusty-pin");
+
+        fn get_app_dir() -> PathBuf {
+            let mut dir: PathBuf = match env::home_dir() {
+                Some(path) => PathBuf::from(path),
+                None => PathBuf::from(""),
+            };
+            dir.push(".cache");
+            dir.push("rusty-pin");
+            dir
+        }
+
+        let cache_dir = get_app_dir();
         let cache_dir = Config::create_cache_dir(cache_dir)?;
         Ok(Config {
             tag_only_search: false,
@@ -30,7 +42,7 @@ impl Config {
         })
     }
 
-    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: P) -> Result<(), String>{
+    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), String>{
         self.cache_dir = Config::create_cache_dir(p)?;
         self.tags_cache_file = self.cache_dir.join("tags.cache");
         self.pins_cache_file = self.cache_dir.join("pins.cache");
