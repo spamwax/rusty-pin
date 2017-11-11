@@ -75,6 +75,9 @@ pub struct Pinboard {
     api: api::Api,
 }
 
+#[derive(Debug)]
+pub struct Tag(String, usize);
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Pin {
     #[serde(with = "url_serde", rename = "href")]
@@ -165,6 +168,14 @@ impl Pinboard {
     pub fn add(self, p: Pin) -> Result<(), String> {
        self.api.add_url(p)
     }
+
+    pub fn search_items(&self, q: &str) -> Option<Vec<Pin>> {
+        None
+    }
+
+    pub fn search_tags(&self, q: &str) -> Option<Vec<Tag>> {
+        None
+    }
 }
 
 
@@ -184,12 +195,11 @@ mod tests {
     #[test]
     fn test_set_cache_dir() {
         let mut h = env::home_dir().unwrap();
-        h.push("tags");
-        h.set_extension("cache");
+        h.push(".cache");
+        h.push("rusty-pin");
         let mut c = Config::new().expect("Can't initiate 'Config'.");
-        assert_eq!(c.tags_cache_file, h);
 
-        h.set_file_name("pins");
+        h.push("pins");
         h.set_extension("cache");
         println!("{:?}", h);
         assert_eq!(c.pins_cache_file, h);

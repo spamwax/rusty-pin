@@ -10,7 +10,7 @@ use url::Url;
 use std::io::Read;
 use std::collections::HashMap;
 
-use super::Pin;
+use super::{Pin, Tag};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ApiResult {
@@ -93,7 +93,7 @@ impl Api {
         }
     }
 
-    pub fn tags_frequency(self) -> Result<HashMap<String, usize>, String> {
+    pub fn tags_frequency(self) -> Result<Vec<Tag>, String> {
         let res = self.get_api_response(
             "https://api.pinboard.in/v1/tags/get",
             HashMap::new(),
@@ -101,18 +101,18 @@ impl Api {
 
         let res: Result<HashMap<String, String>, _> = serde_json::from_str(&res);
         if let Err(e) = res {
-            return Err(format!("Unrecognized server response: {:?}", e));
+            Err(format!("Unrecognized server response: {:?}", e))
+        } else {
+            Ok(
+                res.unwrap()
+                    .into_iter()
+                    .map(|(k, v)| {
+                        let freq = v.parse::<usize>().unwrap_or_default();
+                        Tag(k, freq)
+                    })
+                    .collect(),
+            )
         }
-
-        return Ok(
-            res.unwrap()
-                .into_iter()
-                .map(|(k, v)| {
-                    let freq = v.parse::<usize>().unwrap_or_default();
-                    (k, freq)
-                })
-                .collect(),
-        );
     }
 
     pub fn delete<T: IntoUrl>(self, url: T) -> Result<(), String> {
