@@ -10,7 +10,8 @@ use url::Url;
 
 mod api;
 
-pub struct Config{
+#[derive(Debug)]
+pub struct Config {
     pub cache_dir: PathBuf,
     pub tag_only_search: bool,
     pub enable_fuzzy_search: bool,
@@ -73,6 +74,7 @@ impl Config {
 #[derive(Debug)]
 pub struct Pinboard {
     api: api::Api,
+    cfg: Config,
 }
 
 #[derive(Debug)]
@@ -161,8 +163,9 @@ impl Pin {
 }
 
 impl Pinboard {
-    pub fn new(auth_token: String) -> Self {
-        Pinboard { api: api::Api::new(auth_token) }
+    pub fn new(auth_token: String) -> Result<Self, String> {
+        let cfg = Config::new()?;
+        Ok( Pinboard { api: api::Api::new(auth_token), cfg } )
     }
 
     pub fn add(self, p: Pin) -> Result<(), String> {
