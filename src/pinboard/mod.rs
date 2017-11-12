@@ -47,7 +47,7 @@ impl Config {
         })
     }
 
-    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), String>{
+    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), String> {
         self.cache_dir = Config::create_cache_dir(p)?;
         self.tags_cache_file = self.cache_dir.join("tags.cache");
         self.pins_cache_file = self.cache_dir.join("pins.cache");
@@ -67,10 +67,10 @@ impl Config {
         if cache_dir.as_ref().exists() {
             Ok(cache_dir.as_ref().to_path_buf())
         } else {
-           match fs::create_dir_all(&cache_dir) {
-               Err(e) => Err(format!("{}", e)),
-               Ok(_) => Ok(PathBuf::from(cache_dir.as_ref())),
-           }
+            match fs::create_dir_all(&cache_dir) {
+                Err(e) => Err(format!("{}", e)),
+                Ok(_) => Ok(PathBuf::from(cache_dir.as_ref())),
+            }
         }
     }
 }
@@ -169,18 +169,24 @@ impl Pin {
 impl Pinboard {
     pub fn new(auth_token: String) -> Result<Self, String> {
         let cfg = Config::new()?;
-        Ok( Pinboard { api: api::Api::new(auth_token), cfg } )
+        Ok(Pinboard {
+            api: api::Api::new(auth_token),
+            cfg,
+        })
     }
 
     pub fn add(self, p: Pin) -> Result<(), String> {
-       self.api.add_url(p)
+        self.api.add_url(p)
     }
 
     pub fn search_items(&self, q: &str) -> Result<Option<Vec<Pin>>, String> {
         if self.cfg.tags_cache_file.exists() {
             //TODO: To be continued!
         } else {
-            return Err(format!("items cache file not present: {}", self.cfg.tags_cache_file.to_str().unwrap_or("")));
+            return Err(format!(
+                "items cache file not present: {}",
+                self.cfg.tags_cache_file.to_str().unwrap_or("")
+            ));
         }
         Ok(None)
     }
@@ -190,18 +196,18 @@ impl Pinboard {
 
         let cached_tags: Vec<Tag> = match serde_json::from_str(&cached_tags) {
             Ok(cached_tags) => cached_tags,
-            Err(e) => return Err(format!("{:?}", e))
+            Err(e) => return Err(format!("{:?}", e)),
         };
 
         //TODO: Implement fuzzy search
-        let r = if ! self.cfg.fuzzy_search {
+        let r = if !self.cfg.fuzzy_search {
             let r = cached_tags
-                     .into_iter()
-                     .filter(|item| item.0.contains(q))
-                     .collect::<Vec<Tag>>();
+                .into_iter()
+                .filter(|item| item.0.contains(q))
+                .collect::<Vec<Tag>>();
             match r.len() {
                 0 => None,
-                _ => Some(r)
+                _ => Some(r),
             }
         } else {
             None
@@ -216,7 +222,7 @@ impl Pinboard {
         let f = File::open(p);
         let mut fd = match f {
             Ok(c) => c,
-            Err(e) => return Err(format!("{:?}", e.description()))
+            Err(e) => return Err(format!("{:?}", e.description())),
         };
 
         let mut content = String::new();
@@ -257,7 +263,8 @@ mod tests {
         assert_eq!(c.pins_cache_file, h);
 
         h = env::home_dir().unwrap();
-        h.push(".cache"); h.push("rustypin");
+        h.push(".cache");
+        h.push("rustypin");
         c.set_cache_dir(&h).expect("Can't change cache path.");
 
         h.push("tags.cache");

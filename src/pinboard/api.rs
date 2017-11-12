@@ -41,8 +41,9 @@ impl Api {
     }
 
     pub fn all_pins(&self) -> Result<Vec<Pin>, String> {
-        let res = self.get_api_response("https://api.pinboard.in/v1/posts/all",
-                                        HashMap::new()
+        let res = self.get_api_response(
+            "https://api.pinboard.in/v1/posts/all",
+            HashMap::new(),
         )?;
         let res: Result<Vec<Pin>, _> = serde_json::from_str(&res);
 
