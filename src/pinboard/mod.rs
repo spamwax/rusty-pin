@@ -1,8 +1,12 @@
 #![allow(dead_code)]
+use std::io::prelude::*;
+use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::env;
+use std::fs::File;
 
 use url_serde;
+use serde_json;
 use reqwest::IntoUrl;
 
 use chrono::prelude::*;
@@ -14,7 +18,7 @@ mod api;
 pub struct Config {
     pub cache_dir: PathBuf,
     pub tag_only_search: bool,
-    pub enable_fuzzy_search: bool,
+    pub fuzzy_search: bool,
     tags_cache_file: PathBuf,
     pins_cache_file: PathBuf,
 }
@@ -36,7 +40,7 @@ impl Config {
         let cache_dir = Config::create_cache_dir(cache_dir)?;
         Ok(Config {
             tag_only_search: false,
-            enable_fuzzy_search: false,
+            fuzzy_search: false,
             tags_cache_file: cache_dir.join("tags.cache"),
             pins_cache_file: cache_dir.join("pins.cache"),
             cache_dir,
@@ -55,7 +59,7 @@ impl Config {
     }
 
     pub fn enable_fuzzy_search(&mut self, v: bool) {
-        self.enable_fuzzy_search = v;
+        self.fuzzy_search = v;
     }
 
     fn create_cache_dir<P: AsRef<Path>>(cache_dir: P) -> Result<PathBuf, String> {
@@ -77,7 +81,7 @@ pub struct Pinboard {
     cfg: Config,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Tag(String, usize);
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -176,8 +180,48 @@ impl Pinboard {
         None
     }
 
-    pub fn search_tags(&self, q: &str) -> Option<Vec<Tag>> {
-        None
+    pub fn search_tags(&self, q: &str) -> Result<Option<Vec<Tag>>, String> {
+        let cached_tags = self.read_file(&self.cfg.tags_cache_file)?;
+
+        let cached_tags: Vec<Tag> = match serde_json::from_str(&cached_tags) {
+            Ok(cached_tags) => cached_tags,
+            Err(e) => return Err(format!("{:?}", e))
+        };
+
+        //TODO: Implement fuzzy search
+        let r = if ! self.cfg.fuzzy_search {
+            let r = cached_tags
+                     .into_iter()
+                     .filter(|item| item.0.contains(q))
+                     .collect::<Vec<Tag>>();
+            match r.len() {
+                0 => None,
+                _ => Some(r)
+            }
+        } else {
+            None
+        };
+        Ok(r)
+    }
+}
+
+/// private implementations
+impl Pinboard {
+    fn read_file<P: AsRef<Path>>(&self, p: P) -> Result<String, String> {
+        let f = File::open(p);
+        let mut fd = match f {
+            Ok(c) => c,
+            Err(e) => return Err(format!("{:?}", e.description()))
+        };
+
+        let mut content = String::new();
+        let r = fd.read_to_string(&mut content);
+        if let Err(e) = r {
+            Err(format!("{:?}", e.description()))
+        } else {
+            Ok(content)
+        }
+
     }
 }
 
