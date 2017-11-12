@@ -176,8 +176,13 @@ impl Pinboard {
        self.api.add_url(p)
     }
 
-    pub fn search_items(&self, q: &str) -> Option<Vec<Pin>> {
-        None
+    pub fn search_items(&self, q: &str) -> Result<Option<Vec<Pin>>, String> {
+        if self.cfg.tags_cache_file.exists() {
+            //TODO: To be continued!
+        } else {
+            return Err(format!("items cache file not present: {}", self.cfg.tags_cache_file.to_str().unwrap_or("")));
+        }
+        Ok(None)
     }
 
     pub fn search_tags(&self, q: &str) -> Result<Option<Vec<Tag>>, String> {

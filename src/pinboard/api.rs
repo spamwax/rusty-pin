@@ -33,11 +33,24 @@ impl Api {
         Api { auth_token }
     }
 
-    fn add_auth_token<T: IntoUrl>(self, url: T) -> Url {
+    fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
         Url::parse_with_params(
             url.into_url().unwrap().as_ref(),
             &[("format", "json"), ("auth_token", &self.auth_token)],
         ).unwrap()
+    }
+
+    pub fn all_pins(&self) -> Result<Vec<Pin>, String> {
+        let res = self.get_api_response("https://api.pinboard.in/v1/posts/all",
+                                        HashMap::new()
+        )?;
+        let res: Result<Vec<Pin>, _> = serde_json::from_str(&res);
+
+        if let Err(e) = res {
+            Err(format!("{:?}", e))
+        } else {
+            Ok(res.unwrap())
+        }
     }
 
     pub fn suggest_tags<T: IntoUrl>(self, url: T) -> Result<Vec<String>, String> {
@@ -85,7 +98,6 @@ impl Api {
         )?;
         let res: Result<ApiResult, _> = serde_json::from_str(&res);
 
-        println!("{:?}", res);
         match res {
             Ok(ref r) if r.result_code == "done" => Ok(()),
             Ok(r) => Err(r.result_code),
@@ -145,7 +157,7 @@ impl Api {
     }
 
     fn get_api_response<T: IntoUrl>(
-        self,
+        &self,
         endpoint: T,
         params: HashMap<&str, String>,
     ) -> Result<String, String> {
@@ -157,7 +169,6 @@ impl Api {
         }
         let res = client.get(api_url).send();
 
-        // println!("{:?}", res);
         let mut resp = match res {
             Ok(msg) => msg,
             Err(e) => return Err(e.to_string()),
@@ -221,5 +232,18 @@ mod tests {
         let api = Api::new(include_str!("auth_token.txt").to_string());
         let res = api.tags_frequency();
         assert!(res.is_ok());
+    }
+
+    #[ignore]
+    #[test]
+    fn test_all_pins() {
+        let api = Api::new(include_str!("auth_token.txt").to_string());
+        let res = api.all_pins();
+
+        if res.is_err() {
+            println!("{:?}", res)
+        } else {
+            println!("Got {} pins!!!", res.unwrap().len());
+        }
     }
 }
