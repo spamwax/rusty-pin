@@ -248,21 +248,21 @@ mod tests {
         h.push("rusty-pin");
         let c = Config::new().expect("Can't initiate 'Config'.");
         assert_eq!(c.cache_dir, h);
+
+        h.push("pins");
+        h.set_extension("cache");
+        assert_eq!(c.pins_cache_file, h);
+
+        h.set_file_name("tags");
+        h.set_extension("cache");
+        assert_eq!(c.tags_cache_file, h);
     }
 
     #[test]
     fn test_set_cache_dir() {
         let mut h = env::home_dir().unwrap();
-        h.push(".cache");
-        h.push("rusty-pin");
         let mut c = Config::new().expect("Can't initiate 'Config'.");
 
-        h.push("pins");
-        h.set_extension("cache");
-        println!("{:?}", h);
-        assert_eq!(c.pins_cache_file, h);
-
-        h = env::home_dir().unwrap();
         h.push(".cache");
         h.push("rustypin");
         c.set_cache_dir(&h).expect("Can't change cache path.");
