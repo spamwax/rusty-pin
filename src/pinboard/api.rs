@@ -106,7 +106,7 @@ impl Api {
         }
     }
 
-    pub fn tags_frequency(self) -> Result<Vec<Tag>, String> {
+    pub fn tags_frequency(&self) -> Result<Vec<Tag>, String> {
         let res = self.get_api_response(
             "https://api.pinboard.in/v1/tags/get",
             HashMap::new(),

@@ -214,6 +214,20 @@ impl Pinboard {
         };
         Ok(r)
     }
+
+    fn update_cache(&self) -> Result<(), String> {
+        // Write all pins
+        let pins = self.api.all_pins()?;
+        let mut f = File::create(&self.cfg.pins_cache_file).map_err(|e| format!("{:?}", e))?;
+        let mut data = serde_json::to_vec(&pins).map_err(|e| format!("{:?}", e))?;
+        f.write_all(&mut data).map_err(|e| format!("{:?}", e))?;
+
+        // Write all tags
+        let tags = self.api.tags_frequency()?;
+        let mut f = File::create(&self.cfg.tags_cache_file).map_err(|e| format!("{:?}", e))?;
+        let mut data = serde_json::to_vec(&tags).map_err(|e| format!("{:?}", e))?;
+        f.write_all(&mut data).map_err(|e| format!("{:?}", e))
+    }
 }
 
 /// private implementations
@@ -304,5 +318,12 @@ mod tests {
         assert!(p.contains("IoT"));
         assert!(p.contains("tag"));
         assert!(p.contains("tag1"));
+    }
+
+    #[ignore]
+    #[test]
+    fn test_update_cache() {
+        let pinboard = Pinboard::new(include_str!("auth_token.txt").to_string());
+        pinboard.unwrap().update_cache().unwrap_or_else(|e| panic!(e));
     }
 }
