@@ -243,14 +243,6 @@ impl Pinboard {
                     .map_err(|e| e.description().to_owned())
                     .and_then(|_| Ok(content))
             })
-
-        //        let mut fd = File::open(p).map_err(|e| format!("{:?}", e.description()))?;
-        //
-        //        let mut content = String::new();
-        //        fd.read_to_string(&mut content).map_err(
-        //            |e| format!("{:?}", e),
-        //        )?;
-        //        Ok(content)
     }
 }
 

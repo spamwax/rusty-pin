@@ -57,7 +57,7 @@ impl Api {
         self.get_api_response("https://api.pinboard.in/v1/posts/suggest", query)
             .and_then(|res| {
                 serde_json::from_str::<Vec<serde_json::Value>>(&res)
-                    .map_err(|_| format!("Bad JSON format from server API: posts/suggest"))
+                    .map_err(|_| "Bad JSON format from server API: posts/suggest".to_owned())
             })?
             .into_iter()
             .find(|item| !item["popular"].is_null())
@@ -69,7 +69,7 @@ impl Api {
                     .map(|v| v.as_str().unwrap().to_string())
                     .collect::<Vec<String>>()
             })
-            .ok_or(format!("Unrecognized response from server API: posts/suggest"))
+            .ok_or("Unrecognized response from server API: posts/suggest".to_owned())
     }
 
     pub fn add_url(self, p: Pin) -> Result<(), String> {
@@ -86,7 +86,7 @@ impl Api {
         self.get_api_response("https://api.pinboard.in/v1/posts/add", map)
             .and_then(|res| {
                 serde_json::from_str::<ApiResult>(&res).map_err(|_| {
-                    format!("Unrecognized response from server API: posts/add")
+                    "Unrecognized response from server API: posts/add".to_owned()
                 })
             })
             .and_then(|r| if r.result_code == "done" {
@@ -118,7 +118,7 @@ impl Api {
         self.get_api_response("https://api.pinboard.in/v1/posts/delete", map)
             .and_then(|res| {
                 serde_json::from_str(&res).map_err(|_| {
-                    format!("Unrecognized response from server API: posts/delete")
+                    "Unrecognized response from server API: posts/delete".to_owned()
                 })
             })
             .and_then(|r: ApiResult| if r.result_code == "done" {
@@ -132,7 +132,7 @@ impl Api {
         self.get_api_response("https://api.pinboard.in/v1/posts/update", HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res).map_err(|_| {
-                    format!("Unrecognized response from server API: posts/update")
+                    "Unrecognized response from server API: posts/update".to_owned()
                 })
             })
             .and_then(|date: UpdateTime| Ok(date.datetime))
