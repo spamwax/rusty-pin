@@ -41,28 +41,34 @@ impl Api {
     }
 
     pub fn all_pins(&self) -> Result<Vec<Pin>, String> {
-        let res = self.get_api_response(
-            "https://api.pinboard.in/v1/posts/all",
-            HashMap::new(),
-        )?;
-        serde_json::from_str::<Vec<Pin>>(&res).map_err(|_| format!("Unrecognized response from server API: posts/all"))
+        self.get_api_response("https://api.pinboard.in/v1/posts/all", HashMap::new())
+            .and_then(|res| {
+                serde_json::from_str(&res).map_err(|_| {
+                    "Unrecognized response from server API: posts/all".to_owned()
+                })
+            })
+            .and_then(|p| Ok(p))
     }
 
     pub fn suggest_tags<T: IntoUrl>(self, url: T) -> Result<Vec<String>, String> {
         let mut query = HashMap::new();
         query.insert("url", url.into_url().unwrap().to_string());
 
-        self.get_api_response(
-            "https://api.pinboard.in/v1/posts/suggest",
-            query,
-        ).and_then(|res| serde_json::from_str::<Vec<serde_json::Value>>(&res).map_err(|e| format!("{:?}", e)))?
+        self.get_api_response("https://api.pinboard.in/v1/posts/suggest", query)
+            .and_then(|res| {
+                serde_json::from_str::<Vec<serde_json::Value>>(&res)
+                    .map_err(|_| format!("Bad JSON format from server API: posts/suggest"))
+            })?
             .into_iter()
             .find(|item| !item["popular"].is_null())
-            .map(|item| item["popular"]
-                .as_array().unwrap()
-                .iter()
-                .map(|v| v.as_str().unwrap().to_string())
-                .collect::<Vec<String>>())
+            .map(|item| {
+                item["popular"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|v| v.as_str().unwrap().to_string())
+                    .collect::<Vec<String>>()
+            })
             .ok_or(format!("Unrecognized response from server API: posts/suggest"))
     }
 
@@ -77,53 +83,58 @@ impl Api {
         map.insert("shared", p.shared);
         map.insert("replace", "yes".to_string());
 
-        self.get_api_response(
-            "https://api.pinboard.in/v1/posts/add",
-            map,
-        ).and_then(|res| serde_json::from_str::<ApiResult>(&res).map_err(|_| format!("Unrecognized response from server API: posts/add")))
-            .and_then(|r| {
-                if r.result_code == "done" {
-                    Ok(())
-                } else {
-                    Err(r.result_code)
-                }
+        self.get_api_response("https://api.pinboard.in/v1/posts/add", map)
+            .and_then(|res| {
+                serde_json::from_str::<ApiResult>(&res).map_err(|_| {
+                    format!("Unrecognized response from server API: posts/add")
+                })
+            })
+            .and_then(|r| if r.result_code == "done" {
+                Ok(())
+            } else {
+                Err(r.result_code)
             })
     }
 
     pub fn tags_frequency(&self) -> Result<Vec<Tag>, String> {
-        self.get_api_response(
-            "https://api.pinboard.in/v1/tags/get",
-            HashMap::new(),
-        ).and_then(|res| serde_json::from_str(&res).map_err(|e| format!("{:?}", e)))
-            .and_then(|res: HashMap<String, String>| Ok(res.into_iter()
-                .map(|(k, v)| {
-                    let freq = v.parse::<usize>().unwrap_or_default();
-                    Tag(k, freq)
-                }).collect()))
+        self.get_api_response("https://api.pinboard.in/v1/tags/get", HashMap::new())
+            .and_then(|res| serde_json::from_str(&res).map_err(|e| format!("{:?}", e)))
+            .and_then(|res: HashMap<String, String>| {
+                Ok(
+                    res.into_iter()
+                        .map(|(k, v)| {
+                            let freq = v.parse::<usize>().unwrap_or_default();
+                            Tag(k, freq)
+                        })
+                        .collect(),
+                )
+            })
     }
 
     pub fn delete<T: IntoUrl>(self, url: T) -> Result<(), String> {
         let mut map = HashMap::new();
         let url = url.into_url().unwrap().to_string();
         map.insert("url", url.clone());
-        self.get_api_response(
-            "https://api.pinboard.in/v1/posts/delete",
-            map,
-        ).and_then(|res| serde_json::from_str(&res).map_err(|_| format!("Unrecognized response from server API: posts/delete")))
-            .and_then(|r: ApiResult| {
-                if r.result_code == "done" {
-                    Ok(())
-                } else {
-                    Err(r.result_code)
-                }
+        self.get_api_response("https://api.pinboard.in/v1/posts/delete", map)
+            .and_then(|res| {
+                serde_json::from_str(&res).map_err(|_| {
+                    format!("Unrecognized response from server API: posts/delete")
+                })
+            })
+            .and_then(|r: ApiResult| if r.result_code == "done" {
+                Ok(())
+            } else {
+                Err(r.result_code)
             })
     }
 
     pub fn recent_update(self) -> Result<DateTime<Utc>, String> {
-        self.get_api_response(
-            "https://api.pinboard.in/v1/posts/update",
-            HashMap::new(),
-        ).and_then(|res| serde_json::from_str(&res).map_err(|_| format!("Unrecognized response from server API: posts/update")))
+        self.get_api_response("https://api.pinboard.in/v1/posts/update", HashMap::new())
+            .and_then(|res| {
+                serde_json::from_str(&res).map_err(|_| {
+                    format!("Unrecognized response from server API: posts/update")
+                })
+            })
             .and_then(|date: UpdateTime| Ok(date.datetime))
     }
 

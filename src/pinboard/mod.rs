@@ -37,16 +37,15 @@ impl Config {
         }
 
         let cache_dir = get_app_dir();
-        Config::create_cache_dir(cache_dir)
-            .and_then(|cache_dir|
-                Ok(Config {
-                    tag_only_search: false,
-                    fuzzy_search: false,
-                    tags_cache_file: cache_dir.join("tags.cache"),
-                    pins_cache_file: cache_dir.join("pins.cache"),
-                    cache_dir,
-                })
-            )
+        Config::create_cache_dir(cache_dir).and_then(|cache_dir| {
+            Ok(Config {
+                tag_only_search: false,
+                fuzzy_search: false,
+                tags_cache_file: cache_dir.join("tags.cache"),
+                pins_cache_file: cache_dir.join("pins.cache"),
+                cache_dir,
+            })
+        })
     }
 
     pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), String> {
@@ -67,7 +66,7 @@ impl Config {
     fn create_cache_dir<P: AsRef<Path>>(cache_dir: P) -> Result<PathBuf, String> {
         use std::fs;
         fs::create_dir_all(&cache_dir)
-            .map_err(|e| format!("{}", e.description()))
+            .map_err(|e| e.description().to_owned())
             .and_then(|_| Ok(cache_dir.as_ref().to_path_buf()))
     }
 }
@@ -191,8 +190,9 @@ impl Pinboard {
     pub fn search_tags(&self, q: &str) -> Result<Option<Vec<Tag>>, String> {
         let cached_tags = self.read_file(&self.cfg.tags_cache_file)?;
 
-        let cached_tags: Vec<Tag> = serde_json::from_str(&cached_tags)
-            .map_err(|e| format!("{}", e.description()))?;
+        let cached_tags: Vec<Tag> = serde_json::from_str(&cached_tags).map_err(|e| {
+            e.description().to_owned()
+        })?;
 
         //TODO: Implement fuzzy search
         let r = if !self.cfg.fuzzy_search {
@@ -212,27 +212,45 @@ impl Pinboard {
 
     fn update_cache(&self) -> Result<(), String> {
         // Write all pins
-        let pins = self.api.all_pins()?;
-        let mut f = File::create(&self.cfg.pins_cache_file).map_err(|e| format!("{:?}", e))?;
-        let mut data = serde_json::to_vec(&pins).map_err(|e| format!("{:?}", e))?;
-        f.write_all(&mut data).map_err(|e| format!("{:?}", e))?;
+        let mut f = File::create(&self.cfg.pins_cache_file).map_err(|e| {
+            e.description().to_owned()
+        })?;
+        self.api
+            .all_pins()
+            .and_then(|pins| serde_json::to_vec(&pins).map_err(|e| e.description().to_owned()))
+            .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
 
         // Write all tags
-        let tags = self.api.tags_frequency()?;
-        let mut f = File::create(&self.cfg.tags_cache_file).map_err(|e| format!("{:?}", e))?;
-        let mut data = serde_json::to_vec(&tags).map_err(|e| format!("{:?}", e))?;
-        f.write_all(&mut data).map_err(|e| format!("{:?}", e))
+        let mut f = File::create(&self.cfg.tags_cache_file).map_err(|e| {
+            e.description().to_owned()
+        })?;
+        self.api
+            .tags_frequency()
+            .and_then(|tags| serde_json::to_vec(&tags).map_err(|e| e.description().to_owned()))
+            .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))
     }
 }
 
 /// private implementations
 impl Pinboard {
     fn read_file<P: AsRef<Path>>(&self, p: P) -> Result<String, String> {
-        let mut fd = File::open(p).map_err(|e| format!("{:?}", e.description()))?;
 
-        let mut content = String::new();
-        fd.read_to_string(&mut content).map_err(|e| format!("{:?}", e))?;
-        Ok(content)
+        File::open(p)
+            .map_err(|e| e.description().to_owned())
+            .and_then(|mut f| {
+                let mut content = String::new();
+                f.read_to_string(&mut content)
+                    .map_err(|e| e.description().to_owned())
+                    .and_then(|_| Ok(content))
+            })
+
+        //        let mut fd = File::open(p).map_err(|e| format!("{:?}", e.description()))?;
+        //
+        //        let mut content = String::new();
+        //        fd.read_to_string(&mut content).map_err(
+        //            |e| format!("{:?}", e),
+        //        )?;
+        //        Ok(content)
     }
 }
 
@@ -310,6 +328,8 @@ mod tests {
     #[test]
     fn test_update_cache() {
         let pinboard = Pinboard::new(include_str!("auth_token.txt").to_string());
-        pinboard.unwrap().update_cache().unwrap_or_else(|e| panic!(e));
+        pinboard.unwrap().update_cache().unwrap_or_else(
+            |e| panic!(e),
+        );
     }
 }
