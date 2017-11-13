@@ -37,14 +37,16 @@ impl Config {
         }
 
         let cache_dir = get_app_dir();
-        let cache_dir = Config::create_cache_dir(cache_dir)?;
-        Ok(Config {
-            tag_only_search: false,
-            fuzzy_search: false,
-            tags_cache_file: cache_dir.join("tags.cache"),
-            pins_cache_file: cache_dir.join("pins.cache"),
-            cache_dir,
-        })
+        Config::create_cache_dir(cache_dir)
+            .and_then(|cache_dir|
+                Ok(Config {
+                    tag_only_search: false,
+                    fuzzy_search: false,
+                    tags_cache_file: cache_dir.join("tags.cache"),
+                    pins_cache_file: cache_dir.join("pins.cache"),
+                    cache_dir,
+                })
+            )
     }
 
     pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), String> {
@@ -64,14 +66,9 @@ impl Config {
 
     fn create_cache_dir<P: AsRef<Path>>(cache_dir: P) -> Result<PathBuf, String> {
         use std::fs;
-        if cache_dir.as_ref().exists() {
-            Ok(cache_dir.as_ref().to_path_buf())
-        } else {
-            match fs::create_dir_all(&cache_dir) {
-                Err(e) => Err(format!("{}", e)),
-                Ok(_) => Ok(PathBuf::from(cache_dir.as_ref())),
-            }
-        }
+        fs::create_dir_all(&cache_dir)
+            .map_err(|e| format!("{}", e.description()))
+            .and_then(|_| Ok(cache_dir.as_ref().to_path_buf()))
     }
 }
 
@@ -194,10 +191,8 @@ impl Pinboard {
     pub fn search_tags(&self, q: &str) -> Result<Option<Vec<Tag>>, String> {
         let cached_tags = self.read_file(&self.cfg.tags_cache_file)?;
 
-        let cached_tags: Vec<Tag> = match serde_json::from_str(&cached_tags) {
-            Ok(cached_tags) => cached_tags,
-            Err(e) => return Err(format!("{:?}", e)),
-        };
+        let cached_tags: Vec<Tag> = serde_json::from_str(&cached_tags)
+            .map_err(|e| format!("{}", e.description()))?;
 
         //TODO: Implement fuzzy search
         let r = if !self.cfg.fuzzy_search {
@@ -233,20 +228,11 @@ impl Pinboard {
 /// private implementations
 impl Pinboard {
     fn read_file<P: AsRef<Path>>(&self, p: P) -> Result<String, String> {
-        let f = File::open(p);
-        let mut fd = match f {
-            Ok(c) => c,
-            Err(e) => return Err(format!("{:?}", e.description())),
-        };
+        let mut fd = File::open(p).map_err(|e| format!("{:?}", e.description()))?;
 
         let mut content = String::new();
-        let r = fd.read_to_string(&mut content);
-        if let Err(e) = r {
-            Err(format!("{:?}", e.description()))
-        } else {
-            Ok(content)
-        }
-
+        fd.read_to_string(&mut content).map_err(|e| format!("{:?}", e))?;
+        Ok(content)
     }
 }
 
