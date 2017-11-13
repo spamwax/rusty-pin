@@ -28,7 +28,7 @@ impl Config {
 
         fn get_app_dir() -> PathBuf {
             let mut dir: PathBuf = match env::home_dir() {
-                Some(path) => PathBuf::from(path),
+                Some(path) => path,
                 None => PathBuf::from(""),
             };
             dir.push(".cache");

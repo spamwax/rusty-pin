@@ -1,4 +1,4 @@
-const TOKEN: &'static str = include_str!("auth_token.txt");
+const TOKEN: &str = include_str!("auth_token.txt");
 
 use serde_json;
 use reqwest;
@@ -41,20 +41,19 @@ impl Api {
     }
 
     pub fn all_pins(&self) -> Result<Vec<Pin>, String> {
-        self.get_api_response("https://api.pinboard.in/v1/posts/all", HashMap::new())
+        self.get_api_response("https://api.pinboard.in/v1/posts/all", &HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res).map_err(|_| {
                     "Unrecognized response from server API: posts/all".to_owned()
                 })
             })
-            .and_then(|p| Ok(p))
     }
 
     pub fn suggest_tags<T: IntoUrl>(self, url: T) -> Result<Vec<String>, String> {
         let mut query = HashMap::new();
         query.insert("url", url.into_url().unwrap().to_string());
 
-        self.get_api_response("https://api.pinboard.in/v1/posts/suggest", query)
+        self.get_api_response("https://api.pinboard.in/v1/posts/suggest", &query)
             .and_then(|res| {
                 serde_json::from_str::<Vec<serde_json::Value>>(&res)
                     .map_err(|_| "Bad JSON format from server API: posts/suggest".to_owned())
@@ -69,7 +68,7 @@ impl Api {
                     .map(|v| v.as_str().unwrap().to_string())
                     .collect::<Vec<String>>()
             })
-            .ok_or("Unrecognized response from server API: posts/suggest".to_owned())
+            .ok_or_else(|| "Unrecognized response from server API: posts/suggest".to_owned())
     }
 
     pub fn add_url(self, p: Pin) -> Result<(), String> {
@@ -83,7 +82,7 @@ impl Api {
         map.insert("shared", p.shared);
         map.insert("replace", "yes".to_string());
 
-        self.get_api_response("https://api.pinboard.in/v1/posts/add", map)
+        self.get_api_response("https://api.pinboard.in/v1/posts/add", &map)
             .and_then(|res| {
                 serde_json::from_str::<ApiResult>(&res).map_err(|_| {
                     "Unrecognized response from server API: posts/add".to_owned()
@@ -97,8 +96,12 @@ impl Api {
     }
 
     pub fn tags_frequency(&self) -> Result<Vec<Tag>, String> {
-        self.get_api_response("https://api.pinboard.in/v1/tags/get", HashMap::new())
-            .and_then(|res| serde_json::from_str(&res).map_err(|e| format!("{:?}", e)))
+        self.get_api_response("https://api.pinboard.in/v1/tags/get", &HashMap::new())
+            .and_then(|res| {
+                serde_json::from_str(&res).map_err(|_| {
+                    "Unrecognized response from server API: tags/get".to_owned()
+                })
+            })
             .and_then(|res: HashMap<String, String>| {
                 Ok(
                     res.into_iter()
@@ -115,7 +118,7 @@ impl Api {
         let mut map = HashMap::new();
         let url = url.into_url().unwrap().to_string();
         map.insert("url", url.clone());
-        self.get_api_response("https://api.pinboard.in/v1/posts/delete", map)
+        self.get_api_response("https://api.pinboard.in/v1/posts/delete", &map)
             .and_then(|res| {
                 serde_json::from_str(&res).map_err(|_| {
                     "Unrecognized response from server API: posts/delete".to_owned()
@@ -129,7 +132,7 @@ impl Api {
     }
 
     pub fn recent_update(self) -> Result<DateTime<Utc>, String> {
-        self.get_api_response("https://api.pinboard.in/v1/posts/update", HashMap::new())
+        self.get_api_response("https://api.pinboard.in/v1/posts/update", &HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res).map_err(|_| {
                     "Unrecognized response from server API: posts/update".to_owned()
@@ -141,12 +144,12 @@ impl Api {
     fn get_api_response<T: IntoUrl>(
         &self,
         endpoint: T,
-        params: HashMap<&str, String>,
+        params: &HashMap<&str, String>,
     ) -> Result<String, String> {
         let client = reqwest::Client::new();
         let mut api_url = self.add_auth_token(endpoint);
 
-        for (k, v) in &params {
+        for (k, v) in params {
             api_url.query_pairs_mut().append_pair(k, v);
         }
         let res = client.get(api_url).send();
