@@ -176,38 +176,53 @@ impl Pinboard {
     }
 
     pub fn search_items(&self, q: &str) -> Result<Option<Vec<Pin>>, String> {
-        if self.cfg.tags_cache_file.exists() {
-            //TODO: To be continued!
+        if self.cfg.pins_cache_file.exists() {
+            let cached_pins = self.read_file(&self.cfg.pins_cache_file)?;
+            let cached_pins: Vec<Pin> = serde_json::from_str(&cached_pins).map_err(|e| e.description().to_owned())?;
+            let r = if !self.cfg.fuzzy_search {
+                let r = cached_pins
+                    .into_iter()
+                    .filter(|item| item.contains(q))
+                    .collect::<Vec<Pin>>();
+                match r.len() {
+                    0 => None,
+                    _ => Some(r),
+                }
+            } else {
+                // TODO: Implement fuzzy search
+                None
+            };
+            Ok(r)
         } else {
-            return Err(format!(
-                "items cache file not present: {}",
-                self.cfg.tags_cache_file.to_str().unwrap_or("")
-            ));
+            Err(format!("pins cache file not present: {}", self.cfg.pins_cache_file.to_str().unwrap_or("")))
         }
-        Ok(None)
     }
 
     pub fn search_tags(&self, q: &str) -> Result<Option<Vec<Tag>>, String> {
-        let cached_tags = self.read_file(&self.cfg.tags_cache_file)?;
+        if self.cfg.tags_cache_file.exists() {
+            let cached_tags = self.read_file(&self.cfg.tags_cache_file)?;
+            let cached_tags: Vec<Tag> = serde_json::from_str(&cached_tags).map_err(|e| {
+                e.description().to_owned()
+            })?;
 
-        let cached_tags: Vec<Tag> = serde_json::from_str(&cached_tags).map_err(|e| {
-            e.description().to_owned()
-        })?;
-
-        //TODO: Implement fuzzy search
-        let r = if !self.cfg.fuzzy_search {
-            let r = cached_tags
-                .into_iter()
-                .filter(|item| item.0.contains(q))
-                .collect::<Vec<Tag>>();
-            match r.len() {
-                0 => None,
-                _ => Some(r),
-            }
+            //TODO: Implement fuzzy search
+            let r = if !self.cfg.fuzzy_search {
+                let r = cached_tags
+                    .into_iter()
+                    .filter(|item| item.0.contains(q))
+                    .collect::<Vec<Tag>>();
+                match r.len() {
+                    0 => None,
+                    _ => Some(r),
+                }
+            } else {
+                // TODO: Implement fuzzy search
+                None
+            };
+            Ok(r)
         } else {
-            None
-        };
-        Ok(r)
+            Err(format!("tags cache file not present: {}", self.cfg.tags_cache_file.to_str().unwrap_or("")))
+        }
     }
 
     fn update_cache(&self) -> Result<(), String> {
@@ -314,6 +329,40 @@ mod tests {
         assert!(p.contains("IoT"));
         assert!(p.contains("tag"));
         assert!(p.contains("tag1"));
+    }
+
+    #[test]
+    fn test_search_pins() {
+        let pinboard = Pinboard::new(include_str!("auth_token.txt").to_string()).unwrap();
+        let pins = pinboard.search_items("rust").unwrap_or_else(|e| panic!(e));
+        assert!(pins.is_some());
+
+        let pins = pinboard.search_items("non-existence-pin").unwrap_or_else(|e| panic!(e));
+        assert!(pins.is_none());
+
+        let pins = pinboard.search_items("tmonews").unwrap_or_else(|e| panic!(e));
+        assert!(pins.is_some());
+        let pins = pins.unwrap();
+
+        assert_eq!(pins.len(), 1);
+        assert_eq!(pins[0].url.as_str(),
+                   "http://www.tmonews.com/2012/11/nokias-lumia-920-windows-phone-8-smartphone-is-pentaband-after-all/");
+    }
+
+    #[test]
+    fn test_search_tags() {
+        let pinboard = Pinboard::new(include_str!("auth_token.txt").to_string()).unwrap();
+        let tags = pinboard.search_tags("django").unwrap_or_else(|e| panic!(e));
+        assert!(tags.is_some());
+
+        let tags = pinboard.search_tags("non-existence-tag").unwrap_or_else(|e| panic!(e));
+        assert!(tags.is_none());
+
+        let tags = pinboard.search_tags("lumia920").unwrap_or_else(|e| panic!(e));
+        assert!(tags.is_some());
+        let tags = tags.unwrap();
+        assert_eq!(tags.len(), 1);
+        assert_eq!(tags[0].1, 2);
     }
 
     #[ignore]
