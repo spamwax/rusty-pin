@@ -17,6 +17,16 @@ struct ApiResult {
     result_code: String,
 }
 
+impl ApiResult {
+    fn ok(self) -> Result<(), String> {
+        if self.result_code == "done" {
+            Ok(())
+        } else {
+            Err(self.result_code)
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 struct UpdateTime {
     #[serde(rename = "update_time")]
@@ -88,11 +98,7 @@ impl Api {
                     "Unrecognized response from server API: posts/add".to_owned()
                 })
             })
-            .and_then(|r| if r.result_code == "done" {
-                Ok(())
-            } else {
-                Err(r.result_code)
-            })
+            .and_then(|r| r.ok())
     }
 
     pub fn tags_frequency(&self) -> Result<Vec<Tag>, String> {
@@ -114,7 +120,7 @@ impl Api {
             })
     }
 
-    pub fn delete<T: IntoUrl>(self, url: T) -> Result<(), String> {
+    pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), String> {
         let mut map = HashMap::new();
         let url = url.into_url().unwrap().to_string();
         map.insert("url", url.clone());
@@ -124,14 +130,10 @@ impl Api {
                     "Unrecognized response from server API: posts/delete".to_owned()
                 })
             })
-            .and_then(|r: ApiResult| if r.result_code == "done" {
-                Ok(())
-            } else {
-                Err(r.result_code)
-            })
+            .and_then(|r: ApiResult| r.ok())
     }
 
-    pub fn recent_update(self) -> Result<DateTime<Utc>, String> {
+    pub fn recent_update(&self) -> Result<DateTime<Utc>, String> {
         self.get_api_response("https://api.pinboard.in/v1/posts/update", &HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res).map_err(|_| {
@@ -176,6 +178,8 @@ mod tests {
 
     use pinboard::PinBuilder;
 
+    const TEST_URL: &str = "https://githuуй.com/Здравствуйт?q=13#fragment";
+
     #[test]
     fn get_latest_update_time() {
         let api = Api::new(include_str!("auth_token.txt").to_string());
@@ -188,17 +192,17 @@ mod tests {
     fn delete_a_pin() {
         add_a_url();
         let api = Api::new(include_str!("auth_token.txt").to_string());
-        let r = api.delete("https://githuуй.com/Здравствуйт?q=13#fragment");
+        let r = api.delete(TEST_URL);
         r.expect("Error in deleting a pin.");
+
+        let r = api.delete("http://no.fucking.way");
+        assert_eq!("item not found".to_owned(), r.expect_err("Can't delete non-existing pin."));
     }
 
     #[test]
     fn add_a_url() {
         let api = Api::new(include_str!("auth_token.txt").to_string());
-        let p = PinBuilder::new(
-            "https://githuуй.com/Здравствуйт?q=13#fragment",
-            "test bookmark/pin".to_string(),
-        ).into_pin();
+        let p = PinBuilder::new(TEST_URL, "test bookmark/pin".to_string()).into_pin();
         let res = api.add_url(p);
         res.expect("Error in adding.");
     }
