@@ -341,7 +341,10 @@ mod tests {
 
     #[test]
     fn test_search_pins() {
-        let pinboard = Pinboard::new(include_str!("auth_token.txt").to_string()).unwrap();
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt").to_string()).unwrap();
+        pinboard.cfg.enable_tag_only_search(false);
+        pinboard.cfg.enable_fuzzy_search(false);
+
         let pins = pinboard.search_items("rust").unwrap_or_else(|e| panic!(e));
         assert!(pins.is_some());
 
@@ -362,7 +365,9 @@ mod tests {
 
     #[test]
     fn test_search_tags() {
-        let pinboard = Pinboard::new(include_str!("auth_token.txt").to_string()).unwrap();
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt").to_string()).unwrap();
+        pinboard.cfg.enable_fuzzy_search(false);
+
         let tags = pinboard.search_tags("django").unwrap_or_else(|e| panic!(e));
         assert!(tags.is_some());
 
