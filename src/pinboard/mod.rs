@@ -178,7 +178,9 @@ impl Pinboard {
     pub fn search_items(&self, q: &str) -> Result<Option<Vec<Pin>>, String> {
         if self.cfg.pins_cache_file.exists() {
             let cached_pins = self.read_file(&self.cfg.pins_cache_file)?;
-            let cached_pins: Vec<Pin> = serde_json::from_str(&cached_pins).map_err(|e| e.description().to_owned())?;
+            let cached_pins: Vec<Pin> = serde_json::from_str(&cached_pins).map_err(|e| {
+                e.description().to_owned()
+            })?;
             let r = if !self.cfg.fuzzy_search {
                 let r = cached_pins
                     .into_iter()
@@ -194,7 +196,10 @@ impl Pinboard {
             };
             Ok(r)
         } else {
-            Err(format!("pins cache file not present: {}", self.cfg.pins_cache_file.to_str().unwrap_or("")))
+            Err(format!(
+                "pins cache file not present: {}",
+                self.cfg.pins_cache_file.to_str().unwrap_or("")
+            ))
         }
     }
 
@@ -221,7 +226,10 @@ impl Pinboard {
             };
             Ok(r)
         } else {
-            Err(format!("tags cache file not present: {}", self.cfg.tags_cache_file.to_str().unwrap_or("")))
+            Err(format!(
+                "tags cache file not present: {}",
+                self.cfg.tags_cache_file.to_str().unwrap_or("")
+            ))
         }
     }
 
@@ -337,16 +345,19 @@ mod tests {
         let pins = pinboard.search_items("rust").unwrap_or_else(|e| panic!(e));
         assert!(pins.is_some());
 
-        let pins = pinboard.search_items("non-existence-pin").unwrap_or_else(|e| panic!(e));
+        let pins = pinboard.search_items("non-existence-pin").unwrap_or_else(
+            |e| panic!(e),
+        );
         assert!(pins.is_none());
 
-        let pins = pinboard.search_items("tmonews").unwrap_or_else(|e| panic!(e));
+        let pins = pinboard
+            .search_items("failure - Cargo: packages for Rust")
+            .unwrap_or_else(|e| panic!(e));
         assert!(pins.is_some());
         let pins = pins.unwrap();
 
         assert_eq!(pins.len(), 1);
-        assert_eq!(pins[0].url.as_str(),
-                   "http://www.tmonews.com/2012/11/nokias-lumia-920-windows-phone-8-smartphone-is-pentaband-after-all/");
+        assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
     }
 
     #[test]
@@ -355,10 +366,14 @@ mod tests {
         let tags = pinboard.search_tags("django").unwrap_or_else(|e| panic!(e));
         assert!(tags.is_some());
 
-        let tags = pinboard.search_tags("non-existence-tag").unwrap_or_else(|e| panic!(e));
+        let tags = pinboard.search_tags("non-existence-tag").unwrap_or_else(
+            |e| panic!(e),
+        );
         assert!(tags.is_none());
 
-        let tags = pinboard.search_tags("lumia920").unwrap_or_else(|e| panic!(e));
+        let tags = pinboard.search_tags("lumia920").unwrap_or_else(
+            |e| panic!(e),
+        );
         assert!(tags.is_some());
         let tags = tags.unwrap();
         assert_eq!(tags.len(), 1);
