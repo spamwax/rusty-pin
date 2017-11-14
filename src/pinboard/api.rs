@@ -122,7 +122,9 @@ impl Api {
 
     pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), String> {
         let mut map = HashMap::new();
-        let url = url.into_url().unwrap().to_string();
+        let url = url.into_url()
+            .map_err(|_| "Invalid url.".to_owned())?
+            .to_string();
         map.insert("url", url.clone());
         self.get_api_response("https://api.pinboard.in/v1/posts/delete", &map)
             .and_then(|res| {
@@ -197,6 +199,9 @@ mod tests {
 
         let r = api.delete("http://no.fucking.way");
         assert_eq!("item not found".to_owned(), r.expect_err("Can't delete non-existing pin."));
+
+        let r = api.delete(":// bad url/#");
+        assert_eq!("Invalid url.".to_owned(), r.expect_err("Can't delete malformed url."));
     }
 
     #[test]
