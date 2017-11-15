@@ -61,7 +61,9 @@ impl Api {
 
     pub fn suggest_tags<T: IntoUrl>(self, url: T) -> Result<Vec<String>, String> {
         let mut query = HashMap::new();
-        query.insert("url", url.into_url().unwrap().to_string());
+        query.insert(
+            "url",
+            url.into_url().map_err(|_| "Invalid url.".to_owned())?.to_string());
 
         self.get_api_response("https://api.pinboard.in/v1/posts/suggest", &query)
             .and_then(|res| {
