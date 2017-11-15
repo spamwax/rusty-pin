@@ -59,7 +59,7 @@ impl Api {
             })
     }
 
-    pub fn suggest_tags<T: IntoUrl>(self, url: T) -> Result<Vec<String>, String> {
+    pub fn suggest_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, String> {
         let mut query = HashMap::new();
         query.insert(
             "url",
@@ -83,7 +83,7 @@ impl Api {
             .ok_or_else(|| "Unrecognized response from server API: posts/suggest".to_owned())
     }
 
-    pub fn add_url(self, p: Pin) -> Result<(), String> {
+    pub fn add_url(&self, p: Pin) -> Result<(), String> {
         let mut map = HashMap::new();
         let url = p.url.into_string();
 
@@ -220,6 +220,11 @@ mod tests {
         let url = "http://blog.com/";
         let res = api.suggest_tags(url);
         assert_eq!(res.unwrap(), vec!["blog", "blogging", "free", "hosting"]);
+
+        let url = ":// bad url/#";
+        let res = api.suggest_tags(url);
+        assert!(res.is_err());
+        assert_eq!("Invalid url.".to_owned(), res.expect_err("Can't delete malformed url."));
     }
 
     #[test]
