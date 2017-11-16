@@ -233,6 +233,10 @@ impl Pinboard {
         }
     }
 
+    pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, String> {
+        self.api.recent_update().and_then(|res| Ok(last_update < res))
+    }
+
     fn update_cache(&self) -> Result<(), String> {
         // Write all pins
         let mut f = File::create(&self.cfg.pins_cache_file).map_err(|e| {
