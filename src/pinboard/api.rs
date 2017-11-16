@@ -1,4 +1,4 @@
-const TOKEN: &str = include_str!("auth_token.txt");
+//const TOKEN: &str = include_str!("auth_token.txt");
 
 use serde_json;
 use reqwest;
