@@ -9,7 +9,7 @@ extern crate serde_json;
 extern crate url_serde;
 extern crate reqwest;
 
-mod pinboard;
+pub mod pinboard;
 
 #[cfg(test)]
 mod tests {
