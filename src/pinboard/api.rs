@@ -63,7 +63,10 @@ impl Api {
         let mut query = HashMap::new();
         query.insert(
             "url",
-            url.into_url().map_err(|_| "Invalid url.".to_owned())?.to_string());
+            url.into_url()
+                .map_err(|_| "Invalid url.".to_owned())?
+                .to_string(),
+        );
 
         self.get_api_response("https://api.pinboard.in/v1/posts/suggest", &query)
             .and_then(|res| {
