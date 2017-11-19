@@ -12,6 +12,8 @@ use reqwest::IntoUrl;
 use chrono::prelude::*;
 use url::Url;
 
+use regex::Regex;
+
 mod api;
 
 #[derive(Debug)]
@@ -154,8 +156,24 @@ impl Pin {
         self.time
     }
 
-    pub fn contains(&self, q: &str) -> bool {
-        self.title.contains(q) || self.url.as_ref().contains(q) || self.tags.contains(q)
+    pub fn contains(&self, query: &str) -> bool {
+        let temp;
+        let mut q = query;
+        if query.chars().any(|c| !c.is_lowercase()) {
+            temp = query.to_lowercase();
+            q = &temp;
+        }
+
+        self.title.to_lowercase().contains(q) ||
+            self.tags.to_lowercase().contains(q) ||
+            self.url.as_ref().contains(q) ||
+            (self.extended.is_some() && self.extended.as_ref().unwrap().to_lowercase().contains(q))
+    }
+
+    pub fn contains_fuzzy(&self, re: &Regex) -> bool {
+        re.captures(&self.title).is_some() || re.captures(&self.tags).is_some() ||
+            re.captures(&self.url.as_ref()).is_some() ||
+            (self.extended.is_some() && re.captures(self.extended.as_ref().unwrap()).is_some())
     }
 }
 
@@ -178,20 +196,33 @@ impl Pinboard {
             let cached_pins: Vec<Pin> = serde_json::from_str(&cached_pins).map_err(|e| {
                 e.description().to_owned()
             })?;
+
             let r = if !self.cfg.fuzzy_search {
-                let r = cached_pins
+                let q = &q.to_lowercase();
+                cached_pins
                     .into_iter()
                     .filter(|item| item.contains(q))
-                    .collect::<Vec<Pin>>();
-                match r.len() {
-                    0 => None,
-                    _ => Some(r),
-                }
+                    .collect::<Vec<Pin>>()
             } else {
-                // TODO: Implement fuzzy search
-                None
+                // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
+                let mut fuzzy_string = q.chars()
+                    .map(|c| format!("{}", c))
+                    .collect::<Vec<String>>()
+                    .join(r".*");
+                // Set case-insensitive regex option.
+                fuzzy_string.insert_str(0, "(?i)");
+                let re = Regex::new(&fuzzy_string).map_err(|_| {
+                    "Can't search for given query!".to_owned()
+                })?;
+                cached_pins
+                    .into_iter()
+                    .filter(|item| item.contains_fuzzy(&re))
+                    .collect::<Vec<Pin>>()
             };
-            Ok(r)
+            match r.len() {
+                0 => Ok(None),
+                _ => Ok(Some(r)),
+            }
         } else {
             Err(format!(
                 "pins cache file not present: {}",
@@ -207,21 +238,32 @@ impl Pinboard {
                 e.description().to_owned()
             })?;
 
-            //TODO: Implement fuzzy search
             let r = if !self.cfg.fuzzy_search {
-                let r = cached_tags
+                let q = &q.to_lowercase();
+                cached_tags
                     .into_iter()
-                    .filter(|item| item.0.contains(q))
-                    .collect::<Vec<Tag>>();
-                match r.len() {
-                    0 => None,
-                    _ => Some(r),
-                }
+                    .filter(|item| item.0.to_lowercase().contains(q))
+                    .collect::<Vec<Tag>>()
             } else {
-                // TODO: Implement fuzzy search
-                None
+                // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
+                let mut fuzzy_string = q.chars()
+                    .map(|c| format!("{}", c))
+                    .collect::<Vec<String>>()
+                    .join(r".*");
+                // Set case-insensitive regex option.
+                fuzzy_string.insert_str(0, "(?i)");
+                let re = Regex::new(&fuzzy_string).map_err(|_| {
+                    "Can't search for given query!".to_owned()
+                })?;
+                cached_tags
+                    .into_iter()
+                    .filter(|item| re.captures(&item.0).is_some())
+                    .collect::<Vec<Tag>>()
             };
-            Ok(r)
+            match r.len() {
+                0 => Ok(None),
+                _ => Ok(Some(r)),
+            }
         } else {
             Err(format!(
                 "tags cache file not present: {}",
@@ -231,10 +273,13 @@ impl Pinboard {
     }
 
     pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, String> {
-        self.api.recent_update().and_then(|res| Ok(last_update < res))
+        self.api.recent_update().and_then(
+            |res| Ok(last_update < res),
+        )
     }
 
     fn update_cache(&self) -> Result<(), String> {
+        //TODO: cache all searchable text in lowercase format to make "pin.contains()" efficient.
         // Write all pins
         let mut f = File::create(&self.cfg.pins_cache_file).map_err(|e| {
             e.description().to_owned()
@@ -273,6 +318,7 @@ impl Pinboard {
 
 #[cfg(test)]
 mod tests {
+    // TODO: Add tests for case insensitivity searches of tags/pins
     use super::*;
 
     #[test]
@@ -346,7 +392,14 @@ mod tests {
         pinboard.cfg.enable_tag_only_search(false);
         pinboard.cfg.enable_fuzzy_search(false);
 
+        // non-fuzzy search
         let pins = pinboard.search_items("rust").unwrap_or_else(|e| panic!(e));
+        assert!(pins.is_some());
+        // fuzzy search
+        pinboard.cfg.enable_fuzzy_search(true);
+        let pins = pinboard.search_items("solvingbootp").unwrap_or_else(
+            |e| panic!(e),
+        );
         assert!(pins.is_some());
 
         let pins = pinboard.search_items("non-existence-pin").unwrap_or_else(
@@ -354,12 +407,21 @@ mod tests {
         );
         assert!(pins.is_none());
 
+        // non-fuzzy search
         let pins = pinboard
             .search_items("failure - Cargo: packages for Rust")
             .unwrap_or_else(|e| panic!(e));
         assert!(pins.is_some());
         let pins = pins.unwrap();
+        assert_eq!(pins.len(), 1);
+        assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
 
+        // fuzzy search
+        pinboard.cfg.enable_fuzzy_search(true);
+        let pins = pinboard.search_items("failurecargopackage") // "failure cargo package"
+            .unwrap_or_else(|e| panic!(e));
+        assert!(pins.is_some());
+        let pins = pins.unwrap();
         assert_eq!(pins.len(), 1);
         assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
     }
@@ -372,18 +434,36 @@ mod tests {
         let tags = pinboard.search_tags("django").unwrap_or_else(|e| panic!(e));
         assert!(tags.is_some());
 
+        // non-fuzzy search test
+        let tags = pinboard.search_tags("non-existence-tag").unwrap_or_else(
+            |e| panic!(e),
+        );
+        assert!(tags.is_none());
+        // fuzzy search test
+        pinboard.cfg.enable_fuzzy_search(true);
         let tags = pinboard.search_tags("non-existence-tag").unwrap_or_else(
             |e| panic!(e),
         );
         assert!(tags.is_none());
 
-        let tags = pinboard.search_tags("lumia920").unwrap_or_else(
+        // non-fuzzy search test
+        let tags = pinboard.search_tags("Lumia920").unwrap_or_else(
             |e| panic!(e),
         );
         assert!(tags.is_some());
         let tags = tags.unwrap();
         assert_eq!(tags.len(), 1);
         assert_eq!(tags[0].1, 2);
+        // fuzzy search test
+        pinboard.cfg.enable_fuzzy_search(true);
+        let tags = pinboard.search_tags("Lumia920").unwrap_or_else(
+            |e| panic!(e),
+        );
+        assert!(tags.is_some());
+        let tags = tags.unwrap();
+        assert_eq!(tags.len(), 1);
+        assert_eq!(tags[0].1, 2);
+
     }
 
     #[ignore]
