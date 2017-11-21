@@ -164,8 +164,7 @@ impl Pin {
             q = &temp;
         }
 
-        self.title.to_lowercase().contains(q) ||
-            self.tags.to_lowercase().contains(q) ||
+        self.title.to_lowercase().contains(q) || self.tags.to_lowercase().contains(q) ||
             self.url.as_ref().contains(q) ||
             (self.extended.is_some() && self.extended.as_ref().unwrap().to_lowercase().contains(q))
     }
