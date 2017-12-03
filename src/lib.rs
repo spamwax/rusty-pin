@@ -3,6 +3,7 @@ extern crate url;
 
 #[macro_use]
 extern crate serde_derive;
+extern crate rmp_serde as rmps;
 extern crate regex;
 
 
@@ -15,6 +16,61 @@ pub mod pinboard;
 
 #[cfg(test)]
 mod tests {
+    mod rmp_serde {
+        use rmps::{Serializer, Deserializer};
+        use serde::{Deserialize, Serialize};
+        use url::Url;
+        use chrono::prelude::*;
+        use std::fs::File;
+        use std::io::prelude::*;
+
+        use pinboard::{Pin, PinBuilder};
+
+
+        fn serialize_a_pin() {
+            let mut pin = PinBuilder::new(
+                "https://danielkeep.github.io/tlborm/book/README.html",
+                "The Little Book of Rust Macros".to_string(),
+            ).tags("Rust macros".to_string())
+                .toread("no")
+                .shared("no")
+                .into_pin();
+            pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
+
+            let mut buf: Vec<u8> = Vec::new();
+            pin.serialize(&mut Serializer::new(&mut buf)).unwrap();
+            assert_eq!(125, buf.len());
+
+            let mut fp = File::create("/tmp/test_rmp_serde.bin").unwrap();
+            fp.write_all(buf.as_slice()).unwrap();
+            {
+                let mut de = Deserializer::from_slice(&buf);
+                let pin: Pin = Deserialize::deserialize(&mut de).unwrap();
+                println!("{:?}", pin);
+            }
+        }
+
+        #[test]
+        fn deserialize_a_pin() {
+            serialize_a_pin();
+            let mut fp = File::open("/tmp/test_rmp_serde.bin").unwrap();
+            let mut bytes = Vec::new();
+            fp.read_to_end(&mut bytes).unwrap();
+
+            let mut de = Deserializer::from_slice(&bytes);
+            let pin: Pin = Deserialize::deserialize(&mut de).unwrap();
+
+            assert_eq!(pin.title, "The Little Book of Rust Macros");
+            assert_eq!(pin.time(), Utc.ymd(2017, 5, 22).and_hms(17, 46, 54));
+            assert_eq!(pin.tags, "Rust macros");
+            assert_eq!(
+                pin.url,
+                Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap()
+            );
+
+        }
+    } /* rmp_serde */
+
     mod serde_json {
         use super::*;
         use url::Url;

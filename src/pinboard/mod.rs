@@ -79,7 +79,7 @@ pub struct Pinboard {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Tag(String, usize);
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Pin {
     #[serde(with = "url_serde", rename = "href")]
     pub url: Url,
