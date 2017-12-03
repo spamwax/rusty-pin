@@ -51,10 +51,6 @@ mod tests {
 
             let mut fp = File::create("/tmp/test_rmp_serde.bin").unwrap();
             fp.write_all(buf.as_slice()).unwrap();
-            {
-                let mut de = Deserializer::from_slice(&buf);
-                let pin: Pin = Deserialize::deserialize(&mut de).unwrap();
-            }
         }
 
         #[test]
@@ -203,7 +199,7 @@ mod tests {
             assert_eq!(
                 r#"{"href":"https://danielkeep.github.io/tlborm/book/README.html",
 "description":"The Little Book of Rust Macros","tags":"Rust macros","shared":"no"
-,"toread":"no","time":"2017-05-22T17:46:54Z"}"#
+,"toread":"no","extended":null,"time":"2017-05-22T17:46:54Z"}"#
                     .replace("\n", ""),
                 s
             );
