@@ -88,7 +88,7 @@ pub struct Pin {
     pub tags: String,
     pub shared: String,
     pub toread: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    // #[serde(skip_serializing_if = "Option::is_none")]
     pub extended: Option<String>,
     #[serde(default = "Utc::now")]
     pub time: DateTime<Utc>,

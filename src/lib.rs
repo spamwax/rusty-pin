@@ -33,7 +33,7 @@ mod tests {
                 "https://danielkeep.github.io/tlborm/book/README.html",
                 "The Little Book of Rust Macros".to_string(),
             ).tags("Rust macros".to_string())
-                .toread("no")
+                .toread("yes")
                 .shared("no")
                 .description("WoW!!!".to_string())
                 .into_pin();
@@ -41,7 +41,7 @@ mod tests {
 
             let mut buf: Vec<u8> = Vec::new();
             pin.serialize(&mut Serializer::new(&mut buf)).unwrap();
-            assert_eq!(132, buf.len());
+            assert_eq!(133, buf.len());
 
             let mut fp = File::create("/tmp/test_rmp_serde.bin").unwrap();
             fp.write_all(buf.as_slice()).unwrap();
@@ -63,6 +63,8 @@ mod tests {
             assert_eq!(pin.title, "The Little Book of Rust Macros");
             assert_eq!(pin.time(), Utc.ymd(2017, 5, 22).and_hms(17, 46, 54));
             assert_eq!(pin.tags, "Rust macros");
+            assert_eq!("yes", &pin.toread);
+            assert_eq!("WoW!!!", &pin.extended.unwrap());
             assert_eq!(
                 pin.url,
                 Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap()
