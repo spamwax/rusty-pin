@@ -27,6 +27,7 @@ mod tests {
         use pinboard::{Pin, PinBuilder};
 
 
+        #[test]
         fn serialize_a_pin() {
             let mut pin = PinBuilder::new(
                 "https://danielkeep.github.io/tlborm/book/README.html",
@@ -34,25 +35,24 @@ mod tests {
             ).tags("Rust macros".to_string())
                 .toread("no")
                 .shared("no")
+                .description("WoW!!!".to_string())
                 .into_pin();
             pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
 
             let mut buf: Vec<u8> = Vec::new();
             pin.serialize(&mut Serializer::new(&mut buf)).unwrap();
-            assert_eq!(125, buf.len());
+            assert_eq!(132, buf.len());
 
             let mut fp = File::create("/tmp/test_rmp_serde.bin").unwrap();
             fp.write_all(buf.as_slice()).unwrap();
             {
                 let mut de = Deserializer::from_slice(&buf);
                 let pin: Pin = Deserialize::deserialize(&mut de).unwrap();
-                println!("{:?}", pin);
             }
         }
 
         #[test]
         fn deserialize_a_pin() {
-            serialize_a_pin();
             let mut fp = File::open("/tmp/test_rmp_serde.bin").unwrap();
             let mut bytes = Vec::new();
             fp.read_to_end(&mut bytes).unwrap();
