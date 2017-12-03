@@ -1,3 +1,7 @@
+#![feature(test)]
+
+extern crate test;
+
 extern crate chrono;
 extern crate url;
 
@@ -17,15 +21,17 @@ pub mod pinboard;
 #[cfg(test)]
 mod tests {
     mod rmp_serde {
-        use rmps::{Serializer, Deserializer};
-        use serde::{Deserialize, Serialize};
         use url::Url;
         use chrono::prelude::*;
         use std::fs::File;
         use std::io::prelude::*;
+        use rmps::{Serializer, Deserializer};
+        use serde::{Deserialize, Serialize};
+        use serde_json;
 
         use pinboard::{Pin, PinBuilder};
 
+        use test::Bencher;
 
         #[test]
         fn serialize_a_pin() {
@@ -71,6 +77,47 @@ mod tests {
             );
 
         }
+
+        fn serialize_lots_of_pins() {
+            let input = include_str!("../sample.json");
+            let pins: Vec<Pin> = serde_json::from_str(input).unwrap();
+            assert_eq!(pins.len(), 472);
+
+            let mut buf: Vec<u8> = Vec::new();
+            pins.serialize(&mut Serializer::new(&mut buf)).unwrap();
+            assert_eq!(79588, buf.len());
+
+            let mut fp = File::create("/tmp/test_rmp_serde-vec.bin").unwrap();
+            fp.write_all(buf.as_slice()).unwrap();
+        }
+
+        #[test]
+        fn deserialize_lots_of_pins() {
+            serialize_lots_of_pins();
+            let fp = File::open("/tmp/test_rmp_serde-vec.bin").unwrap();
+            let mut de = Deserializer::from_read(fp);
+            let pins: Vec<Pin> = Deserialize::deserialize(&mut de).unwrap();
+            assert_eq!(pins.len(), 472);
+        }
+
+
+
+
+        #[bench]
+        fn bench_rmp(b: &mut Bencher) {
+            let mut bytes = Vec::new();
+            {
+                let mut fp = File::open("/tmp/test_rmp_serde-vec.bin").unwrap();
+                fp.read_to_end(&mut bytes).unwrap();
+            }
+            b.iter(|| serde_lots_of_pins_bench(&bytes));
+        }
+
+        fn serde_lots_of_pins_bench(buf: &[u8]) {
+            let mut de = Deserializer::from_slice(buf);
+            let _pins: Vec<Pin> = Deserialize::deserialize(&mut de).unwrap();
+        }
+
     } /* rmp_serde */
 
     mod serde_json {
@@ -80,6 +127,8 @@ mod tests {
 
         use pinboard::{Pin, PinBuilder};
         use serde_json::{to_string, from_str};
+
+        use test::Bencher;
 
         #[test]
         fn deserialize_a_pin() {
@@ -133,6 +182,11 @@ mod tests {
             assert!(pins.is_ok());
             let pins = pins.unwrap();
             assert_eq!(pins.len(), 472);
+        }
+
+        #[bench]
+        fn bench_json(b: &mut Bencher) {
+            b.iter(|| deserialize_lots_pins());
         }
 
         #[test]
