@@ -56,10 +56,8 @@ mod tests {
         #[test]
         fn deserialize_a_pin() {
             let mut fp = File::open("/tmp/test_rmp_serde.bin").unwrap();
-            let mut bytes = Vec::new();
-            fp.read_to_end(&mut bytes).unwrap();
 
-            let mut de = Deserializer::from_slice(&bytes);
+            let mut de = Deserializer::from_read(fp);
             let pin: Pin = Deserialize::deserialize(&mut de).unwrap();
 
             assert_eq!(pin.title, "The Little Book of Rust Macros");
