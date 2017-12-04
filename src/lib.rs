@@ -55,7 +55,7 @@ mod tests {
 
         #[test]
         fn deserialize_a_pin() {
-            let mut fp = File::open("/tmp/test_rmp_serde.bin").unwrap();
+            let fp = File::open("/tmp/test_rmp_serde.bin").unwrap();
 
             let mut de = Deserializer::from_read(fp);
             let pin: Pin = Deserialize::deserialize(&mut de).unwrap();
@@ -72,6 +72,7 @@ mod tests {
 
         }
 
+        #[test]
         fn serialize_lots_of_pins() {
             let input = include_str!("../sample.json");
             let pins: Vec<Pin> = serde_json::from_str(input).unwrap();
@@ -96,20 +97,13 @@ mod tests {
 
 
 
-
         #[bench]
         fn bench_rmp(b: &mut Bencher) {
-            let mut bytes = Vec::new();
-            {
-                let mut fp = File::open("/tmp/test_rmp_serde-vec.bin").unwrap();
-                fp.read_to_end(&mut bytes).unwrap();
-            }
-            b.iter(|| serde_lots_of_pins_bench(&bytes));
-        }
-
-        fn serde_lots_of_pins_bench(buf: &[u8]) {
-            let mut de = Deserializer::from_slice(buf);
-            let _pins: Vec<Pin> = Deserialize::deserialize(&mut de).unwrap();
+            let bytes = include_bytes!("/tmp/test_rmp_serde-vec.bin");
+            b.iter(|| {
+                let _pins: Vec<Pin> =
+                    Deserialize::deserialize(&mut Deserializer::from_slice(bytes)).unwrap();
+            })
         }
 
     } /* rmp_serde */
@@ -178,9 +172,12 @@ mod tests {
             assert_eq!(pins.len(), 472);
         }
 
+
+
         #[bench]
         fn bench_json(b: &mut Bencher) {
-            b.iter(|| deserialize_lots_pins());
+            let input = include_str!("../sample.json");
+            b.iter(|| { let _pins: Vec<Pin> = serde_json::from_str(input).unwrap(); });
         }
 
         #[test]
