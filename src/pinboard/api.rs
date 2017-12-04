@@ -227,7 +227,10 @@ mod tests {
         let url = ":// bad url/#";
         let res = api.suggest_tags(url);
         assert!(res.is_err());
-        assert_eq!("Invalid url.".to_owned(), res.expect_err("Can't delete malformed url."));
+        assert_eq!(
+            "Invalid url.".to_owned(),
+            res.expect_err("Getting tag suggestion for malformed url should fail.")
+        );
     }
 
     #[test]
