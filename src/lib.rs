@@ -19,6 +19,8 @@ extern crate reqwest;
 pub mod pinboard;
 
 // TODO: Honor settings for search
+// TODO: Ensure that cache files are read once (add a state to Pinboard instance)
+// TODO: Related to ^: Ensure that expensive encoding/decoding happens only once
 // TODO: Use Cow
 // TODO: Use buffer reading/writing when dealing with cache files.
 // TODO: Use 'failure' crate for better error handling.

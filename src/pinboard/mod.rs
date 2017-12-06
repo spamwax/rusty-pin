@@ -8,7 +8,6 @@ use std::fs::File;
 use serde_json;
 
 use chrono::prelude::*;
-//use url::Url;
 
 use regex::Regex;
 
