@@ -220,8 +220,6 @@ impl Pinboard {
 mod tests {
     // TODO: Add tests for case insensitivity searches of tags/pins
     use super::*;
-    use url::Url;
-    use super::pin::PinBuilder;
 
     #[test]
     fn test_config() {
@@ -254,78 +252,6 @@ mod tests {
 
         h.set_file_name("pins.cache");
         assert_eq!(c.pins_cache_file, h);
-    }
-
-    #[test]
-    fn test_builder() {
-        let p = PinBuilder::new(
-            "https://githuуй.com/Здравствуйт?q=13#fragment",
-            "title".to_string(),
-        ).tags("tag1 tag2".to_string())
-            .into_pin();
-        assert_eq!(p.title, "title");
-        assert_eq!(
-            p.url,
-            Url::parse("https://githuуй.com/Здравствуйт?q=13#fragment").unwrap()
-        );
-        assert_eq!(p.tag_list.len(), 2);
-        assert_eq!(p.tags, "tag1 tag2".to_string());
-        assert_eq!(p.tag_list, vec!["tag1", "tag2"]);
-    }
-
-    #[test]
-    fn test_pin_contain() {
-        let p = PinBuilder::new(
-            "http://правительство.рф",
-            "An open source ecosystem for IoT development · PlatformIO".to_string(),
-        ).tags("tag1 tag2".to_string())
-            .into_pin();
-
-        assert!(p.contains("·"));
-        assert!(p.contains("· PlatformIO"));
-        assert!(p.contains("IoT"));
-        assert!(p.contains("tag"));
-        assert!(p.contains("tag1"));
-    }
-
-    #[test]
-    fn test_search_pins() {
-        let mut pinboard = Pinboard::new(include_str!("auth_token.txt").to_string()).unwrap();
-        pinboard.cfg.enable_tag_only_search(false);
-        pinboard.cfg.enable_fuzzy_search(false);
-
-        // non-fuzzy search
-        let pins = pinboard.search_items("rust").unwrap_or_else(|e| panic!(e));
-        assert!(pins.is_some());
-        // fuzzy search
-        pinboard.cfg.enable_fuzzy_search(true);
-        let pins = pinboard.search_items("solvingbootp").unwrap_or_else(
-            |e| panic!(e),
-        );
-        assert!(pins.is_some());
-
-        let pins = pinboard.search_items("non-existence-pin").unwrap_or_else(
-            |e| panic!(e),
-        );
-        assert!(pins.is_none());
-
-        // non-fuzzy search
-        let pins = pinboard
-            .search_items("failure - Cargo: packages for Rust")
-            .unwrap_or_else(|e| panic!(e));
-        assert!(pins.is_some());
-        let pins = pins.unwrap();
-        assert_eq!(pins.len(), 1);
-        assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
-
-        // fuzzy search
-        pinboard.cfg.enable_fuzzy_search(true);
-        let pins = pinboard.search_items("failurecargopackage") // "failure cargo package"
-            .unwrap_or_else(|e| panic!(e));
-        assert!(pins.is_some());
-        let pins = pins.unwrap();
-        assert_eq!(pins.len(), 1);
-        assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
     }
 
     #[test]
