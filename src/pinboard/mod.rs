@@ -15,7 +15,7 @@ use regex::Regex;
 mod api;
 pub mod pin;
 
-use self::pin::{Pin, Tag};
+pub use self::pin::{Pin, Tag};
 
 #[derive(Debug)]
 pub struct Config {
