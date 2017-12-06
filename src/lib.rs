@@ -18,6 +18,11 @@ extern crate reqwest;
 
 pub mod pinboard;
 
+// TODO: Honor settings for search
+// TODO: Use Cow
+// TODO: Use buffer reading/writing when dealing with cache files.
+// TODO: Use 'failure' crate for better error handling.
+// TODO: Use threads to improve search speed?
 #[cfg(test)]
 mod tests {
     mod rmp_serde {
@@ -29,7 +34,7 @@ mod tests {
         use serde::{Deserialize, Serialize};
         use serde_json;
 
-        use pinboard::{Pin, PinBuilder};
+        use pinboard::pin::{Pin, PinBuilder};
 
         use test::Bencher;
 
@@ -113,7 +118,7 @@ mod tests {
         use url::Url;
         use chrono::prelude::*;
 
-        use pinboard::{Pin, PinBuilder};
+        use pinboard::pin::{Pin, PinBuilder};
         use serde_json::{to_string, from_str};
 
         use test::Bencher;

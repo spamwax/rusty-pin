@@ -10,7 +10,8 @@ use url::Url;
 use std::io::Read;
 use std::collections::HashMap;
 
-use super::{Pin, Tag};
+//use super::{Pin, Tag};
+use super::pin::{Pin, Tag};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ApiResult {
@@ -183,7 +184,7 @@ impl Api {
 mod tests {
     use super::*;
 
-    use pinboard::PinBuilder;
+    use pinboard::pin::PinBuilder;
 
     const TEST_URL: &str = "https://githuуй.com/Здравствуйт?q=13#fragment";
 
