@@ -182,6 +182,14 @@ impl Pinboard {
         }
     }
 
+    pub fn tag_pairs(&mut self) -> &Option<Vec<Tag>> {
+        &self.cached_tags
+    }
+
+    pub fn bookmarks(&mut self) -> &Option<Vec<Pin>> {
+        &self.cached_pins
+    }
+
     pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, String> {
         self.api.recent_update().and_then(
             |res| Ok(last_update < res),
@@ -235,7 +243,7 @@ impl Pinboard {
     }
 
     fn get_cached_pins(&mut self) -> Result<(), String> {
-        // TODO: Use rmp-serde in cache files
+        // TODO: if pins_cache_file not present, call update_cache
         match self.cached_pins {
             Some(_) => Ok(()),
             None => {
@@ -250,8 +258,7 @@ impl Pinboard {
     }
 
     fn get_cached_tags(&mut self) -> Result<(), String> {
-        // TODO: Use rmp-serde in cache files
-//        use rmps::{Serializer, Deserializer};
+        // TODO: if tags_cache_file not present, call update_cache
         match self.cached_tags {
             Some(_) => Ok(()),
             None => {
@@ -356,6 +363,20 @@ mod tests {
         }
 
     }
+
+    #[test]
+    fn list_tags() {
+        let pinboard = Pinboard::new(include_str!("auth_token.txt").to_string());
+        println!("{:?}", pinboard);
+        assert!(pinboard.unwrap().tag_pairs().is_some());
+    }
+
+    #[test]
+    fn list_bookmarks() {
+        let pinboard = Pinboard::new(include_str!("auth_token.txt").to_string());
+        assert!(pinboard.unwrap().bookmarks().is_some());
+    }
+
 
     #[ignore]
     #[test]
