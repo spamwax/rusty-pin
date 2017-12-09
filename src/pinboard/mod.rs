@@ -5,9 +5,8 @@ use std::path::{Path, PathBuf};
 use std::env;
 use std::fs::File;
 
-use serde_json;
 use serde::{Serialize, Deserialize};
-use rmps;
+use rmps::{Serializer, Deserializer};
 
 use chrono::prelude::*;
 
@@ -196,7 +195,7 @@ impl Pinboard {
             .all_pins()
             .and_then(|pins: Vec<Pin>| {
                 let mut buf: Vec<u8> = Vec::new();
-                pins.serialize(&mut rmps::Serializer::new(&mut buf))
+                pins.serialize(&mut Serializer::new(&mut buf))
                     .map_err(|e| e.description().to_owned())?;
                 Ok(buf)
             })
@@ -208,7 +207,12 @@ impl Pinboard {
         })?;
         self.api
             .tags_frequency()
-            .and_then(|tags| serde_json::to_vec(&tags).map_err(|e| e.description().to_owned()))
+            .and_then(|tags_tuple| {
+                let mut buf: Vec<u8> = Vec::new();
+                tags_tuple.serialize(&mut Serializer::new(&mut buf))
+                    .map_err(|e| e.description().to_owned())?;
+                Ok(buf)
+            })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))
     }
 }
@@ -232,10 +236,11 @@ impl Pinboard {
         match self.cached_pins {
             Some(_) => Ok(()),
             None => {
-                let cached_pins = self.read_file(&self.cfg.pins_cache_file)?;
-                self.cached_pins = serde_json::from_str(&cached_pins).map_err(|e| {
-                    e.description().to_owned()
-                })?;
+                let fp = File::open(&self.cfg.pins_cache_file)
+                    .map_err(|e| e.description().to_owned())?;
+                let mut de = Deserializer::from_read(fp);
+                self.cached_pins = Deserialize::deserialize(&mut de)
+                    .map_err(|e| e.description().to_owned())?;
                 Ok(())
             }
         }
@@ -243,13 +248,16 @@ impl Pinboard {
 
     fn get_cached_tags(&mut self) -> Result<(), String> {
         // TODO: Use rmp-serde in cache files
+//        use rmps::{Serializer, Deserializer};
         match self.cached_tags {
             Some(_) => Ok(()),
             None => {
-                let cached_tags = self.read_file(&self.cfg.tags_cache_file)?;
-                self.cached_tags = serde_json::from_str(&cached_tags).map_err(|e| {
-                    e.description().to_owned()
-                })?;
+                let fp = File::open(&self.cfg.tags_cache_file)
+                    .map_err(|e| e.description().to_owned())?;
+                let mut de = Deserializer::from_read(fp);
+                self.cached_tags = Deserialize::deserialize(&mut de)
+                    .map_err(|e| e.description().to_owned())?;
+
                 Ok(())
             }
         }
