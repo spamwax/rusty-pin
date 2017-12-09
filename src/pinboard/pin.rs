@@ -149,38 +149,49 @@ mod tests {
         pinboard.cfg.enable_tag_only_search(false);
         pinboard.cfg.enable_fuzzy_search(false);
 
-        // non-fuzzy search
-        let pins = pinboard.search_items("rust").unwrap_or_else(|e| panic!(e));
-        assert!(pins.is_some());
-        // fuzzy search
-        pinboard.cfg.enable_fuzzy_search(true);
-        let pins = pinboard.search_items("solvingbootp").unwrap_or_else(
-            |e| panic!(e),
-        );
-        assert!(pins.is_some());
+        {
+            // non-fuzzy search
+            let pins = pinboard.search_items("rust").unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+        }
 
-        let pins = pinboard.search_items("non-existence-pin").unwrap_or_else(
-            |e| panic!(e),
-        );
-        assert!(pins.is_none());
+        {
+            // fuzzy search
+            pinboard.cfg.enable_fuzzy_search(true);
+            let pins = pinboard.search_items("solvingbootp").unwrap_or_else(
+                |e| panic!(e),
+            );
+            assert!(pins.is_some());
+        }
 
-        // non-fuzzy search
-        let pins = pinboard
-            .search_items("failure - Cargo: packages for Rust")
-            .unwrap_or_else(|e| panic!(e));
-        assert!(pins.is_some());
-        let pins = pins.unwrap();
-        assert_eq!(pins.len(), 1);
-        assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
+        {
+            let pins = pinboard.search_items("non-existence-pin").unwrap_or_else(
+                |e| panic!(e),
+            );
+            assert!(pins.is_none());
+        }
 
-        // fuzzy search
-        pinboard.cfg.enable_fuzzy_search(true);
-        let pins = pinboard.search_items("failurecargopackage") // "failure cargo package"
-            .unwrap_or_else(|e| panic!(e));
-        assert!(pins.is_some());
-        let pins = pins.unwrap();
-        assert_eq!(pins.len(), 1);
-        assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
+        {
+            // non-fuzzy search
+            let pins = pinboard
+                .search_items("failure - Cargo: packages for Rust")
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            let pins = pins.unwrap();
+            assert_eq!(pins.len(), 1);
+            assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
+        }
+
+        {
+            // fuzzy search
+            pinboard.cfg.enable_fuzzy_search(true);
+            let pins = pinboard.search_items("failurecargopackage") // "failure cargo package"
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            let pins = pins.unwrap();
+            assert_eq!(pins.len(), 1);
+            assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
+        }
     }
 
 

@@ -6,6 +6,8 @@ use std::env;
 use std::fs::File;
 
 use serde_json;
+use serde::{Serialize, Deserialize};
+use rmps;
 
 use chrono::prelude::*;
 
@@ -74,6 +76,8 @@ impl Config {
 pub struct Pinboard {
     api: api::Api,
     cfg: Config,
+    cached_pins: Option<Vec<Pin>>,
+    cached_tags: Option<Vec<Tag>>,
 }
 
 impl Pinboard {
@@ -82,6 +86,8 @@ impl Pinboard {
         Ok(Pinboard {
             api: api::Api::new(auth_token),
             cfg,
+            cached_pins: None,
+            cached_tags: None,
         })
     }
 
@@ -89,19 +95,21 @@ impl Pinboard {
         self.api.add_url(p)
     }
 
-    pub fn search_items(&self, q: &str) -> Result<Option<Vec<Pin>>, String> {
+    pub fn search_items(&mut self, q: &str) -> Result<Option<Vec<&Pin>>, String> {
         if self.cfg.pins_cache_file.exists() {
-            let cached_pins = self.read_file(&self.cfg.pins_cache_file)?;
-            let cached_pins: Vec<Pin> = serde_json::from_str(&cached_pins).map_err(|e| {
-                e.description().to_owned()
-            })?;
+
+            self.get_cached_pins()?;
+
+            if self.cached_pins.is_none() {
+                return Ok(None)
+            }
 
             let r = if !self.cfg.fuzzy_search {
                 let q = &q.to_lowercase();
-                cached_pins
+                self.cached_pins.as_ref().unwrap()
                     .into_iter()
                     .filter(|item| item.contains(q))
-                    .collect::<Vec<Pin>>()
+                    .collect::<Vec<&Pin>>()
             } else {
                 // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
                 let mut fuzzy_string = q.chars()
@@ -113,10 +121,10 @@ impl Pinboard {
                 let re = Regex::new(&fuzzy_string).map_err(|_| {
                     "Can't search for given query!".to_owned()
                 })?;
-                cached_pins
+                self.cached_pins.as_ref().unwrap()
                     .into_iter()
                     .filter(|item| item.contains_fuzzy(&re))
-                    .collect::<Vec<Pin>>()
+                    .collect::<Vec<&Pin>>()
             };
             match r.len() {
                 0 => Ok(None),
@@ -130,19 +138,20 @@ impl Pinboard {
         }
     }
 
-    pub fn search_tags(&self, q: &str) -> Result<Option<Vec<Tag>>, String> {
+    pub fn search_tags(&mut self, q: &str) -> Result<Option<Vec<&Tag>>, String> {
         if self.cfg.tags_cache_file.exists() {
-            let cached_tags = self.read_file(&self.cfg.tags_cache_file)?;
-            let cached_tags: Vec<Tag> = serde_json::from_str(&cached_tags).map_err(|e| {
-                e.description().to_owned()
-            })?;
+
+            self.get_cached_tags()?;
+            if self.cached_tags.is_none() {
+                return Ok(None)
+            }
 
             let r = if !self.cfg.fuzzy_search {
                 let q = &q.to_lowercase();
-                cached_tags
+                self.cached_tags.as_ref().unwrap()
                     .into_iter()
                     .filter(|item| item.0.to_lowercase().contains(q))
-                    .collect::<Vec<Tag>>()
+                    .collect::<Vec<&Tag>>()
             } else {
                 // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
                 let mut fuzzy_string = q.chars()
@@ -154,10 +163,10 @@ impl Pinboard {
                 let re = Regex::new(&fuzzy_string).map_err(|_| {
                     "Can't search for given query!".to_owned()
                 })?;
-                cached_tags
+                self.cached_tags.as_ref().unwrap()
                     .into_iter()
                     .filter(|item| re.captures(&item.0).is_some())
-                    .collect::<Vec<Tag>>()
+                    .collect::<Vec<&Tag>>()
             };
             match r.len() {
                 0 => Ok(None),
@@ -185,7 +194,12 @@ impl Pinboard {
         })?;
         self.api
             .all_pins()
-            .and_then(|pins| serde_json::to_vec(&pins).map_err(|e| e.description().to_owned()))
+            .and_then(|pins: Vec<Pin>| {
+                let mut buf: Vec<u8> = Vec::new();
+                pins.serialize(&mut rmps::Serializer::new(&mut buf))
+                    .map_err(|e| e.description().to_owned())?;
+                Ok(buf)
+            })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
 
         // Write all tags
@@ -211,6 +225,34 @@ impl Pinboard {
                     .map_err(|e| e.description().to_owned())
                     .and_then(|_| Ok(content))
             })
+    }
+
+    fn get_cached_pins(&mut self) -> Result<(), String> {
+        // TODO: Use rmp-serde in cache files
+        match self.cached_pins {
+            Some(_) => Ok(()),
+            None => {
+                let cached_pins = self.read_file(&self.cfg.pins_cache_file)?;
+                self.cached_pins = serde_json::from_str(&cached_pins).map_err(|e| {
+                    e.description().to_owned()
+                })?;
+                Ok(())
+            }
+        }
+    }
+
+    fn get_cached_tags(&mut self) -> Result<(), String> {
+        // TODO: Use rmp-serde in cache files
+        match self.cached_tags {
+            Some(_) => Ok(()),
+            None => {
+                let cached_tags = self.read_file(&self.cfg.tags_cache_file)?;
+                self.cached_tags = serde_json::from_str(&cached_tags).map_err(|e| {
+                    e.description().to_owned()
+                })?;
+                Ok(())
+            }
+        }
     }
 }
 
@@ -258,38 +300,49 @@ mod tests {
         let mut pinboard = Pinboard::new(include_str!("auth_token.txt").to_string()).unwrap();
         pinboard.cfg.enable_fuzzy_search(false);
 
-        let tags = pinboard.search_tags("django").unwrap_or_else(|e| panic!(e));
-        assert!(tags.is_some());
+        {
+            let tags = pinboard.search_tags("django").unwrap_or_else(|e| panic!(e));
+            assert!(tags.is_some());
+        }
 
-        // non-fuzzy search test
-        let tags = pinboard.search_tags("non-existence-tag").unwrap_or_else(
-            |e| panic!(e),
-        );
-        assert!(tags.is_none());
-        // fuzzy search test
-        pinboard.cfg.enable_fuzzy_search(true);
-        let tags = pinboard.search_tags("non-existence-tag").unwrap_or_else(
-            |e| panic!(e),
-        );
-        assert!(tags.is_none());
+        {
+            // non-fuzzy search test
+            let tags = pinboard.search_tags("non-existence-tag").unwrap_or_else(
+                |e| panic!(e),
+            );
+            assert!(tags.is_none());
+        }
+        {
+            // fuzzy search test
+            pinboard.cfg.enable_fuzzy_search(true);
+            let tags = pinboard.search_tags("non-existence-tag").unwrap_or_else(
+                |e| panic!(e),
+            );
+            assert!(tags.is_none());
+        }
 
-        // non-fuzzy search test
-        let tags = pinboard.search_tags("Lumia920").unwrap_or_else(
-            |e| panic!(e),
-        );
-        assert!(tags.is_some());
-        let tags = tags.unwrap();
-        assert_eq!(tags.len(), 1);
-        assert_eq!(tags[0].1, 2);
-        // fuzzy search test
-        pinboard.cfg.enable_fuzzy_search(true);
-        let tags = pinboard.search_tags("Lumia920").unwrap_or_else(
-            |e| panic!(e),
-        );
-        assert!(tags.is_some());
-        let tags = tags.unwrap();
-        assert_eq!(tags.len(), 1);
-        assert_eq!(tags[0].1, 2);
+        {
+            // non-fuzzy search test
+            let tags = pinboard.search_tags("Lumia920").unwrap_or_else(
+                |e| panic!(e),
+            );
+            assert!(tags.is_some());
+            let tags = tags.unwrap();
+            assert_eq!(tags.len(), 1);
+            assert_eq!(tags[0].1, 2);
+        }
+
+        {
+            // fuzzy search test
+            pinboard.cfg.enable_fuzzy_search(true);
+            let tags = pinboard.search_tags("Lumia920").unwrap_or_else(
+                |e| panic!(e),
+            );
+            assert!(tags.is_some());
+            let tags = tags.unwrap();
+            assert_eq!(tags.len(), 1);
+            assert_eq!(tags[0].1, 2);
+        }
 
     }
 
