@@ -82,12 +82,15 @@ pub struct Pinboard {
 impl Pinboard {
     pub fn new(auth_token: String) -> Result<Self, String> {
         let cfg = Config::new()?;
-        Ok(Pinboard {
+        let mut pinboard = Pinboard {
             api: api::Api::new(auth_token),
             cfg,
             cached_pins: None,
             cached_tags: None,
-        })
+        };
+        pinboard.get_cached_pins()?;
+        pinboard.get_cached_tags()?;
+        Ok(pinboard)
     }
 
     pub fn add(self, p: Pin) -> Result<(), String> {
