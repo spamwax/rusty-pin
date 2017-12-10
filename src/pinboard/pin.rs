@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn test_search_pins() {
-        let mut pinboard = ::pinboard::Pinboard::new(&include_str!("auth_token.txt").to_string()).unwrap();
+        let mut pinboard = ::pinboard::Pinboard::new(include_str!("auth_token.txt")).unwrap();
         pinboard.enable_tag_only_search(false);
         pinboard.enable_fuzzy_search(false);
 

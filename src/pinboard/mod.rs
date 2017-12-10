@@ -4,6 +4,7 @@ use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::env;
 use std::fs::File;
+use std::borrow::Cow;
 
 use serde::{Serialize, Deserialize};
 use rmps::{Serializer, Deserializer};
@@ -21,18 +22,19 @@ use self::config::Config;
 pub use self::pin::{Pin, Tag};
 
 #[derive(Debug)]
-pub struct Pinboard {
-    api: api::Api,
+pub struct Pinboard<'a> {
+    api: api::Api<'a>,
     cfg: Config,
     cached_pins: Option<Vec<Pin>>,
     cached_tags: Option<Vec<Tag>>,
 }
 
-impl Pinboard {
-    pub fn new(auth_token: &str) -> Result<Self, String> {
+impl<'a> Pinboard<'a> {
+    pub fn new<S>(auth_token: S) -> Result<Self, String>
+        where S: Into<Cow<'a, str>> {
         let cfg = Config::new()?;
         let mut pinboard = Pinboard {
-            api: api::Api::new(auth_token.into()),
+            api: api::Api::new(auth_token),
             cfg,
             cached_pins: None,
             cached_tags: None,
@@ -198,7 +200,7 @@ impl Pinboard {
 }
 
 /// private implementations
-impl Pinboard {
+impl<'a> Pinboard<'a> {
     fn read_file<P: AsRef<Path>>(&self, p: P) -> Result<String, String> {
 
         File::open(p)
@@ -284,7 +286,7 @@ mod tests {
 
     #[test]
     fn test_search_tags() {
-        let mut pinboard = Pinboard::new(&include_str!("auth_token.txt").to_string()).unwrap();
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
         pinboard.enable_fuzzy_search(false);
 
         {
@@ -335,14 +337,14 @@ mod tests {
 
     #[test]
     fn list_tags() {
-        let pinboard = Pinboard::new(&include_str!("auth_token.txt").to_string());
+        let pinboard = Pinboard::new(include_str!("auth_token.txt"));
         println!("{:?}", pinboard);
         assert!(pinboard.unwrap().tag_pairs().is_some());
     }
 
     #[test]
     fn list_bookmarks() {
-        let pinboard = Pinboard::new(&include_str!("auth_token.txt").to_string());
+        let pinboard = Pinboard::new(include_str!("auth_token.txt"));
         assert!(pinboard.unwrap().bookmarks().is_some());
     }
 
@@ -350,7 +352,7 @@ mod tests {
     #[ignore]
     #[test]
     fn test_update_cache() {
-        let pinboard = Pinboard::new(&include_str!("auth_token.txt").to_string());
+        let pinboard = Pinboard::new(include_str!("auth_token.txt"));
         pinboard.unwrap().update_cache().unwrap_or_else(
             |e| panic!(e),
         );

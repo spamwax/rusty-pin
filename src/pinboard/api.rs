@@ -1,4 +1,4 @@
-//const TOKEN: &str = include_str!("auth_token.txt");
+use std::borrow::Cow;
 
 use serde_json;
 use reqwest;
@@ -35,13 +35,14 @@ struct UpdateTime {
 }
 
 #[derive(Debug)]
-pub struct Api {
-    auth_token: String,
+pub struct Api<'a> {
+    auth_token: Cow<'a, str>
 }
 
-impl Api {
-    pub fn new(auth_token: String) -> Self {
-        Api { auth_token }
+impl<'a> Api<'a> {
+    pub fn new<S>(auth_token: S) -> Self
+        where S: Into<Cow<'a, str>> {
+        Api { auth_token: auth_token.into() }
     }
 
     fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
