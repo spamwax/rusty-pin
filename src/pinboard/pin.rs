@@ -49,6 +49,64 @@ impl Pin {
             (self.extended.is_some() && self.extended.as_ref().unwrap().to_lowercase().contains(q))
     }
 
+    pub fn title_contains(&self, query: &str, re: Option<&Regex>) -> bool {
+        if let Some(re) = re {
+            re.captures(&self.title).is_some()
+        } else {
+            let temp;
+            let mut q = query;
+            if query.chars().any(|c| !c.is_lowercase()) {
+                temp = query.to_lowercase();
+                q = &temp;
+            }
+            self.title.to_lowercase().contains(q)
+        }
+    }
+
+    pub fn tag_contains(&self, query: &str, re: Option<&Regex>) -> bool {
+        if let Some(re) = re {
+            re.captures(&self.tags).is_some()
+        } else {
+            let temp;
+            let mut q = query;
+            if query.chars().any(|c| !c.is_lowercase()) {
+                temp = query.to_lowercase();
+                q = &temp;
+            }
+            self.tags.to_lowercase().contains(q)
+        }
+    }
+
+    pub fn url_contains(&self, query: &str, re: Option<&Regex>) -> bool {
+        if let Some(re) = re {
+            re.captures(&self.url.as_str()).is_some()
+        } else {
+            let temp;
+            let mut q = query;
+            if query.chars().any(|c| !c.is_lowercase()) {
+                temp = query.to_lowercase();
+                q = &temp;
+            }
+            self.url.as_str().to_lowercase().contains(q)
+        }
+    }
+
+    pub fn extended_contains(&self, query: &str, re: Option<&Regex>) -> bool {
+        self.extended.is_some() &&
+            if let Some(re) = re {
+                re.captures(self.extended.as_ref().unwrap()).is_some()
+            }
+            else {
+                let temp;
+                let mut q = query;
+                if query.chars().any(|c| !c.is_lowercase()) {
+                    temp = query.to_lowercase();
+                    q = &temp;
+                }
+                self.extended.as_ref().unwrap().to_lowercase().contains(q)
+            }
+    }
+
     pub fn contains_fuzzy(&self, re: &Regex) -> bool {
         re.captures(&self.title).is_some() || re.captures(&self.tags).is_some() ||
             re.captures(&self.url.as_ref()).is_some() ||

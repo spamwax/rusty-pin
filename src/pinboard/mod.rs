@@ -67,7 +67,12 @@ impl<'a> Pinboard<'a> {
     pub fn add(self, p: Pin) -> Result<(), String> {
         self.api.add_url(p)
     }
+}
 
+// Search functions
+impl<'a> Pinboard<'a> {
+    /// Searches all the fields within bookmarks to filter them.
+    /// This function honors [pinboard::config::Config] settings for fuzzy search.
     pub fn search_items(&mut self, q: &str) -> Result<Option<Vec<&Pin>>, String> {
         if self.cfg.pins_cache_file.exists() {
 
@@ -111,7 +116,9 @@ impl<'a> Pinboard<'a> {
         }
     }
 
-    pub fn search_tags(&mut self, q: &str) -> Result<Option<Vec<&Tag>>, String> {
+    /// Only looks up q within the `tag` field of each bookmark.
+    /// This function honors [pinboard::config::Config] settings for fuzzy search.
+    pub fn search_tag_field(&mut self, q: &str) -> Result<Option<Vec<&Tag>>, String> {
         if self.cfg.tags_cache_file.exists() {
 
             self.get_cached_tags()?;
@@ -153,10 +160,12 @@ impl<'a> Pinboard<'a> {
         }
     }
 
+    /// Returns list of all Tags (tag, frequency)
     pub fn tag_pairs(&mut self) -> &Option<Vec<Tag>> {
         &self.cached_tags
     }
 
+    /// Returns list of all bookmarks
     pub fn bookmarks(&mut self) -> &Option<Vec<Pin>> {
         &self.cached_pins
     }
@@ -290,13 +299,13 @@ mod tests {
         pinboard.enable_fuzzy_search(false);
 
         {
-            let tags = pinboard.search_tags("django").unwrap_or_else(|e| panic!(e));
+            let tags = pinboard.search_tag_field("django").unwrap_or_else(|e| panic!(e));
             assert!(tags.is_some());
         }
 
         {
             // non-fuzzy search test
-            let tags = pinboard.search_tags("non-existence-tag").unwrap_or_else(
+            let tags = pinboard.search_tag_field("non-existence-tag").unwrap_or_else(
                 |e| panic!(e),
             );
             assert!(tags.is_none());
@@ -304,7 +313,7 @@ mod tests {
         {
             // fuzzy search test
             pinboard.enable_fuzzy_search(true);
-            let tags = pinboard.search_tags("non-existence-tag").unwrap_or_else(
+            let tags = pinboard.search_tag_field("non-existence-tag").unwrap_or_else(
                 |e| panic!(e),
             );
             assert!(tags.is_none());
@@ -312,7 +321,7 @@ mod tests {
 
         {
             // non-fuzzy search test
-            let tags = pinboard.search_tags("Lumia920").unwrap_or_else(
+            let tags = pinboard.search_tag_field("Lumia920").unwrap_or_else(
                 |e| panic!(e),
             );
             assert!(tags.is_some());
@@ -324,7 +333,7 @@ mod tests {
         {
             // fuzzy search test
             pinboard.enable_fuzzy_search(true);
-            let tags = pinboard.search_tags("Lumia920").unwrap_or_else(
+            let tags = pinboard.search_tag_field("Lumia920").unwrap_or_else(
                 |e| panic!(e),
             );
             assert!(tags.is_some());
