@@ -7,7 +7,7 @@ use url::Url;
 use regex::Regex;
 
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Tag(pub String, pub usize);
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]

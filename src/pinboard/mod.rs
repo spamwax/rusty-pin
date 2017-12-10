@@ -19,7 +19,7 @@ pub mod pin;
 
 use self::config::Config;
 
-pub use self::pin::{Pin, Tag};
+pub use self::pin::{Pin, Tag, PinBuilder};
 
 #[derive(Debug)]
 pub struct Pinboard<'a> {
@@ -39,8 +39,13 @@ impl<'a> Pinboard<'a> {
             cached_pins: None,
             cached_tags: None,
         };
-        pinboard.get_cached_pins()?;
-        pinboard.get_cached_tags()?;
+        if pinboard.cfg.tags_cache_file.exists() &&
+            pinboard.cfg.pins_cache_file.exists() {
+            pinboard.get_cached_pins()?;
+            pinboard.get_cached_tags()?;
+        } else {
+            pinboard.update_cache()?;
+        }
         Ok(pinboard)
     }
 
@@ -74,7 +79,7 @@ impl<'a> Pinboard<'a> {
         )
     }
 
-    pub fn update_cache(&self) -> Result<(), String> {
+    pub fn update_cache(&mut self) -> Result<(), String> {
         //TODO: cache all searchable text in lowercase format to make "pin.contains()" efficient.
         // Write all pins
         let mut f = File::create(&self.cfg.pins_cache_file).map_err(|e| {
@@ -82,13 +87,33 @@ impl<'a> Pinboard<'a> {
         })?;
         self.api
             .all_pins()
+            // Sort pins in descending creation time order
+            .and_then(|mut pins| {
+                pins.sort_by_key(|pin| pin.time());
+                Ok(pins)
+            })
+//            .and_then(|pins: Vec<Pin>| {
+//                Ok(pins.into_iter()
+//                    .map(|pin| {
+//                        PinBuilder::new(pin.url, pin.title.to_lowercase())
+//                            .tags(pin.tags.to_lowercase())
+//                            .shared(&pin.shared)
+//                            .toread(&pin.toread)
+//                            .description(pin.extended
+//                                .map(|s| s.to_lowercase())
+//                                .unwrap_or("".to_string()))
+//                            .into_pin()
+//                    }).collect())
+//            })
             .and_then(|pins: Vec<Pin>| {
                 let mut buf: Vec<u8> = Vec::new();
-                pins.serialize(&mut Serializer::new(&mut buf))
+                let _pins = Some(pins);
+                _pins.serialize(&mut Serializer::new(&mut buf))
                     .map_err(|e| e.description().to_owned())?;
                 Ok(buf)
             })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
+        self.get_cached_pins()?;
 
         // Write all tags
         let mut f = File::create(&self.cfg.tags_cache_file).map_err(|e| {
@@ -96,13 +121,22 @@ impl<'a> Pinboard<'a> {
         })?;
         self.api
             .tags_frequency()
+            // Sort tags by frequency before writing
+            .and_then(|mut tags| {
+                tags.sort_by(|t1, t2| {
+                    t1.1.cmp(&t2.1).reverse()
+                });
+                Ok(tags)
+            })
             .and_then(|tags_tuple| {
                 let mut buf: Vec<u8> = Vec::new();
-                tags_tuple.serialize(&mut Serializer::new(&mut buf))
+                let _tags = Some(tags_tuple);
+                _tags.serialize(&mut Serializer::new(&mut buf))
                     .map_err(|e| e.description().to_owned())?;
                 Ok(buf)
             })
-            .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))
+            .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
+        self.get_cached_tags()
     }
 }
 
@@ -498,12 +532,41 @@ mod tests {
     }
 
 
-    #[ignore]
+//    #[ignore]
     #[test]
     fn test_update_cache() {
+        use std::{thread, time};
+        use std::fs;
+
+        let five_secs = time::Duration::from_secs(5);
+
+        // First remove all folders to force a full update
+        let mut dir = env::home_dir().unwrap_or_else(|| PathBuf::from(""));
+        dir.push(".cache");
+        dir.push("rusty-pin");
+        fs::remove_dir_all(dir).unwrap();
+
+        thread::sleep(five_secs);
+        println!("Running first update_cache");
+
         let pinboard = Pinboard::new(include_str!("auth_token.txt"));
-        pinboard.unwrap().update_cache().unwrap_or_else(
+        let mut pinboard = pinboard.unwrap();
+        let pins = pinboard.cached_pins.take().unwrap();
+        let tags = pinboard.cached_tags.take().unwrap();
+
+        thread::sleep(five_secs);
+
+        println!("Running second update_cache");
+        pinboard.update_cache().unwrap_or_else(
             |e| panic!(e),
         );
+
+        assert!(pinboard.cached_pins.is_some());
+        assert_eq!(pins[0], pinboard.cached_pins.as_ref().unwrap()[0]);
+        assert_eq!(pins.len(), pinboard.cached_pins.unwrap().len());
+
+        assert!(pinboard.cached_tags.is_some());
+        assert_eq!(tags[0], pinboard.cached_tags.as_ref().unwrap()[0]);
+        assert_eq!(tags.len(), pinboard.cached_tags.unwrap().len());
     }
 }
