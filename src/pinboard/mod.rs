@@ -80,10 +80,10 @@ pub struct Pinboard {
 }
 
 impl Pinboard {
-    pub fn new(auth_token: String) -> Result<Self, String> {
+    pub fn new(auth_token: &str) -> Result<Self, String> {
         let cfg = Config::new()?;
         let mut pinboard = Pinboard {
-            api: api::Api::new(auth_token),
+            api: api::Api::new(auth_token.into()),
             cfg,
             cached_pins: None,
             cached_tags: None,
