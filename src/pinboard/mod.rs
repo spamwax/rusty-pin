@@ -48,18 +48,18 @@ impl Config {
         })
     }
 
-    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), String> {
+    fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), String> {
         self.cache_dir = Config::create_cache_dir(p)?;
         self.tags_cache_file = self.cache_dir.join("tags.cache");
         self.pins_cache_file = self.cache_dir.join("pins.cache");
         Ok(())
     }
 
-    pub fn enable_tag_only_search(&mut self, v: bool) {
+    fn enable_tag_only_search(&mut self, v: bool) {
         self.tag_only_search = v;
     }
 
-    pub fn enable_fuzzy_search(&mut self, v: bool) {
+    fn enable_fuzzy_search(&mut self, v: bool) {
         self.fuzzy_search = v;
     }
 
@@ -91,6 +91,18 @@ impl Pinboard {
         pinboard.get_cached_pins()?;
         pinboard.get_cached_tags()?;
         Ok(pinboard)
+    }
+
+    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), String> {
+        self.cfg.set_cache_dir(p)
+    }
+
+    pub fn enable_tag_only_search(&mut self, v: bool) {
+        self.cfg.enable_tag_only_search(v);
+    }
+
+    pub fn enable_fuzzy_search(&mut self, v: bool) {
+        self.cfg.enable_fuzzy_search(v);
     }
 
     pub fn add(self, p: Pin) -> Result<(), String> {
