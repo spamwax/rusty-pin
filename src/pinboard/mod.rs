@@ -208,7 +208,7 @@ impl Pinboard {
         )
     }
 
-    fn update_cache(&self) -> Result<(), String> {
+    pub fn update_cache(&self) -> Result<(), String> {
         //TODO: cache all searchable text in lowercase format to make "pin.contains()" efficient.
         // Write all pins
         let mut f = File::create(&self.cfg.pins_cache_file).map_err(|e| {
