@@ -36,73 +36,42 @@ impl Pin {
         self.time
     }
 
-    pub fn contains(&self, query: &str) -> bool {
-        let temp;
-        let mut q = query;
-        if query.chars().any(|c| !c.is_lowercase()) {
-            temp = query.to_lowercase();
-            q = &temp;
-        }
-
+    pub fn contains(&self, q: &str) -> bool {
         self.title.to_lowercase().contains(q) || self.tags.to_lowercase().contains(q) ||
             self.url.as_ref().contains(q) ||
             (self.extended.is_some() && self.extended.as_ref().unwrap().to_lowercase().contains(q))
     }
 
-    pub fn title_contains(&self, query: &str, re: Option<&Regex>) -> bool {
+    pub fn title_contains(&self, q: &str, re: Option<&Regex>) -> bool {
         if let Some(re) = re {
             re.captures(&self.title).is_some()
         } else {
-            let temp;
-            let mut q = query;
-            if query.chars().any(|c| !c.is_lowercase()) {
-                temp = query.to_lowercase();
-                q = &temp;
-            }
             self.title.to_lowercase().contains(q)
         }
     }
 
-    pub fn tag_contains(&self, query: &str, re: Option<&Regex>) -> bool {
+    pub fn tag_contains(&self, q: &str, re: Option<&Regex>) -> bool {
         if let Some(re) = re {
             re.captures(&self.tags).is_some()
         } else {
-            let temp;
-            let mut q = query;
-            if query.chars().any(|c| !c.is_lowercase()) {
-                temp = query.to_lowercase();
-                q = &temp;
-            }
             self.tags.to_lowercase().contains(q)
         }
     }
 
-    pub fn url_contains(&self, query: &str, re: Option<&Regex>) -> bool {
+    pub fn url_contains(&self, q: &str, re: Option<&Regex>) -> bool {
         if let Some(re) = re {
             re.captures(&self.url.as_str()).is_some()
         } else {
-            let temp;
-            let mut q = query;
-            if query.chars().any(|c| !c.is_lowercase()) {
-                temp = query.to_lowercase();
-                q = &temp;
-            }
             self.url.as_str().to_lowercase().contains(q)
         }
     }
 
-    pub fn extended_contains(&self, query: &str, re: Option<&Regex>) -> bool {
+    pub fn extended_contains(&self, q: &str, re: Option<&Regex>) -> bool {
         self.extended.is_some() &&
             if let Some(re) = re {
                 re.captures(self.extended.as_ref().unwrap()).is_some()
             }
             else {
-                let temp;
-                let mut q = query;
-                if query.chars().any(|c| !c.is_lowercase()) {
-                    temp = query.to_lowercase();
-                    q = &temp;
-                }
                 self.extended.as_ref().unwrap().to_lowercase().contains(q)
             }
     }
@@ -195,10 +164,10 @@ mod tests {
             .into_pin();
 
         assert!(p.contains("·"));
-        assert!(p.contains("· PlatformIO"));
-        assert!(p.contains("IoT"));
-        assert!(p.contains("tag"));
-        assert!(p.contains("tag1"));
+        assert!(p.contains("· PlatformIO".to_lowercase().as_str()));
+        assert!(p.contains("IoT".to_lowercase().as_str()));
+        assert!(p.contains("tag".to_lowercase().as_str()));
+        assert!(p.contains("tag1".to_lowercase().as_str()));
     }
 
     #[test]

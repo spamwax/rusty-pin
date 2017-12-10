@@ -67,6 +67,43 @@ impl<'a> Pinboard<'a> {
     pub fn add(self, p: Pin) -> Result<(), String> {
         self.api.add_url(p)
     }
+
+    pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, String> {
+        self.api.recent_update().and_then(
+            |res| Ok(last_update < res),
+        )
+    }
+
+    pub fn update_cache(&self) -> Result<(), String> {
+        //TODO: cache all searchable text in lowercase format to make "pin.contains()" efficient.
+        // Write all pins
+        let mut f = File::create(&self.cfg.pins_cache_file).map_err(|e| {
+            e.description().to_owned()
+        })?;
+        self.api
+            .all_pins()
+            .and_then(|pins: Vec<Pin>| {
+                let mut buf: Vec<u8> = Vec::new();
+                pins.serialize(&mut Serializer::new(&mut buf))
+                    .map_err(|e| e.description().to_owned())?;
+                Ok(buf)
+            })
+            .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
+
+        // Write all tags
+        let mut f = File::create(&self.cfg.tags_cache_file).map_err(|e| {
+            e.description().to_owned()
+        })?;
+        self.api
+            .tags_frequency()
+            .and_then(|tags_tuple| {
+                let mut buf: Vec<u8> = Vec::new();
+                tags_tuple.serialize(&mut Serializer::new(&mut buf))
+                    .map_err(|e| e.description().to_owned())?;
+                Ok(buf)
+            })
+            .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))
+    }
 }
 
 // Search functions
@@ -168,43 +205,6 @@ impl<'a> Pinboard<'a> {
     /// Returns list of all bookmarks
     pub fn bookmarks(&mut self) -> &Option<Vec<Pin>> {
         &self.cached_pins
-    }
-
-    pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, String> {
-        self.api.recent_update().and_then(
-            |res| Ok(last_update < res),
-        )
-    }
-
-    pub fn update_cache(&self) -> Result<(), String> {
-        //TODO: cache all searchable text in lowercase format to make "pin.contains()" efficient.
-        // Write all pins
-        let mut f = File::create(&self.cfg.pins_cache_file).map_err(|e| {
-            e.description().to_owned()
-        })?;
-        self.api
-            .all_pins()
-            .and_then(|pins: Vec<Pin>| {
-                let mut buf: Vec<u8> = Vec::new();
-                pins.serialize(&mut Serializer::new(&mut buf))
-                    .map_err(|e| e.description().to_owned())?;
-                Ok(buf)
-            })
-            .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
-
-        // Write all tags
-        let mut f = File::create(&self.cfg.tags_cache_file).map_err(|e| {
-            e.description().to_owned()
-        })?;
-        self.api
-            .tags_frequency()
-            .and_then(|tags_tuple| {
-                let mut buf: Vec<u8> = Vec::new();
-                tags_tuple.serialize(&mut Serializer::new(&mut buf))
-                    .map_err(|e| e.description().to_owned())?;
-                Ok(buf)
-            })
-            .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))
     }
 }
 
