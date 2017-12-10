@@ -250,10 +250,10 @@ impl<'a> Pinboard<'a> {
                     .filter(|item| {
                         match stype {
                             SearchType::TitleOnly => {
-                                re.captures(item.title.as_ref()).is_some()
+                                re.captures(&item.title).is_some()
                             },
                             SearchType::TagOnly => {
-                                re.captures(item.tags).is_some()
+                                re.captures(&item.tags).is_some()
                             },
                             SearchType::UrlOnly => {
                                 re.captures(item.url.as_ref()).is_some()
@@ -263,7 +263,7 @@ impl<'a> Pinboard<'a> {
                                     re.captures(item.extended.as_ref().unwrap()).is_some()
                             },
                             SearchType::TagTitleOnly => {
-                                re.captures(item.title.as_ref()).is_some() ||
+                                re.captures(&item.title).is_some() ||
                                 re.captures(item.url.as_ref()).is_some()
                             },
                         }
@@ -379,6 +379,34 @@ mod tests {
     }
 
     #[test]
+    fn test_search_items() {
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        pinboard.enable_fuzzy_search(false);
+
+        {
+            let pins = pinboard.search_items("django").unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+        }
+
+        {
+            // non-fuzzy search test
+            let pins = pinboard.search_items("non-existence-tag").unwrap_or_else(
+                |e| panic!(e),
+            );
+            assert!(pins.is_none());
+        }
+        {
+            // fuzzy search test
+            pinboard.enable_fuzzy_search(true);
+            let pins = pinboard.search_items("funkYoumoth").unwrap_or_else(
+                |e| panic!(e),
+            );
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+        }
+    }
+
+    #[test]
     fn test_search_tags() {
         let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
         pinboard.enable_fuzzy_search(false);
@@ -429,6 +457,33 @@ mod tests {
 
     }
 
+    #[test]
+    fn search_field_title() {
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        pinboard.enable_fuzzy_search(false);
+        {
+            let pins = pinboard
+                .search_field("torchbox", SearchType::TitleOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+        }
+        {
+            let pins = pinboard
+                .search_field("tORcHboX", SearchType::TitleOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+        }
+        pinboard.enable_fuzzy_search(true);
+        {
+            let pins = pinboard
+                .search_field("11lc0ytube", SearchType::TitleOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+        }
+    }
     #[test]
     fn list_tags() {
         let pinboard = Pinboard::new(include_str!("auth_token.txt"));
