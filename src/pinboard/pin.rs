@@ -70,16 +70,15 @@ impl Pin {
         self.extended.is_some() &&
             if let Some(re) = re {
                 re.captures(self.extended.as_ref().unwrap()).is_some()
-            }
-            else {
+            } else {
                 self.extended.as_ref().unwrap().to_lowercase().contains(q)
             }
     }
 
     pub fn contains_fuzzy(&self, re: &Regex) -> bool {
         re.captures(&self.title).is_some() || re.captures(&self.tags).is_some() ||
-            re.captures(&self.url.as_ref()).is_some() ||
-            (self.extended.is_some() && re.captures(self.extended.as_ref().unwrap()).is_some())
+            (self.extended.is_some() && re.captures(self.extended.as_ref().unwrap()).is_some()) ||
+            re.captures(&self.url.as_ref()).is_some()
     }
 }
 

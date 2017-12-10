@@ -106,6 +106,14 @@ impl<'a> Pinboard<'a> {
     }
 }
 
+pub enum SearchType {
+    TitleOnly,
+    TagOnly,
+    UrlOnly,
+    DescriptionOnly,
+    TagTitleOnly,
+}
+
 // Search functions
 impl<'a> Pinboard<'a> {
     /// Searches all the fields within bookmarks to filter them.
@@ -128,7 +136,7 @@ impl<'a> Pinboard<'a> {
             } else {
                 // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
                 let mut fuzzy_string = q.chars()
-                    .map(|c| format!("{}", c))
+                    .map(|c| c.to_string())
                     .collect::<Vec<String>>()
                     .join(r".*");
                 // Set case-insensitive regex option.
@@ -193,6 +201,83 @@ impl<'a> Pinboard<'a> {
             Err(format!(
                 "tags cache file not present: {}",
                 self.cfg.tags_cache_file.to_str().unwrap_or("")
+            ))
+        }
+    }
+
+    pub fn search_field(&mut self, q: &str, stype: SearchType) -> Result<Option<Vec<&Pin>>, String> {
+        if self.cfg.pins_cache_file.exists() {
+
+            self.get_cached_pins()?;
+
+            if self.cached_pins.is_none() {
+                return Ok(None)
+            }
+
+            let r = if !self.cfg.fuzzy_search {
+                let q = &q.to_lowercase();
+                self.cached_pins.as_ref().unwrap()
+                    .into_iter()
+                    .filter(|item| {
+                        match stype {
+                            SearchType::TitleOnly => {item.title.contains(q)},
+                            SearchType::TagOnly => {item.tags.contains(q)},
+                            SearchType::UrlOnly => {item.url.as_ref().contains(q)},
+                            SearchType::DescriptionOnly => {
+                                item.extended.is_some() &&
+                                    item.extended.as_ref().unwrap().contains(q)
+                            },
+                            SearchType::TagTitleOnly => {
+                                item.title.contains(q) ||
+                                    item.tags.contains(q)
+                            },
+                        }
+                    })
+                    .collect::<Vec<&Pin>>()
+            } else {
+                // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
+                let mut fuzzy_string = q.chars()
+                    .map(|c| c.to_string())
+                    .collect::<Vec<String>>()
+                    .join(r".*");
+                // Set case-insensitive regex option.
+                fuzzy_string.insert_str(0, "(?i)");
+                let re = Regex::new(&fuzzy_string).map_err(|_| {
+                    "Can't search for given query!".to_owned()
+                })?;
+                self.cached_pins.as_ref().unwrap()
+                    .into_iter()
+                    .filter(|item| {
+                        match stype {
+                            SearchType::TitleOnly => {
+                                re.captures(item.title.as_ref()).is_some()
+                            },
+                            SearchType::TagOnly => {
+                                re.captures(item.tags).is_some()
+                            },
+                            SearchType::UrlOnly => {
+                                re.captures(item.url.as_ref()).is_some()
+                            },
+                            SearchType::DescriptionOnly => {
+                                item.extended.is_some() &&
+                                    re.captures(item.extended.as_ref().unwrap()).is_some()
+                            },
+                            SearchType::TagTitleOnly => {
+                                re.captures(item.title.as_ref()).is_some() ||
+                                re.captures(item.url.as_ref()).is_some()
+                            },
+                        }
+                    })
+                    .collect::<Vec<&Pin>>()
+            };
+            match r.len() {
+                0 => Ok(None),
+                _ => Ok(Some(r)),
+            }
+        } else {
+            Err(format!(
+                "pins cache file not present: {}",
+                self.cfg.pins_cache_file.to_str().unwrap_or("")
             ))
         }
     }
