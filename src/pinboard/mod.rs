@@ -13,63 +13,12 @@ use chrono::prelude::*;
 use regex::Regex;
 
 mod api;
+mod config;
 pub mod pin;
 
+use self::config::Config;
+
 pub use self::pin::{Pin, Tag};
-
-#[derive(Debug)]
-struct Config {
-    pub cache_dir: PathBuf,
-    pub tag_only_search: bool,
-    pub fuzzy_search: bool,
-    tags_cache_file: PathBuf,
-    pins_cache_file: PathBuf,
-}
-
-impl Config {
-    pub fn new() -> Result<Self, String> {
-
-        fn get_app_dir() -> PathBuf {
-            let mut dir = env::home_dir().unwrap_or_else(|| PathBuf::from(""));
-            dir.push(".cache");
-            dir.push("rusty-pin");
-            dir
-        }
-
-        let cache_dir = get_app_dir();
-        Config::create_cache_dir(cache_dir).and_then(|cache_dir| {
-            Ok(Config {
-                tag_only_search: false,
-                fuzzy_search: false,
-                tags_cache_file: cache_dir.join("tags.cache"),
-                pins_cache_file: cache_dir.join("pins.cache"),
-                cache_dir,
-            })
-        })
-    }
-
-    fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), String> {
-        self.cache_dir = Config::create_cache_dir(p)?;
-        self.tags_cache_file = self.cache_dir.join("tags.cache");
-        self.pins_cache_file = self.cache_dir.join("pins.cache");
-        Ok(())
-    }
-
-    fn enable_tag_only_search(&mut self, v: bool) {
-        self.tag_only_search = v;
-    }
-
-    fn enable_fuzzy_search(&mut self, v: bool) {
-        self.fuzzy_search = v;
-    }
-
-    fn create_cache_dir<P: AsRef<Path>>(cache_dir: P) -> Result<PathBuf, String> {
-        use std::fs;
-        fs::create_dir_all(&cache_dir)
-            .map_err(|e| e.description().to_owned())
-            .and_then(|_| Ok(cache_dir.as_ref().to_path_buf()))
-    }
-}
 
 #[derive(Debug)]
 pub struct Pinboard {
@@ -98,11 +47,19 @@ impl Pinboard {
     }
 
     pub fn enable_tag_only_search(&mut self, v: bool) {
-        self.cfg.enable_tag_only_search(v);
+        self.cfg.tag_only_search = v;
     }
 
     pub fn enable_fuzzy_search(&mut self, v: bool) {
-        self.cfg.enable_fuzzy_search(v);
+        self.cfg.fuzzy_search = v;
+    }
+
+    pub fn enable_private_new_pin(&mut self, v: bool) {
+        self.cfg.private_new_pin = v;
+    }
+
+    pub fn enable_toread_new_pin(&mut self, v: bool) {
+        self.cfg.toread_new_pin = v;
     }
 
     pub fn add(self, p: Pin) -> Result<(), String> {
@@ -327,8 +284,8 @@ mod tests {
 
     #[test]
     fn test_search_tags() {
-        let mut pinboard = Pinboard::new(include_str!("auth_token.txt").to_string()).unwrap();
-        pinboard.cfg.enable_fuzzy_search(false);
+        let mut pinboard = Pinboard::new(&include_str!("auth_token.txt").to_string()).unwrap();
+        pinboard.enable_fuzzy_search(false);
 
         {
             let tags = pinboard.search_tags("django").unwrap_or_else(|e| panic!(e));
@@ -344,7 +301,7 @@ mod tests {
         }
         {
             // fuzzy search test
-            pinboard.cfg.enable_fuzzy_search(true);
+            pinboard.enable_fuzzy_search(true);
             let tags = pinboard.search_tags("non-existence-tag").unwrap_or_else(
                 |e| panic!(e),
             );
@@ -364,7 +321,7 @@ mod tests {
 
         {
             // fuzzy search test
-            pinboard.cfg.enable_fuzzy_search(true);
+            pinboard.enable_fuzzy_search(true);
             let tags = pinboard.search_tags("Lumia920").unwrap_or_else(
                 |e| panic!(e),
             );
@@ -378,14 +335,14 @@ mod tests {
 
     #[test]
     fn list_tags() {
-        let pinboard = Pinboard::new(include_str!("auth_token.txt").to_string());
+        let pinboard = Pinboard::new(&include_str!("auth_token.txt").to_string());
         println!("{:?}", pinboard);
         assert!(pinboard.unwrap().tag_pairs().is_some());
     }
 
     #[test]
     fn list_bookmarks() {
-        let pinboard = Pinboard::new(include_str!("auth_token.txt").to_string());
+        let pinboard = Pinboard::new(&include_str!("auth_token.txt").to_string());
         assert!(pinboard.unwrap().bookmarks().is_some());
     }
 
@@ -393,7 +350,7 @@ mod tests {
     #[ignore]
     #[test]
     fn test_update_cache() {
-        let pinboard = Pinboard::new(include_str!("auth_token.txt").to_string());
+        let pinboard = Pinboard::new(&include_str!("auth_token.txt").to_string());
         pinboard.unwrap().update_cache().unwrap_or_else(
             |e| panic!(e),
         );

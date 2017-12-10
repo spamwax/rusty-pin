@@ -145,9 +145,9 @@ mod tests {
 
     #[test]
     fn test_search_pins() {
-        let mut pinboard = ::pinboard::Pinboard::new(include_str!("auth_token.txt").to_string()).unwrap();
-        pinboard.cfg.enable_tag_only_search(false);
-        pinboard.cfg.enable_fuzzy_search(false);
+        let mut pinboard = ::pinboard::Pinboard::new(&include_str!("auth_token.txt").to_string()).unwrap();
+        pinboard.enable_tag_only_search(false);
+        pinboard.enable_fuzzy_search(false);
 
         {
             // non-fuzzy search
@@ -157,7 +157,7 @@ mod tests {
 
         {
             // fuzzy search
-            pinboard.cfg.enable_fuzzy_search(true);
+            pinboard.enable_fuzzy_search(true);
             let pins = pinboard.search_items("solvingbootp").unwrap_or_else(
                 |e| panic!(e),
             );
@@ -184,7 +184,7 @@ mod tests {
 
         {
             // fuzzy search
-            pinboard.cfg.enable_fuzzy_search(true);
+            pinboard.enable_fuzzy_search(true);
             let pins = pinboard.search_items("failurecargopackage") // "failure cargo package"
                 .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
