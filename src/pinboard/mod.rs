@@ -531,6 +531,33 @@ mod tests {
     }
 
     #[test]
+    fn search_field_tag() {
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        pinboard.enable_fuzzy_search(false);
+        {
+            let pins = pinboard
+                .search_field("bestpractices", SearchType::TagOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert!(pins.unwrap().len() >= 3);
+        }
+        {
+            let pins = pinboard
+                .search_field("fook", SearchType::TagOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_none());
+        }
+        pinboard.enable_fuzzy_search(true);
+        {
+            let pins = pinboard
+                .search_field("cmm-e", SearchType::TagOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert!(pins.unwrap().len() > 10);
+        }
+    }
+
+    #[test]
     fn search_field_description() {
         let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
         pinboard.enable_fuzzy_search(false);
@@ -558,16 +585,43 @@ mod tests {
     }
 
     #[test]
+    fn search_field_url() {
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        pinboard.enable_fuzzy_search(false);
+        {
+            let pins = pinboard
+                .search_field("dyne", SearchType::UrlOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+        }
+        {
+            let pins = pinboard
+                .search_field("nofreakingway", SearchType::UrlOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_none());
+        }
+        pinboard.enable_fuzzy_search(true);
+        {
+            let pins = pinboard
+                .search_field("sdooommteeee8", SearchType::UrlOnly)
+                .unwrap_or_else(|e| panic!(e));
+            println!("{:?}", pins);
+            assert!(pins.is_some());
+        }
+    }
+
+    #[test]
     fn list_tags() {
         let pinboard = Pinboard::new(include_str!("auth_token.txt"));
         println!("{:?}", pinboard);
-        assert!(pinboard.unwrap().tag_pairs().is_some());
+        assert!(pinboard.unwrap().list_tag_pairs().is_some());
     }
 
     #[test]
     fn list_bookmarks() {
         let pinboard = Pinboard::new(include_str!("auth_token.txt"));
-        assert!(pinboard.unwrap().bookmarks().is_some());
+        assert!(pinboard.unwrap().list_bookmarks().is_some());
     }
 
 
