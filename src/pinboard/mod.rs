@@ -10,6 +10,7 @@ use serde::{Serialize, Deserialize};
 use rmps::{Serializer, Deserializer};
 
 use chrono::prelude::*;
+use url::Url;
 
 use regex::Regex;
 
@@ -94,9 +95,11 @@ impl<'a> Pinboard<'a> {
                 Ok(pins)
             })
             .and_then(|pins: Vec<Pin>| {
+                // Lower case all fields of each pin
                 Ok(pins.into_iter()
                     .map(|pin| {
-                        let mut pb = PinBuilder::new(pin.url, pin.title.to_lowercase())
+                        let url_lowered = Url::parse(pin.url.as_str()).unwrap();
+                        let mut pb = PinBuilder::new(url_lowered, pin.title.to_lowercase())
                             .tags(pin.tags.to_lowercase())
                             .shared(&pin.shared)
                             .toread(&pin.toread);
