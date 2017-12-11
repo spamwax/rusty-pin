@@ -273,7 +273,7 @@ impl<'a> Pinboard<'a> {
                             },
                             SearchType::TagTitleOnly => {
                                 item.title.contains(q) ||
-                                    item.tags.contains(q)
+                                    item.tags.split_whitespace().any(|t| t.contains(q))
                             },
                         }
                     })
@@ -298,7 +298,6 @@ impl<'a> Pinboard<'a> {
                             },
                             SearchType::TagOnly => {
                                 item.tags.split_whitespace().any(|t| re.captures(t).is_some())
-//                                re.captures(&item.tags).is_some()
                             },
                             SearchType::UrlOnly => {
                                 re.captures(item.url.as_ref()).is_some()
@@ -309,7 +308,7 @@ impl<'a> Pinboard<'a> {
                             },
                             SearchType::TagTitleOnly => {
                                 re.captures(&item.title).is_some() ||
-                                re.captures(item.url.as_ref()).is_some()
+                                    item.tags.split_whitespace().any(|t| re.captures(t).is_some())
                             },
                         }
                     })
@@ -607,6 +606,32 @@ mod tests {
                 .search_field("sdooommteeee8", SearchType::UrlOnly)
                 .unwrap_or_else(|e| panic!(e));
             println!("{:?}", pins);
+            assert!(pins.is_some());
+        }
+    }
+
+    #[test]
+    fn search_field_title_tag() {
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        pinboard.enable_fuzzy_search(false);
+        {
+            let pins = pinboard
+                .search_field("trackball", SearchType::TagTitleOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(2, pins.unwrap().len());
+        }
+        {
+            let pins = pinboard
+                .search_field("nofreakingway", SearchType::TagTitleOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_none());
+        }
+        pinboard.enable_fuzzy_search(true);
+        {
+            let pins = pinboard
+                .search_field("mlbddsv", SearchType::TagTitleOnly)
+                .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
         }
     }
