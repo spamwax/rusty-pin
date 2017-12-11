@@ -81,6 +81,7 @@ impl<'a> Pinboard<'a> {
 
     pub fn update_cache(&mut self) -> Result<(), String> {
         //TODO: cache all searchable text in lowercase format to make "pin.contains()" efficient.
+
         // Write all pins
         let mut f = File::create(&self.cfg.pins_cache_file).map_err(|e| {
             e.description().to_owned()
@@ -89,30 +90,32 @@ impl<'a> Pinboard<'a> {
             .all_pins()
             // Sort pins in descending creation time order
             .and_then(|mut pins| {
-                pins.sort_by_key(|pin| pin.time());
+                pins.sort_by(|pin1, pin2| pin1.time().cmp(&pin2.time()).reverse());
                 Ok(pins)
             })
-//            .and_then(|pins: Vec<Pin>| {
-//                Ok(pins.into_iter()
-//                    .map(|pin| {
-//                        PinBuilder::new(pin.url, pin.title.to_lowercase())
-//                            .tags(pin.tags.to_lowercase())
-//                            .shared(&pin.shared)
-//                            .toread(&pin.toread)
-//                            .description(pin.extended
-//                                .map(|s| s.to_lowercase())
-//                                .unwrap_or("".to_string()))
-//                            .into_pin()
-//                    }).collect())
-//            })
+            .and_then(|pins: Vec<Pin>| {
+                Ok(pins.into_iter()
+                    .map(|pin| {
+                        let mut pb = PinBuilder::new(pin.url, pin.title.to_lowercase())
+                            .tags(pin.tags.to_lowercase())
+                            .shared(&pin.shared)
+                            .toread(&pin.toread);
+                        if pin.extended.is_some() {
+                            pb = pb.description(pin.extended.map(|s| s.to_lowercase()).unwrap());
+                        }
+                        pb.into_pin()
+                    }).collect())
+            })
             .and_then(|pins: Vec<Pin>| {
                 let mut buf: Vec<u8> = Vec::new();
-                let _pins = Some(pins);
-                _pins.serialize(&mut Serializer::new(&mut buf))
+                pins.serialize(&mut Serializer::new(&mut buf))
                     .map_err(|e| e.description().to_owned())?;
                 Ok(buf)
             })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
+        // Empty out stored cache state
+        self.cached_pins.take();
+        assert!(self.cached_pins.is_none());
         self.get_cached_pins()?;
 
         // Write all tags
@@ -130,12 +133,14 @@ impl<'a> Pinboard<'a> {
             })
             .and_then(|tags_tuple| {
                 let mut buf: Vec<u8> = Vec::new();
-                let _tags = Some(tags_tuple);
-                _tags.serialize(&mut Serializer::new(&mut buf))
+                tags_tuple.serialize(&mut Serializer::new(&mut buf))
                     .map_err(|e| e.description().to_owned())?;
                 Ok(buf)
             })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
+        // Empty out current cached state
+        self.cached_tags.take();
+        assert!(self.cached_tags.is_none());
         self.get_cached_tags()
     }
 }
@@ -518,6 +523,34 @@ mod tests {
             assert_eq!(1, pins.unwrap().len());
         }
     }
+
+    #[test]
+    fn search_field_description() {
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        pinboard.enable_fuzzy_search(false);
+        {
+            let pins = pinboard
+                .search_field("nmcli dev wifi connect ESSID_NAME", SearchType::DescriptionOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+        }
+        {
+            let pins = pinboard
+                .search_field("sonlz4 firefox stores", SearchType::DescriptionOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+        }
+        pinboard.enable_fuzzy_search(true);
+        {
+            let pins = pinboard
+                .search_field("hooooks", SearchType::DescriptionOnly)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+        }
+    }
+
     #[test]
     fn list_tags() {
         let pinboard = Pinboard::new(include_str!("auth_token.txt"));
@@ -562,11 +595,13 @@ mod tests {
         );
 
         assert!(pinboard.cached_pins.is_some());
-        assert_eq!(pins[0], pinboard.cached_pins.as_ref().unwrap()[0]);
+        println!("{:?}\n{:?}", pins[20], pinboard.cached_pins.as_ref().unwrap()[20]);
+        assert_eq!(pins[20], pinboard.cached_pins.as_ref().unwrap()[20]);
         assert_eq!(pins.len(), pinboard.cached_pins.unwrap().len());
 
         assert!(pinboard.cached_tags.is_some());
-        assert_eq!(tags[0], pinboard.cached_tags.as_ref().unwrap()[0]);
+        println!("{:?}\n{:?}", tags[20], pinboard.cached_tags.as_ref().unwrap()[20]);
+        assert_eq!(tags[20], pinboard.cached_tags.as_ref().unwrap()[20]);
         assert_eq!(tags.len(), pinboard.cached_tags.unwrap().len());
     }
 }
