@@ -391,6 +391,7 @@ impl<'a> Pinboard<'a> {
 mod tests {
     // TODO: Add tests for case insensitivity searches of tags/pins
     use super::*;
+    use test::Bencher;
 
     #[test]
     fn test_config() {
@@ -590,6 +591,28 @@ mod tests {
             let pins = pinboard.search(&queries, &fields).unwrap_or_else(|e| panic!(e));
             assert_eq!(2, pins.as_ref().unwrap().len());
         }
+    }
+
+    #[bench]
+    fn bench_search_1(b: &mut Bencher) {
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        pinboard.enable_fuzzy_search(false);
+        let queries = ["zfs", "fr"];
+        let fields = vec![];
+        b.iter(|| {
+            let pins = pinboard.search(&queries, fields.as_slice()).unwrap_or_else(|e| panic!(e));
+        });
+    }
+
+    #[bench]
+    fn bench_search_2(b: &mut Bencher) {
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        pinboard.enable_fuzzy_search(true);
+        let queries = ["zfs", "fr"];
+        let fields = vec![];
+        b.iter(|| {
+            let pins = pinboard.search(&queries, fields.as_slice()).unwrap_or_else(|e| panic!(e));
+        });
     }
 
     #[ignore]
