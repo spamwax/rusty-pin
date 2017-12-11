@@ -591,6 +591,17 @@ mod tests {
             let pins = pinboard.search(&queries, &fields).unwrap_or_else(|e| panic!(e));
             assert_eq!(2, pins.as_ref().unwrap().len());
         }
+
+        // empty search query
+        {
+            pinboard.enable_fuzzy_search(false);
+            let queries = [""];
+            let fields = vec![SearchType::TitleOnly, SearchType::UrlOnly];
+            let pins = pinboard.search(&queries, &fields).unwrap_or_else(
+                |e| panic!(e),
+            );
+            assert!(pins.is_some());
+        }
     }
 
     #[bench]
