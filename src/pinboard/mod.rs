@@ -247,13 +247,23 @@ impl<'a> Pinboard<'a> {
         }
     }
 
-    pub fn search(&self, q: &[&str], fields: Vec<SearchType>) -> Result<Option<Vec<&Pin>>, String> {
+    pub fn search(&self, q: &[&str], fields: &[SearchType]) -> Result<Option<Vec<&Pin>>, String> {
         self.cached_pins.as_ref().ok_or(String::from("Empty cached pins! Run self.update_cache()!"))?;
+
+        // When no field is specified, search everywhere
+        let all_fields = vec![SearchType::TitleOnly, SearchType::TagOnly, SearchType::UrlOnly, SearchType::DescriptionOnly];
+        let search_fields;
+        if fields.len() == 0 {
+            search_fields = all_fields.as_slice();
+        } else {
+            search_fields = fields;
+        }
+
         let results = if !self.cfg.fuzzy_search {
             self.cached_pins.as_ref().unwrap().into_iter().filter(|pin: &&Pin| {
                 q.iter().all(|s| {
                     let query = &s.to_lowercase();
-                    fields.iter().any(|stype| {
+                    search_fields.iter().any(|stype| {
                         match *stype {
                             SearchType::TitleOnly => { pin.title.contains(query) },
                             SearchType::TagOnly => {
@@ -288,7 +298,7 @@ impl<'a> Pinboard<'a> {
             }).collect::<Vec<Regex>>();
             self.cached_pins.as_ref().unwrap().into_iter().filter(|pin: &&Pin| {
                 regex_queries.iter().all(|re| {
-                    fields.iter().any(|stype| {
+                    search_fields.iter().any(|stype| {
                         match *stype {
                             SearchType::TitleOnly => {
                                 re.captures(&pin.title).is_some()
@@ -516,16 +526,15 @@ mod tests {
             pinboard.enable_fuzzy_search(false);
             let queries = ["rust", "python"];
             let fields = vec![SearchType::TitleOnly, SearchType::TagOnly, SearchType::DescriptionOnly];
-            let pins = pinboard.search(&queries, fields).unwrap_or_else(|e| panic!(e));
+            let pins = pinboard.search(&queries, &fields).unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
-            println!("--> {}", pins.as_ref().unwrap().len());
         }
 
         // Find pins that have all keywords only in Title
         {
             let fields = vec![SearchType::TitleOnly];
             let queries = ["rust", "python"];
-            let pins = pinboard.search(&queries, fields).unwrap_or_else(|e| panic!(e));
+            let pins = pinboard.search(&queries, &fields).unwrap_or_else(|e| panic!(e));
             assert!(pins.is_none());
         }
 
@@ -534,7 +543,7 @@ mod tests {
         {
             let queries = ["bashy"];
             let fields = vec![SearchType::UrlOnly];
-            let pins = pinboard.search(&queries, fields).unwrap_or_else(|e| panic!(e));
+            let pins = pinboard.search(&queries, &fields).unwrap_or_else(|e| panic!(e));
             assert_eq!(2, pins.as_ref().unwrap().len());
         }
 
@@ -543,7 +552,7 @@ mod tests {
             pinboard.enable_fuzzy_search(true);
             let queries = ["rust", "python", "open", "handoff", "sony", "writing", "elseif", "osx"];
             let fields = vec![SearchType::TitleOnly, SearchType::TagOnly, SearchType::DescriptionOnly, SearchType::UrlOnly];
-            let pins = pinboard.search(&queries, fields).unwrap_or_else(|e| panic!(e));
+            let pins = pinboard.search(&queries, &fields).unwrap_or_else(|e| panic!(e));
             assert_eq!(9, pins.as_ref().unwrap().len());
         }
 
@@ -552,7 +561,7 @@ mod tests {
             pinboard.enable_fuzzy_search(true);
             let queries = ["世"];
             let fields = vec![SearchType::TitleOnly, SearchType::TagOnly, SearchType::DescriptionOnly, SearchType::UrlOnly];
-            let pins = pinboard.search(&queries, fields).unwrap_or_else(|e| panic!(e));
+            let pins = pinboard.search(&queries, &fields).unwrap_or_else(|e| panic!(e));
             assert_eq!(1, pins.as_ref().unwrap().len());
         }
         // Tag-only search
@@ -560,7 +569,7 @@ mod tests {
             pinboard.enable_fuzzy_search(false);
             let queries = ["bestpractices"];
             let fields = vec![SearchType::TagOnly];
-            let pins = pinboard.search(&queries, fields).unwrap_or_else(|e| panic!(e));
+            let pins = pinboard.search(&queries, &fields).unwrap_or_else(|e| panic!(e));
             assert_eq!(3, pins.as_ref().unwrap().len());
         }
 
@@ -569,7 +578,7 @@ mod tests {
             pinboard.enable_fuzzy_search(true);
             let queries = ["bestpractices"];
             let fields = vec![SearchType::TagOnly];
-            let pins = pinboard.search(&queries, fields).unwrap_or_else(|e| panic!(e));
+            let pins = pinboard.search(&queries, &fields).unwrap_or_else(|e| panic!(e));
             assert_eq!(4, pins.as_ref().unwrap().len());
         }
 
@@ -578,7 +587,7 @@ mod tests {
             pinboard.enable_fuzzy_search(false);
             let queries = ["000", "intel"];
             let fields = vec![SearchType::TitleOnly, SearchType::UrlOnly];
-            let pins = pinboard.search(&queries, fields).unwrap_or_else(|e| panic!(e));
+            let pins = pinboard.search(&queries, &fields).unwrap_or_else(|e| panic!(e));
             assert_eq!(2, pins.as_ref().unwrap().len());
         }
     }
