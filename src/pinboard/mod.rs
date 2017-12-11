@@ -260,7 +260,9 @@ impl<'a> Pinboard<'a> {
                     .filter(|item| {
                         match stype {
                             SearchType::TitleOnly => {item.title.contains(q)},
-                            SearchType::TagOnly => {item.tags.contains(q)},
+                            SearchType::TagOnly => {
+                                item.tags.split_whitespace().any(|t| t.contains(q))
+                                },
                             SearchType::UrlOnly => {item.url.as_ref().contains(q)},
                             SearchType::DescriptionOnly => {
                                 item.extended.is_some() &&
@@ -292,7 +294,8 @@ impl<'a> Pinboard<'a> {
                                 re.captures(&item.title).is_some()
                             },
                             SearchType::TagOnly => {
-                                re.captures(&item.tags).is_some()
+                                item.tags.split_whitespace().any(|t| re.captures(t).is_some())
+//                                re.captures(&item.tags).is_some()
                             },
                             SearchType::UrlOnly => {
                                 re.captures(item.url.as_ref()).is_some()
