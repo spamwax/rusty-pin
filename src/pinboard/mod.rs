@@ -735,11 +735,11 @@ mod tests {
         assert!(pinboard.cached_pins.is_some());
         println!("{:?}\n{:?}", pins[20], pinboard.cached_pins.as_ref().unwrap()[20]);
         assert_eq!(pins[20], pinboard.cached_pins.as_ref().unwrap()[20]);
-        assert_eq!(pins.len(), pinboard.cached_pins.unwrap().len());
+        assert_eq!(pins.len(), pinboard.cached_pins.as_ref().unwrap().len());
 
         assert!(pinboard.cached_tags.is_some());
         println!("{:?}\n{:?}", tags[20], pinboard.cached_tags.as_ref().unwrap()[20]);
         assert_eq!(tags[20], pinboard.cached_tags.as_ref().unwrap()[20]);
-        assert_eq!(tags.len(), pinboard.cached_tags.unwrap().len());
+        assert_eq!(tags.len(), pinboard.cached_tags.as_ref().unwrap().len());
     }
 }
