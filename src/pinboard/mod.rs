@@ -700,7 +700,7 @@ mod tests {
         let queries = ["zfs", "fr"];
         let fields = vec![];
         b.iter(|| {
-            let pins = pinboard
+            let _pins = pinboard
                 .search(&queries, fields.as_slice())
                 .unwrap_or_else(|e| panic!(e));
         });
@@ -713,7 +713,7 @@ mod tests {
         let queries = ["zfs", "fr"];
         let fields = vec![];
         b.iter(|| {
-            let pins = pinboard
+            let _pins = pinboard
                 .search(&queries, fields.as_slice())
                 .unwrap_or_else(|e| panic!(e));
         });
@@ -731,6 +731,8 @@ mod tests {
         assert_eq!(fresh_pins.len(), pinboard.cached_pins.as_ref().unwrap().len());
 
 
+        // Pick 3 pins and compare them between cached dataset and freshly fetched from Pinboard's
+        // API
         for idx in [0u32, 10u32, 100u32].iter() {
             println!(" Checking pin[{}]...", idx);
             assert_eq!(
