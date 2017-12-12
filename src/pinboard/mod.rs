@@ -107,7 +107,10 @@ impl<'a> Pinboard<'a> {
                         if pin.extended.is_some() {
                             pb = pb.description(pin.extended.map(|s| s.to_lowercase()).unwrap());
                         }
-                        pb.into_pin()
+                        let mut newpin = pb.into_pin();
+                        newpin.time = pin.time;
+                        newpin.tags = pin.tags.split_whitespace().collect();
+                        newpin
                     }).collect())
             })
             .and_then(|pins: Vec<Pin>| {
