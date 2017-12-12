@@ -85,66 +85,78 @@ impl<'a> Pinboard<'a> {
         //TODO: cache all searchable text in lowercase format to make "pin.contains()" efficient.
 
         // Write all pins
+        //
         let mut f = File::create(&self.cfg.pins_cache_file).map_err(|e| {
             e.description().to_owned()
         })?;
+
+        // Sort pins in descending creation time order
         self.api
             .all_pins()
-            // Sort pins in descending creation time order
             .and_then(|mut pins| {
                 pins.sort_by(|pin1, pin2| pin1.time().cmp(&pin2.time()).reverse());
                 Ok(pins)
             })
             .and_then(|pins: Vec<Pin>| {
                 // Lower case all fields of each pin
-                Ok(pins.into_iter()
-                    .map(|pin| {
-                        let url_lowered = Url::parse(pin.url.as_str()).unwrap();
-                        let mut pb = PinBuilder::new(url_lowered, pin.title.to_lowercase())
-                            .tags(pin.tags.to_lowercase())
-                            .shared(&pin.shared)
-                            .toread(&pin.toread);
-                        if pin.extended.is_some() {
-                            pb = pb.description(pin.extended.map(|s| s.to_lowercase()).unwrap());
-                        }
-                        let mut newpin = pb.into_pin();
-                        newpin.time = pin.time;
-                        newpin.tags = pin.tags.split_whitespace().collect();
-                        newpin
-                    }).collect())
+                Ok(
+                    pins.into_iter()
+                        .map(|pin| {
+                            let url_lowered = Url::parse(pin.url.as_str()).unwrap();
+                            let mut pb = PinBuilder::new(url_lowered, pin.title.to_lowercase())
+                                .tags(pin.tags.to_lowercase())
+                                .shared(&pin.shared)
+                                .toread(&pin.toread);
+                            if pin.extended.is_some() {
+                                pb =
+                                    pb.description(pin.extended.map(|s| s.to_lowercase()).unwrap());
+                            }
+                            let mut newpin = pb.into_pin();
+                            newpin.time = pin.time;
+                            newpin.tags = pin.tags.split_whitespace().collect();
+                            newpin
+                        })
+                        .collect(),
+                )
             })
             .and_then(|pins: Vec<Pin>| {
                 let mut buf: Vec<u8> = Vec::new();
-                pins.serialize(&mut Serializer::new(&mut buf))
-                    .map_err(|e| e.description().to_owned())?;
+                pins.serialize(&mut Serializer::new(&mut buf)).map_err(
+                    |e| {
+                        e.description().to_owned()
+                    },
+                )?;
                 Ok(buf)
             })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
+
         // Empty out stored cache state
         self.cached_pins.take();
         assert!(self.cached_pins.is_none());
         self.get_cached_pins()?;
 
         // Write all tags
+        //
         let mut f = File::create(&self.cfg.tags_cache_file).map_err(|e| {
             e.description().to_owned()
         })?;
+
+        // Sort tags by frequency before writing
         self.api
             .tags_frequency()
-            // Sort tags by frequency before writing
             .and_then(|mut tags| {
-                tags.sort_by(|t1, t2| {
-                    t1.1.cmp(&t2.1).reverse()
-                });
+                tags.sort_by(|t1, t2| t1.1.cmp(&t2.1).reverse());
                 Ok(tags)
             })
             .and_then(|tags_tuple| {
                 let mut buf: Vec<u8> = Vec::new();
-                tags_tuple.serialize(&mut Serializer::new(&mut buf))
+                tags_tuple
+                    .serialize(&mut Serializer::new(&mut buf))
                     .map_err(|e| e.description().to_owned())?;
                 Ok(buf)
             })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
+
         // Empty out current cached state
         self.cached_tags.take();
         assert!(self.cached_tags.is_none());
@@ -705,6 +717,60 @@ mod tests {
         });
     }
 
+    #[test]
+    fn serde_update_cache() {
+        let pinboard = Pinboard::new(include_str!("auth_token.txt"));
+        let pinboard = pinboard.unwrap();
+
+        // Get all pins directly from Pinboard.in (no caching)
+        let fresh_pins = pinboard.api.all_pins().unwrap();
+
+        let cached_pins = pinboard.cached_pins.as_ref().unwrap();
+        assert_eq!(fresh_pins.len(), pinboard.cached_pins.as_ref().unwrap().len());
+
+
+        for idx in [0u32, 10u32, 100u32].iter() {
+            println!(" Checking pin[{}]...", idx);
+            assert_eq!(
+                fresh_pins[*idx as usize].title.to_lowercase(),
+                cached_pins[*idx as usize].title.to_lowercase()
+            );
+            assert_eq!(fresh_pins[*idx as usize].url, cached_pins[*idx as usize].url);
+            assert_eq!(
+                fresh_pins[*idx as usize].tags.to_lowercase(),
+                cached_pins[*idx as usize].tags.to_lowercase()
+            );
+            assert_eq!(
+                fresh_pins[*idx as usize].shared.to_lowercase(),
+                cached_pins[*idx as usize].shared.to_lowercase()
+            );
+            assert_eq!(
+                fresh_pins[*idx as usize].toread.to_lowercase(),
+                cached_pins[*idx as usize].toread.to_lowercase()
+            );
+            assert_eq!(fresh_pins[*idx as usize].time, cached_pins[*idx as usize].time);
+
+            if fresh_pins[*idx as usize].extended.is_some() {
+                assert!(cached_pins[*idx as usize].extended.is_some());
+                assert_eq!(
+                    fresh_pins[*idx as usize]
+                        .extended
+                        .as_ref()
+                        .unwrap()
+                        .to_lowercase(),
+                    cached_pins[*idx as usize]
+                        .extended
+                        .as_ref()
+                        .unwrap()
+                        .to_lowercase()
+                );
+            } else {
+                assert!(cached_pins[*idx as usize].extended.is_none());
+            }
+        }
+    }
+
+
     #[ignore]
     #[test]
     fn test_update_cache() {
@@ -722,6 +788,7 @@ mod tests {
         thread::sleep(five_secs);
         println!("Running first update_cache");
 
+        // Pinboard::new() will call update_cache since we remove the cache folder.
         let pinboard = Pinboard::new(include_str!("auth_token.txt"));
         let mut pinboard = pinboard.unwrap();
         let pins = pinboard.cached_pins.take().unwrap();
