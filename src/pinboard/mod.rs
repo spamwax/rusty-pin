@@ -71,7 +71,7 @@ impl<'a> Pinboard<'a> {
         self.cfg.toread_new_pin = v;
     }
 
-    pub fn add(self, p: Pin) -> Result<(), String> {
+    pub fn add_pin(self, p: Pin) -> Result<(), String> {
         self.api.add_url(p)
     }
 
@@ -274,9 +274,9 @@ impl<'a> Pinboard<'a> {
     }
 
     pub fn search(&self, q: &[&str], fields: &[SearchType]) -> Result<Option<Vec<&Pin>>, String> {
-        self.cached_pins.as_ref().ok_or(String::from(
-            "Empty cached pins! Run self.update_cache()!",
-        ))?;
+        self.cached_pins.as_ref().ok_or_else(|| {
+            String::from("Empty cached pins! Run self.update_cache()!")
+        })?;
 
         // When no field is specified, search everywhere
         let all_fields = vec![
@@ -285,12 +285,11 @@ impl<'a> Pinboard<'a> {
             SearchType::UrlOnly,
             SearchType::DescriptionOnly,
         ];
-        let search_fields;
-        if fields.len() == 0 {
-            search_fields = all_fields.as_slice();
+        let search_fields = if fields.is_empty() {
+            all_fields.as_slice()
         } else {
-            search_fields = fields;
-        }
+            fields
+        };
 
         let results = if !self.cfg.fuzzy_search {
             self.cached_pins

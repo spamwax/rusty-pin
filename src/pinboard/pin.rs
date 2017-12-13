@@ -60,7 +60,7 @@ impl Pin {
 
     pub fn url_contains(&self, q: &str, re: Option<&Regex>) -> bool {
         if let Some(re) = re {
-            re.captures(&self.url.as_str()).is_some()
+            re.captures(self.url.as_str()).is_some()
         } else {
             self.url.as_str().to_lowercase().contains(q)
         }
@@ -78,7 +78,7 @@ impl Pin {
     pub fn contains_fuzzy(&self, re: &Regex) -> bool {
         re.captures(&self.title).is_some() || re.captures(&self.tags).is_some() ||
             (self.extended.is_some() && re.captures(self.extended.as_ref().unwrap()).is_some()) ||
-            re.captures(&self.url.as_ref()).is_some()
+            re.captures(self.url.as_ref()).is_some()
     }
 }
 
