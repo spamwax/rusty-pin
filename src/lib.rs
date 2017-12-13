@@ -23,6 +23,8 @@ pub mod pinboard;
 // TODO: Use buffer reading/writing when dealing with cache files.
 // TODO: Use 'failure' crate for better error handling.
 // TODO: Use threads to improve search speed?
+// TODO: Use CachedPin when saving cache files so we can use tag_list
+// TODO: Update search functions to take advantage of ^
 #[cfg(test)]
 mod tests {
     mod rmp_serde {

@@ -27,7 +27,10 @@ pub struct Pin {
     meta: Option<String>,
     #[serde(skip)]
     hash: Option<String>,
-    #[serde(skip)]
+}
+
+pub struct CachedPin {
+    pub pin: Pin,
     pub tag_list: Vec<String>,
 }
 
@@ -99,7 +102,6 @@ impl PinBuilder {
             extended: None,
             meta: None,
             hash: None,
-            tag_list: vec![],
         };
         PinBuilder { pin }
     }
@@ -107,7 +109,6 @@ impl PinBuilder {
 
 impl PinBuilder {
     pub fn tags(mut self, t: String) -> Self {
-        self.pin.tag_list = t.split_whitespace().map(|s| s.into()).collect();
         self.pin.tags = t;
         self
     }

@@ -113,9 +113,8 @@ impl<'a> Pinboard<'a> {
                             }
                             let mut newpin = pb.into_pin();
                             newpin.time = pin.time;
-                            newpin.tag_list =
-                                pin.tags.split_whitespace().map(|s| s.to_string()).collect();
-
+                            // newpin.tag_list =
+                            //     pin.tags.split_whitespace().map(|s| s.to_string()).collect();
                             newpin
                         })
                         .collect(),
