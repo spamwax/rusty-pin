@@ -29,6 +29,7 @@ pub struct Pin {
     hash: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct CachedPin {
     pub pin: Pin,
     pub tag_list: Vec<String>,

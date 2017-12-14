@@ -36,7 +36,7 @@ mod tests {
         use serde::{Deserialize, Serialize};
         use serde_json;
 
-        use pinboard::pin::{Pin, PinBuilder};
+        use pinboard::pin::{Pin, PinBuilder, CachedPin};
 
         use test::Bencher;
 
@@ -58,6 +58,45 @@ mod tests {
 
             let mut fp = File::create("/tmp/test_rmp_serde.bin").unwrap();
             fp.write_all(buf.as_slice()).unwrap();
+        }
+
+        #[test]
+        fn serde_a_cached_pin() {
+            let mut pin = PinBuilder::new(
+                "https://danielkeep.github.io/tlborm/book/README.html",
+                "The Little Book of Rust Macros".to_string(),
+            ).tags("Rust macros".to_string())
+                .toread("yes")
+                .shared("no")
+                .description("WoW!!!".to_string())
+                .into_pin();
+            pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
+
+            let cached_pin = CachedPin {
+                pin: pin,
+                tag_list: vec!["Rust".into(), "macros".into()],
+            };
+
+            let mut buf: Vec<u8> = Vec::new();
+
+            cached_pin
+                .serialize(&mut Serializer::new(&mut buf))
+                .unwrap();
+            assert_eq!(147, buf.len());
+
+            let mut de = Deserializer::from_slice(&buf);
+            let new_cached: CachedPin = Deserialize::deserialize(&mut de).unwrap();
+
+            assert_eq!("The Little Book of Rust Macros".to_string(), new_cached.pin.title);
+            assert_eq!(
+                "https://danielkeep.github.io/tlborm/book/README.html",
+                new_cached.pin.url.as_ref()
+            );
+            assert_eq!("yes".to_string(), new_cached.pin.toread);
+            assert_eq!("no".to_string(), new_cached.pin.shared);
+            assert_eq!("WoW!!!".to_string(), new_cached.pin.extended.unwrap());
+            assert_eq!(Utc.ymd(2017, 5, 22).and_hms(17, 46, 54), new_cached.pin.time);
+            assert_eq!(vec!["Rust".to_string(), "macros".to_string()], new_cached.tag_list);
         }
 
         #[test]
