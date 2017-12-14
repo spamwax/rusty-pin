@@ -138,6 +138,10 @@ impl<'a> Pinboard<'a> {
             })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
 
+        if cfg!(any(target_os = "macos", target_os = "linux", target_os = "freebsd")) {
+            self.fix_cache_file_perm(&self.cfg.pins_cache_file);
+        }
+
         // Empty out stored cache state
         self.cached_pins.take();
         assert!(self.cached_pins.is_none());
@@ -165,10 +169,24 @@ impl<'a> Pinboard<'a> {
             })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
 
+        if cfg!(any(target_os = "macos", target_os = "linux", target_os = "freebsd")) {
+            self.fix_cache_file_perm(&self.cfg.tags_cache_file);
+        }
+
         // Empty out current cached state
         self.cached_tags.take();
         assert!(self.cached_tags.is_none());
         self.get_cached_tags()
+    }
+
+    #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
+    fn fix_cache_file_perm(&self, p: &PathBuf) {
+        // TODO: don't just unwrap, return a proper error.
+        use std::fs::Permissions;
+        use std::os::unix::fs::PermissionsExt;
+        use std::fs::set_permissions;
+        let permissions = Permissions::from_mode(0o600);
+        set_permissions(p, permissions).map_err(|e| e.to_string()).unwrap();
     }
 }
 
