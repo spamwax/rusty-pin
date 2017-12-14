@@ -134,6 +134,7 @@ impl<'a> Pinboard<'a> {
                         e.description().to_owned()
                     },
                 )?;
+                self.cached_pins = Some(pins);
                 Ok(buf)
             })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
@@ -142,10 +143,7 @@ impl<'a> Pinboard<'a> {
             self.fix_cache_file_perm(&self.cfg.pins_cache_file);
         }
 
-        // Empty out stored cache state
-        self.cached_pins.take();
-        assert!(self.cached_pins.is_none());
-        self.get_cached_pins()?;
+        assert!(self.cached_pins.is_some());
 
         // Write all tags
         //
@@ -165,6 +163,7 @@ impl<'a> Pinboard<'a> {
                 tags_tuple
                     .serialize(&mut Serializer::new(&mut buf))
                     .map_err(|e| e.description().to_owned())?;
+                self.cached_tags = Some(tags_tuple);
                 Ok(buf)
             })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
@@ -173,10 +172,8 @@ impl<'a> Pinboard<'a> {
             self.fix_cache_file_perm(&self.cfg.tags_cache_file);
         }
 
-        // Empty out current cached state
-        self.cached_tags.take();
-        assert!(self.cached_tags.is_none());
-        self.get_cached_tags()
+        assert!(self.cached_tags.is_some());
+        Ok(())
     }
 
     #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
