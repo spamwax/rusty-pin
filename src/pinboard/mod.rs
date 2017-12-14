@@ -20,13 +20,13 @@ pub mod pin;
 
 use self::config::Config;
 
-pub use self::pin::{Pin, Tag, PinBuilder};
+pub use self::pin::{Pin, Tag, PinBuilder, CachedPin};
 
 #[derive(Debug)]
 pub struct Pinboard<'a> {
     api: api::Api<'a>,
     cfg: Config,
-    cached_pins: Option<Vec<Pin>>,
+    cached_pins: Option<Vec<CachedPin>>,
     cached_tags: Option<Vec<Tag>>,
 }
 
@@ -113,14 +113,21 @@ impl<'a> Pinboard<'a> {
                             }
                             let mut newpin = pb.into_pin();
                             newpin.time = pin.time;
+                            let cached_pin = CachedPin {
+                                pin: newpin,
+                                tag_list: pin.tags
+                                    .split_whitespace()
+                                    .map(|s| s.to_string())
+                                    .collect(),
+                            };
                             // newpin.tag_list =
                             //     pin.tags.split_whitespace().map(|s| s.to_string()).collect();
-                            newpin
+                            cached_pin
                         })
                         .collect(),
                 )
             })
-            .and_then(|pins: Vec<Pin>| {
+            .and_then(|pins: Vec<CachedPin>| {
                 let mut buf: Vec<u8> = Vec::new();
                 pins.serialize(&mut Serializer::new(&mut buf)).map_err(
                     |e| {
@@ -192,7 +199,8 @@ impl<'a> Pinboard<'a> {
                     .as_ref()
                     .unwrap()
                     .into_iter()
-                    .filter(|item| item.contains(q))
+                    .filter(|item| item.pin.contains(q))
+                    .map(|item| &item.pin)
                     .collect::<Vec<&Pin>>()
             } else {
                 // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
@@ -209,7 +217,8 @@ impl<'a> Pinboard<'a> {
                     .as_ref()
                     .unwrap()
                     .into_iter()
-                    .filter(|item| item.contains_fuzzy(&re))
+                    .filter(|item| item.pin.contains_fuzzy(&re))
+                    .map(|item| &item.pin)
                     .collect::<Vec<&Pin>>()
             };
             match r.len() {
@@ -295,26 +304,27 @@ impl<'a> Pinboard<'a> {
                 .as_ref()
                 .unwrap()
                 .into_iter()
-                .filter(|pin: &&Pin| {
+                .filter(|cached_pin: &&CachedPin| {
                     q.iter().all(|s| {
                         let query = &s.to_lowercase();
-                        search_fields.iter().any(|stype| match *stype {
-                            SearchType::TitleOnly => pin.title.contains(query),
+                        search_fields.iter().any(|search_type| match *search_type {
+                            SearchType::TitleOnly => cached_pin.pin.title.contains(query),
                             SearchType::TagOnly => {
-                                pin.tags.split_whitespace().any(|t| t.contains(query))
+                                cached_pin.tag_list.contains(query)
                             }
-                            SearchType::UrlOnly => pin.url.as_ref().contains(query),
+                            SearchType::UrlOnly => cached_pin.pin.url.as_ref().contains(query),
                             SearchType::DescriptionOnly => {
-                                pin.extended.is_some() &&
-                                    pin.extended.as_ref().unwrap().contains(query)
+                                cached_pin.pin.extended.is_some() &&
+                                    cached_pin.pin.extended.as_ref().unwrap().contains(query)
                             }
                             SearchType::TagTitleOnly => {
-                                pin.title.contains(query) ||
-                                    pin.tags.split_whitespace().any(|t| t.contains(query))
+                                cached_pin.pin.title.contains(query) ||
+                                    cached_pin.tag_list.contains(query)
                             }
                         })
                     })
                 })
+                .map(|p| &p.pin)
                 .collect::<Vec<&Pin>>()
         } else {
             let regex_queries = q.iter()
@@ -337,29 +347,26 @@ impl<'a> Pinboard<'a> {
                 .as_ref()
                 .unwrap()
                 .into_iter()
-                .filter(|pin: &&Pin| {
+                .filter(|cached_pin: &&CachedPin| {
                     regex_queries.iter().all(|re| {
-                        search_fields.iter().any(|stype| match *stype {
-                            SearchType::TitleOnly => re.captures(&pin.title).is_some(),
+                        search_fields.iter().any(|search_type| match *search_type {
+                            SearchType::TitleOnly => re.captures(&cached_pin.pin.title).is_some(),
                             SearchType::TagOnly => {
-                                pin.tags.split_whitespace().any(
-                                    |t| re.captures(t).is_some(),
-                                )
+                                cached_pin.tag_list.iter().any(|t| re.captures(t).is_some())
                             }
-                            SearchType::UrlOnly => re.captures(pin.url.as_ref()).is_some(),
+                            SearchType::UrlOnly => re.captures(cached_pin.pin.url.as_ref()).is_some(),
                             SearchType::DescriptionOnly => {
-                                pin.extended.is_some() &&
-                                    re.captures(pin.extended.as_ref().unwrap()).is_some()
+                                cached_pin.pin.extended.is_some() &&
+                                    re.captures(cached_pin.pin.extended.as_ref().unwrap()).is_some()
                             }
                             SearchType::TagTitleOnly => {
-                                re.captures(&pin.title).is_some() ||
-                                    pin.tags.split_whitespace().any(
-                                        |t| re.captures(t).is_some(),
-                                    )
+                                re.captures(&cached_pin.pin.title).is_some() ||
+                                    cached_pin.tag_list.iter().any(|t| re.captures(t).is_some())
                             }
                         })
                     })
                 })
+                .map(|p| &p.pin)
                 .collect::<Vec<&Pin>>()
         };
 
@@ -370,13 +377,15 @@ impl<'a> Pinboard<'a> {
     }
 
     /// Returns list of all Tags (tag, frequency)
-    pub fn list_tag_pairs(&mut self) -> &Option<Vec<Tag>> {
+    pub fn list_tag_pairs(&self) -> &Option<Vec<Tag>> {
         &self.cached_tags
     }
 
     /// Returns list of all bookmarks
-    pub fn list_bookmarks(&mut self) -> &Option<Vec<Pin>> {
-        &self.cached_pins
+    pub fn list_bookmarks(&self) -> Option<Vec<&Pin>> {
+        self.cached_pins.as_ref().map(|v| {
+            v.iter().map(|p| &p.pin).collect()
+        })
     }
 }
 
@@ -460,7 +469,7 @@ mod tests {
         let mut c = Config::new().expect("Can't initiate 'Config'.");
 
         h.push(".cache");
-        h.push("rustypin");
+        h.push("rusty-pin");
         c.set_cache_dir(&h).expect("Can't change cache path.");
 
         h.push("tags.cache");
@@ -725,7 +734,7 @@ mod tests {
         // Get all pins directly from Pinboard.in (no caching)
         let fresh_pins = pinboard.api.all_pins().unwrap();
 
-        let cached_pins = pinboard.cached_pins.as_ref().unwrap();
+        let cached_pins = pinboard.list_bookmarks().unwrap();
         assert_eq!(fresh_pins.len(), pinboard.cached_pins.as_ref().unwrap().len());
 
 
@@ -802,7 +811,7 @@ mod tests {
         pinboard.update_cache().unwrap_or_else(|e| panic!(e));
 
         assert!(pinboard.cached_pins.is_some());
-        println!("{:?}\n{:?}", pins[20], pinboard.cached_pins.as_ref().unwrap()[20]);
+        println!("{:?}\n\n{:?}\n\n", pins[20], pinboard.cached_pins.as_ref().unwrap()[20]);
         assert_eq!(pins[20], pinboard.cached_pins.as_ref().unwrap()[20]);
         assert_eq!(pins.len(), pinboard.cached_pins.as_ref().unwrap().len());
 
