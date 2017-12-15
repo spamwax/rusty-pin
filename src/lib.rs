@@ -18,6 +18,8 @@ extern crate reqwest;
 
 pub mod pinboard;
 
+pub use pinboard::{Pinboard, Pin, PinBuilder, Tag};
+
 // TODO: Honor settings for search
 // TODO: Use Cow
 // TODO: Use buffer reading/writing when dealing with cache files.
