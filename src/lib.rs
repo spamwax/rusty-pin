@@ -33,6 +33,7 @@ mod tests {
         use url::Url;
         use chrono::prelude::*;
         use std::fs::File;
+        use std::fs;
         use std::io::prelude::*;
         use rmps::{Serializer, Deserializer};
         use serde::{Deserialize, Serialize};
@@ -103,6 +104,7 @@ mod tests {
 
         #[test]
         fn deserialize_a_pin() {
+            serialize_a_pin();
             let fp = File::open("/tmp/test_rmp_serde.bin").unwrap();
 
             let mut de = Deserializer::from_read(fp);
@@ -116,8 +118,8 @@ mod tests {
             assert_eq!(
                 pin.url,
                 Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap()
-            );
-
+                );
+            fs::remove_file("/tmp/test_rmp_serde.bin");
         }
 
         #[test]
@@ -136,10 +138,12 @@ mod tests {
 
         #[test]
         fn deserialize_lots_of_pins() {
+            serialize_lots_of_pins();
             let fp = File::open("tests/test_rmp_serde-vec.bin").unwrap();
             let mut de = Deserializer::from_read(fp);
             let pins: Vec<Pin> = Deserialize::deserialize(&mut de).unwrap();
             assert_eq!(pins.len(), 472);
+            fs::remove_file("/tmp/test_rmp_serde-vec.bin");
         }
 
 
