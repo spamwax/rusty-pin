@@ -30,8 +30,7 @@ impl ApiResult {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct UpdateTime {
-    #[serde(rename = "update_time")]
-    datetime: DateTime<Utc>,
+    #[serde(rename = "update_time")] datetime: DateTime<Utc>,
 }
 
 #[derive(Debug)]
@@ -44,7 +43,9 @@ impl<'a> Api<'a> {
     where
         S: Into<Cow<'a, str>>,
     {
-        Api { auth_token: auth_token.into() }
+        Api {
+            auth_token: auth_token.into(),
+        }
     }
 
     fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
@@ -57,9 +58,8 @@ impl<'a> Api<'a> {
     pub fn all_pins(&self) -> Result<Vec<Pin>, String> {
         self.get_api_response("https://api.pinboard.in/v1/posts/all", &HashMap::new())
             .and_then(|res| {
-                serde_json::from_str(&res).map_err(|_| {
-                    "Unrecognized response from server API: posts/all".to_owned()
-                })
+                serde_json::from_str(&res)
+                    .map_err(|_| "Unrecognized response from server API: posts/all".to_owned())
             })
     }
 
@@ -103,9 +103,8 @@ impl<'a> Api<'a> {
 
         self.get_api_response("https://api.pinboard.in/v1/posts/add", &map)
             .and_then(|res| {
-                serde_json::from_str::<ApiResult>(&res).map_err(|_| {
-                    "Unrecognized response from server API: posts/add".to_owned()
-                })
+                serde_json::from_str::<ApiResult>(&res)
+                    .map_err(|_| "Unrecognized response from server API: posts/add".to_owned())
             })
             .and_then(|r| r.ok())
     }
@@ -113,19 +112,16 @@ impl<'a> Api<'a> {
     pub fn tags_frequency(&self) -> Result<Vec<Tag>, String> {
         self.get_api_response("https://api.pinboard.in/v1/tags/get", &HashMap::new())
             .and_then(|res| {
-                serde_json::from_str(&res).map_err(|_| {
-                    "Unrecognized response from server API: tags/get".to_owned()
-                })
+                serde_json::from_str(&res)
+                    .map_err(|_| "Unrecognized response from server API: tags/get".to_owned())
             })
             .and_then(|res: HashMap<String, String>| {
-                Ok(
-                    res.into_iter()
-                        .map(|(k, v)| {
-                            let freq = v.parse::<usize>().unwrap_or_default();
-                            Tag(k, freq)
-                        })
-                        .collect(),
-                )
+                Ok(res.into_iter()
+                    .map(|(k, v)| {
+                        let freq = v.parse::<usize>().unwrap_or_default();
+                        Tag(k, freq)
+                    })
+                    .collect())
             })
     }
 
@@ -137,9 +133,8 @@ impl<'a> Api<'a> {
         map.insert("url", url.clone());
         self.get_api_response("https://api.pinboard.in/v1/posts/delete", &map)
             .and_then(|res| {
-                serde_json::from_str(&res).map_err(|_| {
-                    "Unrecognized response from server API: posts/delete".to_owned()
-                })
+                serde_json::from_str(&res)
+                    .map_err(|_| "Unrecognized response from server API: posts/delete".to_owned())
             })
             .and_then(|r: ApiResult| r.ok())
     }
@@ -147,9 +142,8 @@ impl<'a> Api<'a> {
     pub fn recent_update(&self) -> Result<DateTime<Utc>, String> {
         self.get_api_response("https://api.pinboard.in/v1/posts/update", &HashMap::new())
             .and_then(|res| {
-                serde_json::from_str(&res).map_err(|_| {
-                    "Unrecognized response from server API: posts/update".to_owned()
-                })
+                serde_json::from_str(&res)
+                    .map_err(|_| "Unrecognized response from server API: posts/update".to_owned())
             })
             .and_then(|date: UpdateTime| Ok(date.datetime))
     }
@@ -207,10 +201,16 @@ mod tests {
         r.expect("Error in deleting a pin.");
 
         let r = api.delete("http://no.fucking.way");
-        assert_eq!("item not found".to_owned(), r.expect_err("Deleted non-existing pin!"));
+        assert_eq!(
+            "item not found".to_owned(),
+            r.expect_err("Deleted non-existing pin!")
+        );
 
         let r = api.delete(":// bad url/#");
-        assert_eq!("Invalid url.".to_owned(), r.expect_err("Deleted malformed url!"));
+        assert_eq!(
+            "Invalid url.".to_owned(),
+            r.expect_err("Deleted malformed url!")
+        );
     }
 
     #[test]

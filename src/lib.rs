@@ -5,20 +5,19 @@ extern crate test;
 extern crate chrono;
 extern crate url;
 
+extern crate regex;
+extern crate rmp_serde as rmps;
 #[macro_use]
 extern crate serde_derive;
-extern crate rmp_serde as rmps;
-extern crate regex;
 
-
+extern crate reqwest;
 extern crate serde;
 extern crate serde_json;
 extern crate url_serde;
-extern crate reqwest;
 
 pub mod pinboard;
 
-pub use pinboard::{Pinboard, Pin, PinBuilder, Tag};
+pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
 
 // TODO: Honor settings for search
 // TODO: Use Cow
@@ -35,11 +34,11 @@ mod tests {
         use std::fs::File;
         use std::fs;
         use std::io::prelude::*;
-        use rmps::{Serializer, Deserializer};
+        use rmps::{Deserializer, Serializer};
         use serde::{Deserialize, Serialize};
         use serde_json;
 
-        use pinboard::pin::{Pin, PinBuilder, CachedPin};
+        use pinboard::pin::{CachedPin, Pin, PinBuilder};
 
         use test::Bencher;
 
@@ -90,7 +89,10 @@ mod tests {
             let mut de = Deserializer::from_slice(&buf);
             let new_cached: CachedPin = Deserialize::deserialize(&mut de).unwrap();
 
-            assert_eq!("The Little Book of Rust Macros".to_string(), new_cached.pin.title);
+            assert_eq!(
+                "The Little Book of Rust Macros".to_string(),
+                new_cached.pin.title
+            );
             assert_eq!(
                 "https://danielkeep.github.io/tlborm/book/README.html",
                 new_cached.pin.url.as_ref()
@@ -98,8 +100,14 @@ mod tests {
             assert_eq!("yes".to_string(), new_cached.pin.toread);
             assert_eq!("no".to_string(), new_cached.pin.shared);
             assert_eq!("WoW!!!".to_string(), new_cached.pin.extended.unwrap());
-            assert_eq!(Utc.ymd(2017, 5, 22).and_hms(17, 46, 54), new_cached.pin.time);
-            assert_eq!(vec!["Rust".to_string(), "macros".to_string()], new_cached.tag_list);
+            assert_eq!(
+                Utc.ymd(2017, 5, 22).and_hms(17, 46, 54),
+                new_cached.pin.time
+            );
+            assert_eq!(
+                vec!["Rust".to_string(), "macros".to_string()],
+                new_cached.tag_list
+            );
         }
 
         #[test]
@@ -118,7 +126,7 @@ mod tests {
             assert_eq!(
                 pin.url,
                 Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap()
-                );
+            );
             fs::remove_file("/tmp/test_rmp_serde.bin");
         }
 
@@ -146,8 +154,6 @@ mod tests {
             fs::remove_file("/tmp/test_rmp_serde-vec.bin");
         }
 
-
-
         #[bench]
         fn bench_rmp(b: &mut Bencher) {
             let bytes = include_bytes!("../tests/test_rmp_serde-vec.bin");
@@ -165,7 +171,7 @@ mod tests {
         use chrono::prelude::*;
 
         use pinboard::pin::{Pin, PinBuilder};
-        use serde_json::{to_string, from_str};
+        use serde_json::{from_str, to_string};
 
         use test::Bencher;
 
@@ -192,7 +198,8 @@ mod tests {
             assert_eq!(pin.tags, "git ctags vim");
             assert_eq!(
                 pin.url,
-                Url::parse("http://tbaggery.com/2011/08/08/effortless-ctags-with-git.html").unwrap()
+                Url::parse("http://tbaggery.com/2011/08/08/effortless-ctags-with-git.html")
+                    .unwrap()
             );
         }
 
@@ -223,12 +230,12 @@ mod tests {
             assert_eq!(pins.len(), 472);
         }
 
-
-
         #[bench]
         fn bench_json(b: &mut Bencher) {
             let input = include_str!("../sample.json");
-            b.iter(|| { let _pins: Vec<Pin> = serde_json::from_str(input).unwrap(); });
+            b.iter(|| {
+                let _pins: Vec<Pin> = serde_json::from_str(input).unwrap();
+            });
         }
 
         #[test]
@@ -245,8 +252,7 @@ mod tests {
             assert_eq!(
                 r#"{"href":"https://danielkeep.github.io/tlborm/book/README.html",
 "description":"The Little Book of Rust Macros","tags":"Rust macros","shared":"no"
-,"toread":"no","extended":null,"time":"2017-05-22T17:46:54Z"}"#
-                    .replace("\n", ""),
+,"toread":"no","extended":null,"time":"2017-05-22T17:46:54Z"}"#.replace("\n", ""),
                 s
             );
         }

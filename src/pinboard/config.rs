@@ -14,7 +14,6 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Result<Self, String> {
-
         fn get_app_dir() -> PathBuf {
             let mut dir = env::home_dir().unwrap_or_else(|| PathBuf::from(""));
             dir.push(".cache");

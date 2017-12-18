@@ -6,8 +6,8 @@ use std::env;
 use std::fs::File;
 use std::borrow::Cow;
 
-use serde::{Serialize, Deserialize};
-use rmps::{Serializer, Deserializer};
+use serde::{Deserialize, Serialize};
+use rmps::{Deserializer, Serializer};
 
 use chrono::prelude::*;
 use url::Url;
@@ -20,7 +20,7 @@ pub mod pin;
 
 use self::config::Config;
 
-pub use self::pin::{Pin, Tag, PinBuilder, CachedPin};
+pub use self::pin::{CachedPin, Pin, PinBuilder, Tag};
 
 #[derive(Debug)]
 pub struct Pinboard<'a> {
@@ -76,9 +76,9 @@ impl<'a> Pinboard<'a> {
     }
 
     pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, String> {
-        self.api.recent_update().and_then(
-            |res| Ok(last_update < res),
-        )
+        self.api
+            .recent_update()
+            .and_then(|res| Ok(last_update < res))
     }
 
     pub fn update_cache(&mut self) -> Result<(), String> {
@@ -86,9 +86,8 @@ impl<'a> Pinboard<'a> {
 
         // Write all pins
         //
-        let mut f = File::create(&self.cfg.pins_cache_file).map_err(|e| {
-            e.description().to_owned()
-        })?;
+        let mut f =
+            File::create(&self.cfg.pins_cache_file).map_err(|e| e.description().to_owned())?;
 
         // Sort pins in descending creation time order
         self.api
@@ -99,47 +98,42 @@ impl<'a> Pinboard<'a> {
             })
             .and_then(|pins: Vec<Pin>| {
                 // Lower case all fields of each pin
-                Ok(
-                    pins.into_iter()
-                        .map(|pin| {
-                            let url_lowered = Url::parse(pin.url.as_str()).unwrap();
-                            let mut pb = PinBuilder::new(url_lowered, pin.title.to_lowercase())
-                                .tags(pin.tags.to_lowercase())
-                                .shared(&pin.shared)
-                                .toread(&pin.toread);
-                            if pin.extended.is_some() {
-                                pb =
-                                    pb.description(pin.extended.map(|s| s.to_lowercase()).unwrap());
-                            }
-                            let mut newpin = pb.into_pin();
-                            newpin.time = pin.time;
-                            let cached_pin = CachedPin {
-                                pin: newpin,
-                                tag_list: pin.tags
-                                    .split_whitespace()
-                                    .map(|s| s.to_string())
-                                    .collect(),
-                            };
-                            // newpin.tag_list =
-                            //     pin.tags.split_whitespace().map(|s| s.to_string()).collect();
-                            cached_pin
-                        })
-                        .collect(),
-                )
+                Ok(pins.into_iter()
+                    .map(|pin| {
+                        let url_lowered = Url::parse(pin.url.as_str()).unwrap();
+                        let mut pb = PinBuilder::new(url_lowered, pin.title.to_lowercase())
+                            .tags(pin.tags.to_lowercase())
+                            .shared(&pin.shared)
+                            .toread(&pin.toread);
+                        if pin.extended.is_some() {
+                            pb = pb.description(pin.extended.map(|s| s.to_lowercase()).unwrap());
+                        }
+                        let mut newpin = pb.into_pin();
+                        newpin.time = pin.time;
+                        let cached_pin = CachedPin {
+                            pin: newpin,
+                            tag_list: pin.tags.split_whitespace().map(|s| s.to_string()).collect(),
+                        };
+                        // newpin.tag_list =
+                        //     pin.tags.split_whitespace().map(|s| s.to_string()).collect();
+                        cached_pin
+                    })
+                    .collect())
             })
             .and_then(|pins: Vec<CachedPin>| {
                 let mut buf: Vec<u8> = Vec::new();
-                pins.serialize(&mut Serializer::new(&mut buf)).map_err(
-                    |e| {
-                        e.description().to_owned()
-                    },
-                )?;
+                pins.serialize(&mut Serializer::new(&mut buf))
+                    .map_err(|e| e.description().to_owned())?;
                 self.cached_pins = Some(pins);
                 Ok(buf)
             })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
 
-        if cfg!(any(target_os = "macos", target_os = "linux", target_os = "freebsd")) {
+        if cfg!(any(
+            target_os = "macos",
+            target_os = "linux",
+            target_os = "freebsd"
+        )) {
             self.fix_cache_file_perm(&self.cfg.pins_cache_file);
         }
 
@@ -147,9 +141,8 @@ impl<'a> Pinboard<'a> {
 
         // Write all tags
         //
-        let mut f = File::create(&self.cfg.tags_cache_file).map_err(|e| {
-            e.description().to_owned()
-        })?;
+        let mut f =
+            File::create(&self.cfg.tags_cache_file).map_err(|e| e.description().to_owned())?;
 
         // Sort tags by frequency before writing
         self.api
@@ -168,7 +161,11 @@ impl<'a> Pinboard<'a> {
             })
             .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
 
-        if cfg!(any(target_os = "macos", target_os = "linux", target_os = "freebsd")) {
+        if cfg!(any(
+            target_os = "macos",
+            target_os = "linux",
+            target_os = "freebsd"
+        )) {
             self.fix_cache_file_perm(&self.cfg.tags_cache_file);
         }
 
@@ -183,7 +180,9 @@ impl<'a> Pinboard<'a> {
         use std::os::unix::fs::PermissionsExt;
         use std::fs::set_permissions;
         let permissions = Permissions::from_mode(0o600);
-        set_permissions(p, permissions).map_err(|e| e.to_string()).unwrap();
+        set_permissions(p, permissions)
+            .map_err(|e| e.to_string())
+            .unwrap();
     }
 }
 
@@ -201,7 +200,6 @@ impl<'a> Pinboard<'a> {
     /// This function honors [pinboard::config::Config] settings for fuzzy search.
     pub fn search_items(&mut self, q: &str) -> Result<Option<Vec<&Pin>>, String> {
         if self.cfg.pins_cache_file.exists() {
-
             self.get_cached_pins()?;
 
             if self.cached_pins.is_none() {
@@ -225,9 +223,8 @@ impl<'a> Pinboard<'a> {
                     .join(r".*");
                 // Set case-insensitive regex option.
                 fuzzy_string.insert_str(0, "(?i)");
-                let re = Regex::new(&fuzzy_string).map_err(|_| {
-                    "Can't search for given query!".to_owned()
-                })?;
+                let re = Regex::new(&fuzzy_string)
+                    .map_err(|_| "Can't search for given query!".to_owned())?;
                 self.cached_pins
                     .as_ref()
                     .unwrap()
@@ -252,7 +249,6 @@ impl<'a> Pinboard<'a> {
     /// This function honors [pinboard::config::Config] settings for fuzzy search.
     pub fn search_list_of_tags(&mut self, q: &str) -> Result<Option<Vec<&Tag>>, String> {
         if self.cfg.tags_cache_file.exists() {
-
             self.get_cached_tags()?;
             if self.cached_tags.is_none() {
                 return Ok(None);
@@ -274,9 +270,8 @@ impl<'a> Pinboard<'a> {
                     .join(r".*");
                 // Set case-insensitive regex option.
                 fuzzy_string.insert_str(0, "(?i)");
-                let re = Regex::new(&fuzzy_string).map_err(|_| {
-                    "Can't search for given query!".to_owned()
-                })?;
+                let re = Regex::new(&fuzzy_string)
+                    .map_err(|_| "Can't search for given query!".to_owned())?;
                 self.cached_tags
                     .as_ref()
                     .unwrap()
@@ -297,9 +292,9 @@ impl<'a> Pinboard<'a> {
     }
 
     pub fn search(&self, q: &[&str], fields: &[SearchType]) -> Result<Option<Vec<&Pin>>, String> {
-        self.cached_pins.as_ref().ok_or_else(|| {
-            String::from("Empty cached pins! Run self.update_cache()!")
-        })?;
+        self.cached_pins
+            .as_ref()
+            .ok_or_else(|| String::from("Empty cached pins! Run self.update_cache()!"))?;
 
         // When no field is specified, search everywhere
         let all_fields = vec![
@@ -324,17 +319,15 @@ impl<'a> Pinboard<'a> {
                         let query = &s.to_lowercase();
                         search_fields.iter().any(|search_type| match *search_type {
                             SearchType::TitleOnly => cached_pin.pin.title.contains(query),
-                            SearchType::TagOnly => {
-                                cached_pin.tag_list.contains(query)
-                            }
+                            SearchType::TagOnly => cached_pin.tag_list.contains(query),
                             SearchType::UrlOnly => cached_pin.pin.url.as_ref().contains(query),
                             SearchType::DescriptionOnly => {
-                                cached_pin.pin.extended.is_some() &&
-                                    cached_pin.pin.extended.as_ref().unwrap().contains(query)
+                                cached_pin.pin.extended.is_some()
+                                    && cached_pin.pin.extended.as_ref().unwrap().contains(query)
                             }
                             SearchType::TagTitleOnly => {
-                                cached_pin.pin.title.contains(query) ||
-                                    cached_pin.tag_list.contains(query)
+                                cached_pin.pin.title.contains(query)
+                                    || cached_pin.tag_list.contains(query)
                             }
                         })
                     })
@@ -369,14 +362,17 @@ impl<'a> Pinboard<'a> {
                             SearchType::TagOnly => {
                                 cached_pin.tag_list.iter().any(|t| re.captures(t).is_some())
                             }
-                            SearchType::UrlOnly => re.captures(cached_pin.pin.url.as_ref()).is_some(),
+                            SearchType::UrlOnly => {
+                                re.captures(cached_pin.pin.url.as_ref()).is_some()
+                            }
                             SearchType::DescriptionOnly => {
-                                cached_pin.pin.extended.is_some() &&
-                                    re.captures(cached_pin.pin.extended.as_ref().unwrap()).is_some()
+                                cached_pin.pin.extended.is_some()
+                                    && re.captures(cached_pin.pin.extended.as_ref().unwrap())
+                                        .is_some()
                             }
                             SearchType::TagTitleOnly => {
-                                re.captures(&cached_pin.pin.title).is_some() ||
-                                    cached_pin.tag_list.iter().any(|t| re.captures(t).is_some())
+                                re.captures(&cached_pin.pin.title).is_some()
+                                    || cached_pin.tag_list.iter().any(|t| re.captures(t).is_some())
                             }
                         })
                     })
@@ -398,16 +394,15 @@ impl<'a> Pinboard<'a> {
 
     /// Returns list of all bookmarks
     pub fn list_bookmarks(&self) -> Option<Vec<&Pin>> {
-        self.cached_pins.as_ref().map(|v| {
-            v.iter().map(|p| &p.pin).collect()
-        })
+        self.cached_pins
+            .as_ref()
+            .map(|v| v.iter().map(|p| &p.pin).collect())
     }
 }
 
 /// private implementations
 impl<'a> Pinboard<'a> {
     fn read_file<P: AsRef<Path>>(&self, p: P) -> Result<String, String> {
-
         File::open(p)
             .map_err(|e| e.description().to_owned())
             .and_then(|mut f| {
@@ -423,13 +418,11 @@ impl<'a> Pinboard<'a> {
         match self.cached_pins {
             Some(_) => Ok(()),
             None => {
-                let fp = File::open(&self.cfg.pins_cache_file).map_err(|e| {
-                    e.description().to_owned()
-                })?;
+                let fp =
+                    File::open(&self.cfg.pins_cache_file).map_err(|e| e.description().to_owned())?;
                 let mut de = Deserializer::from_read(fp);
-                self.cached_pins = Deserialize::deserialize(&mut de).map_err(|e| {
-                    e.description().to_owned()
-                })?;
+                self.cached_pins =
+                    Deserialize::deserialize(&mut de).map_err(|e| e.description().to_owned())?;
                 Ok(())
             }
         }
@@ -440,20 +433,17 @@ impl<'a> Pinboard<'a> {
         match self.cached_tags {
             Some(_) => Ok(()),
             None => {
-                let fp = File::open(&self.cfg.tags_cache_file).map_err(|e| {
-                    e.description().to_owned()
-                })?;
+                let fp =
+                    File::open(&self.cfg.tags_cache_file).map_err(|e| e.description().to_owned())?;
                 let mut de = Deserializer::from_read(fp);
-                self.cached_tags = Deserialize::deserialize(&mut de).map_err(|e| {
-                    e.description().to_owned()
-                })?;
+                self.cached_tags =
+                    Deserialize::deserialize(&mut de).map_err(|e| e.description().to_owned())?;
 
                 Ok(())
             }
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -500,25 +490,25 @@ mod tests {
         pinboard.enable_fuzzy_search(false);
 
         {
-            let pins = pinboard.search_items("django").unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search_items("django")
+                .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
         }
 
         {
             // non-fuzzy search test
-            let pins = pinboard.search_items("non-existence-tag").unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search_items("non-existence-tag")
+                .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_none());
         }
         {
             // fuzzy search test
             pinboard.enable_fuzzy_search(true);
-            let pins = pinboard.search_items("funkYoumoth").unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search_items("funkYoumoth")
+                .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
             assert_eq!(1, pins.unwrap().len());
         }
@@ -530,9 +520,9 @@ mod tests {
         pinboard.enable_fuzzy_search(false);
 
         {
-            let tags = pinboard.search_list_of_tags("django").unwrap_or_else(
-                |e| panic!(e),
-            );
+            let tags = pinboard
+                .search_list_of_tags("django")
+                .unwrap_or_else(|e| panic!(e));
             assert!(tags.is_some());
         }
 
@@ -554,9 +544,9 @@ mod tests {
 
         {
             // non-fuzzy search test
-            let tags = pinboard.search_list_of_tags("Lumia920").unwrap_or_else(
-                |e| panic!(e),
-            );
+            let tags = pinboard
+                .search_list_of_tags("Lumia920")
+                .unwrap_or_else(|e| panic!(e));
             assert!(tags.is_some());
             let tags = tags.unwrap();
             assert_eq!(tags.len(), 1);
@@ -566,15 +556,14 @@ mod tests {
         {
             // fuzzy search test
             pinboard.enable_fuzzy_search(true);
-            let tags = pinboard.search_list_of_tags("Lumia920").unwrap_or_else(
-                |e| panic!(e),
-            );
+            let tags = pinboard
+                .search_list_of_tags("Lumia920")
+                .unwrap_or_else(|e| panic!(e));
             assert!(tags.is_some());
             let tags = tags.unwrap();
             assert_eq!(tags.len(), 1);
             assert_eq!(tags[0].1, 2);
         }
-
     }
 
     #[test]
@@ -590,7 +579,6 @@ mod tests {
         assert!(pinboard.unwrap().list_bookmarks().is_some());
     }
 
-
     #[test]
     fn search_multi_query_multi_field() {
         let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
@@ -603,9 +591,9 @@ mod tests {
                 SearchType::TagOnly,
                 SearchType::DescriptionOnly,
             ];
-            let pins = pinboard.search(&queries, &fields).unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
         }
 
@@ -613,20 +601,19 @@ mod tests {
         {
             let fields = vec![SearchType::TitleOnly];
             let queries = ["rust", "python"];
-            let pins = pinboard.search(&queries, &fields).unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_none());
         }
-
 
         // Find pins that have all keywords only in Url
         {
             let queries = ["bashy"];
             let fields = vec![SearchType::UrlOnly];
-            let pins = pinboard.search(&queries, &fields).unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
             assert_eq!(2, pins.as_ref().unwrap().len());
         }
 
@@ -634,14 +621,7 @@ mod tests {
         {
             pinboard.enable_fuzzy_search(true);
             let queries = [
-                "rust",
-                "python",
-                "open",
-                "handoff",
-                "sony",
-                "writing",
-                "elseif",
-                "osx",
+                "rust", "python", "open", "handoff", "sony", "writing", "elseif", "osx"
             ];
             let fields = vec![
                 SearchType::TitleOnly,
@@ -649,9 +629,9 @@ mod tests {
                 SearchType::DescriptionOnly,
                 SearchType::UrlOnly,
             ];
-            let pins = pinboard.search(&queries, &fields).unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
             assert_eq!(9, pins.as_ref().unwrap().len());
         }
 
@@ -665,9 +645,9 @@ mod tests {
                 SearchType::DescriptionOnly,
                 SearchType::UrlOnly,
             ];
-            let pins = pinboard.search(&queries, &fields).unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
             assert_eq!(1, pins.as_ref().unwrap().len());
         }
         // Tag-only search
@@ -675,9 +655,9 @@ mod tests {
             pinboard.enable_fuzzy_search(false);
             let queries = ["bestpractices"];
             let fields = vec![SearchType::TagOnly];
-            let pins = pinboard.search(&queries, &fields).unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
             assert_eq!(3, pins.as_ref().unwrap().len());
         }
 
@@ -686,9 +666,9 @@ mod tests {
             pinboard.enable_fuzzy_search(true);
             let queries = ["bestpractices"];
             let fields = vec![SearchType::TagOnly];
-            let pins = pinboard.search(&queries, &fields).unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
             assert_eq!(4, pins.as_ref().unwrap().len());
         }
 
@@ -697,9 +677,9 @@ mod tests {
             pinboard.enable_fuzzy_search(false);
             let queries = ["000", "intel"];
             let fields = vec![SearchType::TitleOnly, SearchType::UrlOnly];
-            let pins = pinboard.search(&queries, &fields).unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
             assert_eq!(2, pins.as_ref().unwrap().len());
         }
 
@@ -708,9 +688,9 @@ mod tests {
             pinboard.enable_fuzzy_search(false);
             let queries = [""];
             let fields = vec![SearchType::TitleOnly, SearchType::UrlOnly];
-            let pins = pinboard.search(&queries, &fields).unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
         }
     }
@@ -750,8 +730,10 @@ mod tests {
         let fresh_pins = pinboard.api.all_pins().unwrap();
 
         let cached_pins = pinboard.list_bookmarks().unwrap();
-        assert_eq!(fresh_pins.len(), pinboard.cached_pins.as_ref().unwrap().len());
-
+        assert_eq!(
+            fresh_pins.len(),
+            pinboard.cached_pins.as_ref().unwrap().len()
+        );
 
         // Pick 3 pins and compare them between cached dataset and freshly fetched from Pinboard's
         // API
@@ -761,7 +743,10 @@ mod tests {
                 fresh_pins[*idx as usize].title.to_lowercase(),
                 cached_pins[*idx as usize].title.to_lowercase()
             );
-            assert_eq!(fresh_pins[*idx as usize].url, cached_pins[*idx as usize].url);
+            assert_eq!(
+                fresh_pins[*idx as usize].url,
+                cached_pins[*idx as usize].url
+            );
             assert_eq!(
                 fresh_pins[*idx as usize].tags.to_lowercase(),
                 cached_pins[*idx as usize].tags.to_lowercase()
@@ -774,7 +759,10 @@ mod tests {
                 fresh_pins[*idx as usize].toread.to_lowercase(),
                 cached_pins[*idx as usize].toread.to_lowercase()
             );
-            assert_eq!(fresh_pins[*idx as usize].time, cached_pins[*idx as usize].time);
+            assert_eq!(
+                fresh_pins[*idx as usize].time,
+                cached_pins[*idx as usize].time
+            );
 
             if fresh_pins[*idx as usize].extended.is_some() {
                 assert!(cached_pins[*idx as usize].extended.is_some());
@@ -795,7 +783,6 @@ mod tests {
             }
         }
     }
-
 
     #[ignore]
     #[test]
@@ -826,12 +813,20 @@ mod tests {
         pinboard.update_cache().unwrap_or_else(|e| panic!(e));
 
         assert!(pinboard.cached_pins.is_some());
-        println!("{:?}\n\n{:?}\n\n", pins[20], pinboard.cached_pins.as_ref().unwrap()[20]);
+        println!(
+            "{:?}\n\n{:?}\n\n",
+            pins[20],
+            pinboard.cached_pins.as_ref().unwrap()[20]
+        );
         assert_eq!(pins[20], pinboard.cached_pins.as_ref().unwrap()[20]);
         assert_eq!(pins.len(), pinboard.cached_pins.as_ref().unwrap().len());
 
         assert!(pinboard.cached_tags.is_some());
-        println!("{:?}\n{:?}", tags[20], pinboard.cached_tags.as_ref().unwrap()[20]);
+        println!(
+            "{:?}\n{:?}",
+            tags[20],
+            pinboard.cached_tags.as_ref().unwrap()[20]
+        );
         assert_eq!(tags[20], pinboard.cached_tags.as_ref().unwrap()[20]);
         assert_eq!(tags.len(), pinboard.cached_tags.as_ref().unwrap().len());
     }

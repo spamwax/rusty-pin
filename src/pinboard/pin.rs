@@ -6,27 +6,21 @@ use url::Url;
 
 use regex::Regex;
 
-
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Tag(pub String, pub usize);
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Pin {
-    #[serde(with = "url_serde", rename = "href")]
-    pub url: Url,
-    #[serde(rename = "description")]
-    pub title: String,
+    #[serde(with = "url_serde", rename = "href")] pub url: Url,
+    #[serde(rename = "description")] pub title: String,
     pub tags: String,
     pub shared: String,
     pub toread: String,
     // #[serde(skip_serializing_if = "Option::is_none")]
     pub extended: Option<String>,
-    #[serde(default = "Utc::now")]
-    pub time: DateTime<Utc>,
-    #[serde(skip)]
-    meta: Option<String>,
-    #[serde(skip)]
-    hash: Option<String>,
+    #[serde(default = "Utc::now")] pub time: DateTime<Utc>,
+    #[serde(skip)] meta: Option<String>,
+    #[serde(skip)] hash: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -41,9 +35,10 @@ impl Pin {
     }
 
     pub fn contains(&self, q: &str) -> bool {
-        self.title.to_lowercase().contains(q) || self.tags.to_lowercase().contains(q) ||
-            self.url.as_ref().contains(q) ||
-            (self.extended.is_some() && self.extended.as_ref().unwrap().to_lowercase().contains(q))
+        self.title.to_lowercase().contains(q) || self.tags.to_lowercase().contains(q)
+            || self.url.as_ref().contains(q)
+            || (self.extended.is_some()
+                && self.extended.as_ref().unwrap().to_lowercase().contains(q))
     }
 
     pub fn title_contains(&self, q: &str, re: Option<&Regex>) -> bool {
@@ -71,18 +66,17 @@ impl Pin {
     }
 
     pub fn extended_contains(&self, q: &str, re: Option<&Regex>) -> bool {
-        self.extended.is_some() &&
-            if let Some(re) = re {
-                re.captures(self.extended.as_ref().unwrap()).is_some()
-            } else {
-                self.extended.as_ref().unwrap().to_lowercase().contains(q)
-            }
+        self.extended.is_some() && if let Some(re) = re {
+            re.captures(self.extended.as_ref().unwrap()).is_some()
+        } else {
+            self.extended.as_ref().unwrap().to_lowercase().contains(q)
+        }
     }
 
     pub fn contains_fuzzy(&self, re: &Regex) -> bool {
-        re.captures(&self.title).is_some() || re.captures(&self.tags).is_some() ||
-            (self.extended.is_some() && re.captures(self.extended.as_ref().unwrap()).is_some()) ||
-            re.captures(self.url.as_ref()).is_some()
+        re.captures(&self.title).is_some() || re.captures(&self.tags).is_some()
+            || (self.extended.is_some() && re.captures(self.extended.as_ref().unwrap()).is_some())
+            || re.captures(self.url.as_ref()).is_some()
     }
 }
 
@@ -133,7 +127,6 @@ impl PinBuilder {
         self.pin
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -187,16 +180,16 @@ mod tests {
         {
             // fuzzy search
             pinboard.enable_fuzzy_search(true);
-            let pins = pinboard.search_items("solvingbootp").unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search_items("solvingbootp")
+                .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
         }
 
         {
-            let pins = pinboard.search_items("non-existence-pin").unwrap_or_else(
-                |e| panic!(e),
-            );
+            let pins = pinboard
+                .search_items("non-existence-pin")
+                .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_none());
         }
 
@@ -222,6 +215,5 @@ mod tests {
             assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
         }
     }
-
 
 }
