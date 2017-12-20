@@ -114,8 +114,6 @@ impl<'a> Pinboard<'a> {
                             pin: newpin,
                             tag_list: pin.tags.split_whitespace().map(|s| s.to_string()).collect(),
                         };
-                        // newpin.tag_list =
-                        //     pin.tags.split_whitespace().map(|s| s.to_string()).collect();
                         cached_pin
                     })
                     .collect())
@@ -245,7 +243,7 @@ impl<'a> Pinboard<'a> {
         }
     }
 
-    /// Only looks up q within the `tag` field of each bookmark.
+    /// Only looks up q within list of cached tags.
     /// This function honors [pinboard::config::Config] settings for fuzzy search.
     pub fn search_list_of_tags(&mut self, q: &str) -> Result<Option<Vec<&Tag>>, String> {
         if self.cfg.tags_cache_file.exists() {

@@ -42,22 +42,6 @@ impl Config {
         Ok(())
     }
 
-    //    fn enable_tag_only_search(&mut self, v: bool) {
-    //        self.tag_only_search = v;
-    //    }
-    //
-    //    fn enable_fuzzy_search(&mut self, v: bool) {
-    //        self.fuzzy_search = v;
-    //    }
-    //
-    //    fn enable_private_pin(&mut self, v: bool) {
-    //        self.private_new_pin = v;
-    //    }
-    //
-    //    fn enable_toread_pin(&mut self, v: bool) {
-    //        self.toread_new_pin = v;
-    //    }
-
     fn create_cache_dir<P: AsRef<Path>>(cache_dir: P) -> Result<PathBuf, String> {
         use std::fs;
         fs::create_dir_all(&cache_dir)
