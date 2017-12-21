@@ -289,17 +289,14 @@ impl<'a> Pinboard<'a> {
         }
     }
 
-//    impl<'a, T> IntoIterator for &'a Vec<T> {
-//    type Item = &'a T;
-//    type IntoIter = slice::Iter<'a, T>;
-//
-//    fn into_iter(self) -> slice::Iter<'a, T> {
-//    self.iter()
-//    }
-//    }
-    pub fn search<'b, I, S>(&self, q: &'b I, fields: &[SearchType]) -> Result<Option<Vec<&Pin>>, String>
+    pub fn search<'b, I, S>(
+        &self,
+        q: &'b I,
+        fields: &[SearchType],
+    ) -> Result<Option<Vec<&Pin>>, String>
     where
-        &'b I: IntoIterator<Item=S>, S: AsRef<str>,
+        &'b I: IntoIterator<Item = S>,
+        S: AsRef<str>,
     {
         self.cached_pins
             .as_ref()
