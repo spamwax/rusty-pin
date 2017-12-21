@@ -289,7 +289,18 @@ impl<'a> Pinboard<'a> {
         }
     }
 
-    pub fn search(&self, q: &[&str], fields: &[SearchType]) -> Result<Option<Vec<&Pin>>, String> {
+//    impl<'a, T> IntoIterator for &'a Vec<T> {
+//    type Item = &'a T;
+//    type IntoIter = slice::Iter<'a, T>;
+//
+//    fn into_iter(self) -> slice::Iter<'a, T> {
+//    self.iter()
+//    }
+//    }
+    pub fn search<'b, I, S>(&self, q: &'b I, fields: &[SearchType]) -> Result<Option<Vec<&Pin>>, String>
+    where
+        &'b I: IntoIterator<Item=S>, S: AsRef<str>,
+    {
         self.cached_pins
             .as_ref()
             .ok_or_else(|| String::from("Empty cached pins! Run self.update_cache()!"))?;
@@ -313,8 +324,8 @@ impl<'a> Pinboard<'a> {
                 .unwrap()
                 .into_iter()
                 .filter(|cached_pin: &&CachedPin| {
-                    q.iter().all(|s| {
-                        let query = &s.to_lowercase();
+                    q.into_iter().all(|s| {
+                        let query = &s.as_ref().to_lowercase();
                         search_fields.iter().any(|search_type| match *search_type {
                             SearchType::TitleOnly => cached_pin.pin.title.contains(query),
                             SearchType::TagOnly => cached_pin.tag_list.contains(query),
@@ -333,9 +344,9 @@ impl<'a> Pinboard<'a> {
                 .map(|p| &p.pin)
                 .collect::<Vec<&Pin>>()
         } else {
-            let regex_queries = q.iter()
+            let regex_queries = q.into_iter()
                 .map(|s| {
-                    let query = &s.to_lowercase();
+                    let query = &s.as_ref().to_lowercase();
                     // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
                     let mut fuzzy_string = query
                         .chars()
@@ -589,6 +600,13 @@ mod tests {
                 SearchType::TagOnly,
                 SearchType::DescriptionOnly,
             ];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+
+            // Run same query, this time with Vec<String> instead of Vec<&str>
+            let queries = [String::from("rust"), String::from("python")];
             let pins = pinboard
                 .search(&queries, &fields)
                 .unwrap_or_else(|e| panic!(e));
