@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::env;
 use std::fs::File;
 use std::borrow::Cow;
+use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 use rmps::{Deserializer, Serializer};
@@ -16,43 +17,57 @@ use regex::Regex;
 
 mod api;
 mod config;
+mod cached_data;
 pub mod pin;
 
 use self::config::Config;
+use self::cached_data::*;
 
-pub use self::pin::{CachedPin, Pin, PinBuilder, Tag};
+pub use self::pin::{Pin, PinBuilder, Tag};
+
+const DEBUG: bool = false;
+fn logme(from: &str, msg: &str) {
+    if DEBUG {
+        println!("** In {:?}: {:?}", from, msg);
+    }
+}
 
 #[derive(Debug)]
 pub struct Pinboard<'a> {
     api: api::Api<'a>,
     cfg: Config,
-    cached_pins: Option<Vec<CachedPin>>,
-    cached_tags: Option<Vec<Tag>>,
+    cached_data: CachedData,
 }
 
 impl<'a> Pinboard<'a> {
-    pub fn new<S>(auth_token: S) -> Result<Self, String>
+    pub fn new<S, P>(auth_token: S, cached_dir: Option<P>) -> Result<Self, String>
     where
         S: Into<Cow<'a, str>>,
+        P: AsRef<Path>,
     {
-        let cfg = Config::new()?;
-        let mut pinboard = Pinboard {
-            api: api::Api::new(auth_token),
-            cfg,
-            cached_pins: None,
-            cached_tags: None,
-        };
-        if pinboard.cfg.tags_cache_file.exists() && pinboard.cfg.pins_cache_file.exists() {
-            pinboard.get_cached_pins()?;
-            pinboard.get_cached_tags()?;
+        let api = api::Api::new(auth_token);
+        let cfg = Config::new();
+        let mut cached_data = CachedData::new(cached_dir)?;
+        if !cached_data.cache_ok() {
+            logme("pinb::new", "cache file missing, calling update");
+            cached_data.update_cache(&api)?;
+            logme("pinb::new", "  update done.");
         } else {
-            pinboard.update_cache()?;
+            logme("pinb::new", "cache not missing");
         }
+
+
+        let pinboard = Pinboard {
+            api: api,
+            cfg,
+            cached_data,
+        };
         Ok(pinboard)
     }
 
     pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), String> {
-        self.cfg.set_cache_dir(p)
+        self.cached_data.set_cache_dir(p)?;
+        self.cached_data.load_cache_data_from_file()
     }
 
     pub fn enable_tag_only_search(&mut self, v: bool) {
@@ -80,108 +95,6 @@ impl<'a> Pinboard<'a> {
             .recent_update()
             .and_then(|res| Ok(last_update < res))
     }
-
-    pub fn update_cache(&mut self) -> Result<(), String> {
-        //TODO: cache all searchable text in lowercase format to make "pin.contains()" efficient.
-
-        // Write all pins
-        //
-        let mut f =
-            File::create(&self.cfg.pins_cache_file).map_err(|e| e.description().to_owned())?;
-
-        // Sort pins in descending creation time order
-        self.api
-            .all_pins()
-            .and_then(|mut pins| {
-                pins.sort_by(|pin1, pin2| pin1.time().cmp(&pin2.time()).reverse());
-                Ok(pins)
-            })
-            .and_then(|pins: Vec<Pin>| {
-                // Lower case all fields of each pin
-                Ok(pins.into_iter()
-                    .map(|pin| {
-                        let url_lowered = Url::parse(pin.url.as_str()).unwrap();
-                        let mut pb = PinBuilder::new(url_lowered, pin.title.to_lowercase())
-                            .tags(pin.tags.to_lowercase())
-                            .shared(&pin.shared)
-                            .toread(&pin.toread);
-                        if pin.extended.is_some() {
-                            pb = pb.description(pin.extended.map(|s| s.to_lowercase()).unwrap());
-                        }
-                        let mut newpin = pb.into_pin();
-                        newpin.time = pin.time;
-                        let cached_pin = CachedPin {
-                            pin: newpin,
-                            tag_list: pin.tags.split_whitespace().map(|s| s.to_string()).collect(),
-                        };
-                        cached_pin
-                    })
-                    .collect())
-            })
-            .and_then(|pins: Vec<CachedPin>| {
-                let mut buf: Vec<u8> = Vec::new();
-                pins.serialize(&mut Serializer::new(&mut buf))
-                    .map_err(|e| e.description().to_owned())?;
-                self.cached_pins = Some(pins);
-                Ok(buf)
-            })
-            .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
-
-        if cfg!(any(
-            target_os = "macos",
-            target_os = "linux",
-            target_os = "freebsd"
-        )) {
-            self.fix_cache_file_perm(&self.cfg.pins_cache_file);
-        }
-
-        assert!(self.cached_pins.is_some());
-
-        // Write all tags
-        //
-        let mut f =
-            File::create(&self.cfg.tags_cache_file).map_err(|e| e.description().to_owned())?;
-
-        // Sort tags by frequency before writing
-        self.api
-            .tags_frequency()
-            .and_then(|mut tags| {
-                tags.sort_by(|t1, t2| t1.1.cmp(&t2.1).reverse());
-                Ok(tags)
-            })
-            .and_then(|tags_tuple| {
-                let mut buf: Vec<u8> = Vec::new();
-                tags_tuple
-                    .serialize(&mut Serializer::new(&mut buf))
-                    .map_err(|e| e.description().to_owned())?;
-                self.cached_tags = Some(tags_tuple);
-                Ok(buf)
-            })
-            .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
-
-        if cfg!(any(
-            target_os = "macos",
-            target_os = "linux",
-            target_os = "freebsd"
-        )) {
-            self.fix_cache_file_perm(&self.cfg.tags_cache_file);
-        }
-
-        assert!(self.cached_tags.is_some());
-        Ok(())
-    }
-
-    #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
-    fn fix_cache_file_perm(&self, p: &PathBuf) {
-        // TODO: don't just unwrap, return a proper error.
-        use std::fs::Permissions;
-        use std::os::unix::fs::PermissionsExt;
-        use std::fs::set_permissions;
-        let permissions = Permissions::from_mode(0o600);
-        set_permissions(p, permissions)
-            .map_err(|e| e.to_string())
-            .unwrap();
-    }
 }
 
 pub enum SearchType {
@@ -197,16 +110,10 @@ impl<'a> Pinboard<'a> {
     /// Searches all the fields within bookmarks to filter them.
     /// This function honors [pinboard::config::Config] settings for fuzzy search.
     pub fn search_items(&mut self, q: &str) -> Result<Option<Vec<&Pin>>, String> {
-        if self.cfg.pins_cache_file.exists() {
-            self.get_cached_pins()?;
-
-            if self.cached_pins.is_none() {
-                return Ok(None);
-            }
-
+        if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
                 let q = &q.to_lowercase();
-                self.cached_pins
+                self.cached_data.pins
                     .as_ref()
                     .unwrap()
                     .into_iter()
@@ -223,7 +130,7 @@ impl<'a> Pinboard<'a> {
                 fuzzy_string.insert_str(0, "(?i)");
                 let re = Regex::new(&fuzzy_string)
                     .map_err(|_| "Can't search for given query!".to_owned())?;
-                self.cached_pins
+                self.cached_data.pins
                     .as_ref()
                     .unwrap()
                     .into_iter()
@@ -236,25 +143,17 @@ impl<'a> Pinboard<'a> {
                 _ => Ok(Some(r)),
             }
         } else {
-            Err(format!(
-                "pins cache file not present: {}",
-                self.cfg.pins_cache_file.to_str().unwrap_or("")
-            ))
+            Err("Tags cache data is invalid.".to_string())
         }
     }
 
     /// Only looks up q within list of cached tags.
     /// This function honors [pinboard::config::Config] settings for fuzzy search.
     pub fn search_list_of_tags(&mut self, q: &str) -> Result<Option<Vec<&Tag>>, String> {
-        if self.cfg.tags_cache_file.exists() {
-            self.get_cached_tags()?;
-            if self.cached_tags.is_none() {
-                return Ok(None);
-            }
-
+        if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
                 let q = &q.to_lowercase();
-                self.cached_tags
+                self.cached_data.tags
                     .as_ref()
                     .unwrap()
                     .into_iter()
@@ -270,7 +169,7 @@ impl<'a> Pinboard<'a> {
                 fuzzy_string.insert_str(0, "(?i)");
                 let re = Regex::new(&fuzzy_string)
                     .map_err(|_| "Can't search for given query!".to_owned())?;
-                self.cached_tags
+                self.cached_data.tags
                     .as_ref()
                     .unwrap()
                     .into_iter()
@@ -282,10 +181,7 @@ impl<'a> Pinboard<'a> {
                 _ => Ok(Some(r)),
             }
         } else {
-            Err(format!(
-                "tags cache file not present: {}",
-                self.cfg.tags_cache_file.to_str().unwrap_or("")
-            ))
+            Err("Tags cache data is invalid.".to_string())
         }
     }
 
@@ -298,10 +194,9 @@ impl<'a> Pinboard<'a> {
         &'b I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        self.cached_pins
-            .as_ref()
-            .ok_or_else(|| String::from("Empty cached pins! Run self.update_cache()!"))?;
-
+        if !self.cached_data.cache_ok() {
+            return Err(String::from("Cache data is invalid."));
+        }
         // When no field is specified, search everywhere
         let all_fields = vec![
             SearchType::TitleOnly,
@@ -316,7 +211,7 @@ impl<'a> Pinboard<'a> {
         };
 
         let results = if !self.cfg.fuzzy_search {
-            self.cached_pins
+            self.cached_data.pins
                 .as_ref()
                 .unwrap()
                 .into_iter()
@@ -351,13 +246,13 @@ impl<'a> Pinboard<'a> {
                         .collect::<Vec<String>>()
                         .join(r".*");
                     // Set case-insensitive regex option.
-                    fuzzy_string.insert_str(0, "(?i)");
+                    fuzzy_string = "(?i)".chars().chain(fuzzy_string.chars()).collect();
                     Regex::new(&fuzzy_string)
                         .map_err(|_| "Can't search for given query!".to_owned())
                         .expect("Couldn't build regex using given search query!")
                 })
                 .collect::<Vec<Regex>>();
-            self.cached_pins
+            self.cached_data.pins
                 .as_ref()
                 .unwrap()
                 .into_iter()
@@ -395,59 +290,14 @@ impl<'a> Pinboard<'a> {
 
     /// Returns list of all Tags (tag, frequency)
     pub fn list_tag_pairs(&self) -> &Option<Vec<Tag>> {
-        &self.cached_tags
+        &self.cached_data.tags
     }
 
     /// Returns list of all bookmarks
     pub fn list_bookmarks(&self) -> Option<Vec<&Pin>> {
-        self.cached_pins
+        self.cached_data.pins
             .as_ref()
             .map(|v| v.iter().map(|p| &p.pin).collect())
-    }
-}
-
-/// private implementations
-impl<'a> Pinboard<'a> {
-    fn read_file<P: AsRef<Path>>(&self, p: P) -> Result<String, String> {
-        File::open(p)
-            .map_err(|e| e.description().to_owned())
-            .and_then(|mut f| {
-                let mut content = String::new();
-                f.read_to_string(&mut content)
-                    .map_err(|e| e.description().to_owned())
-                    .and_then(|_| Ok(content))
-            })
-    }
-
-    fn get_cached_pins(&mut self) -> Result<(), String> {
-        // TODO: if pins_cache_file not present, call update_cache
-        match self.cached_pins {
-            Some(_) => Ok(()),
-            None => {
-                let fp =
-                    File::open(&self.cfg.pins_cache_file).map_err(|e| e.description().to_owned())?;
-                let mut de = Deserializer::from_read(fp);
-                self.cached_pins =
-                    Deserialize::deserialize(&mut de).map_err(|e| e.description().to_owned())?;
-                Ok(())
-            }
-        }
-    }
-
-    fn get_cached_tags(&mut self) -> Result<(), String> {
-        // TODO: if tags_cache_file not present, call update_cache
-        match self.cached_tags {
-            Some(_) => Ok(()),
-            None => {
-                let fp =
-                    File::open(&self.cfg.tags_cache_file).map_err(|e| e.description().to_owned())?;
-                let mut de = Deserializer::from_read(fp);
-                self.cached_tags =
-                    Deserialize::deserialize(&mut de).map_err(|e| e.description().to_owned())?;
-
-                Ok(())
-            }
-        }
     }
 }
 
@@ -458,13 +308,16 @@ mod tests {
     use test::Bencher;
 
     #[test]
-    fn test_config() {
+    fn test_cached_data() {
         let mut h = env::home_dir().unwrap();
         h.push(".cache");
         h.push("rusty-pin");
-        let c = Config::new().expect("Can't initiate 'Config'.");
+        let p: Option<PathBuf> = None;
+        let c = CachedData::new(p).expect("Can't initiate 'CachedData'.");
         assert_eq!(c.cache_dir, h);
 
+        // const TAGS_CACHE_FN: &str = "tags.cache";
+        // const PINS_CACHE_FN: &str = "pins.cache";
         h.push("pins");
         h.set_extension("cache");
         assert_eq!(c.pins_cache_file, h);
@@ -477,7 +330,8 @@ mod tests {
     #[test]
     fn test_set_cache_dir() {
         let mut h = env::home_dir().unwrap();
-        let mut c = Config::new().expect("Can't initiate 'Config'.");
+        let p: Option<PathBuf> = None;
+        let mut c = CachedData::new(p).expect("Can't initiate 'CachedData'.");
 
         h.push(".cache");
         h.push("rusty-pin");
@@ -492,7 +346,8 @@ mod tests {
 
     #[test]
     fn test_search_items() {
-        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        let p: Option<PathBuf> = None;
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
         pinboard.enable_fuzzy_search(false);
 
         {
@@ -522,7 +377,8 @@ mod tests {
 
     #[test]
     fn search_tag_pairs() {
-        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        let p: Option<PathBuf> = None;
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
         pinboard.enable_fuzzy_search(false);
 
         {
@@ -574,20 +430,23 @@ mod tests {
 
     #[test]
     fn list_tags() {
-        let pinboard = Pinboard::new(include_str!("auth_token.txt"));
-        println!("{:?}", pinboard);
+        let p: Option<PathBuf> = None;
+        let pinboard = Pinboard::new(include_str!("auth_token.txt"), p);
+        // println!("{:?}", pinboard);
         assert!(pinboard.unwrap().list_tag_pairs().is_some());
     }
 
     #[test]
     fn list_bookmarks() {
-        let pinboard = Pinboard::new(include_str!("auth_token.txt"));
+        let p: Option<PathBuf> = None;
+        let pinboard = Pinboard::new(include_str!("auth_token.txt"), p);
         assert!(pinboard.unwrap().list_bookmarks().is_some());
     }
 
     #[test]
     fn search_multi_query_multi_field() {
-        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        let p: Option<PathBuf> = None;
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
         // Find pins that have all keywords almost anywhere
         {
             pinboard.enable_fuzzy_search(false);
@@ -710,7 +569,8 @@ mod tests {
 
     #[bench]
     fn bench_search_1(b: &mut Bencher) {
-        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        let p: Option<PathBuf> = None;
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
         pinboard.enable_fuzzy_search(false);
         let queries = ["zfs", "fr"];
         let fields = vec![];
@@ -723,7 +583,8 @@ mod tests {
 
     #[bench]
     fn bench_search_2(b: &mut Bencher) {
-        let mut pinboard = Pinboard::new(include_str!("auth_token.txt")).unwrap();
+        let p: Option<PathBuf> = None;
+        let mut pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
         pinboard.enable_fuzzy_search(true);
         let queries = ["zfs", "fr"];
         let fields = vec![];
@@ -736,7 +597,8 @@ mod tests {
 
     #[test]
     fn serde_update_cache() {
-        let pinboard = Pinboard::new(include_str!("auth_token.txt"));
+        let p: Option<PathBuf> = None;
+        let pinboard = Pinboard::new(include_str!("auth_token.txt"), p);
         let pinboard = pinboard.unwrap();
 
         // Get all pins directly from Pinboard.in (no caching)
@@ -745,7 +607,7 @@ mod tests {
         let cached_pins = pinboard.list_bookmarks().unwrap();
         assert_eq!(
             fresh_pins.len(),
-            pinboard.cached_pins.as_ref().unwrap().len()
+            pinboard.cached_data.pins.as_ref().unwrap().len()
         );
 
         // Pick 3 pins and compare them between cached dataset and freshly fetched from Pinboard's
@@ -797,7 +659,6 @@ mod tests {
         }
     }
 
-    #[ignore]
     #[test]
     fn test_update_cache() {
         use std::{thread, time};
@@ -809,38 +670,41 @@ mod tests {
         let mut dir = env::home_dir().unwrap_or_else(|| PathBuf::from(""));
         dir.push(".cache");
         dir.push("rusty-pin");
-        fs::remove_dir_all(dir).unwrap();
+        fs::remove_dir_all(dir);
 
         thread::sleep(five_secs);
         println!("Running first update_cache");
 
         // Pinboard::new() will call update_cache since we remove the cache folder.
-        let pinboard = Pinboard::new(include_str!("auth_token.txt"));
+        let p: Option<PathBuf> = None;
+        let pinboard = Pinboard::new(include_str!("auth_token.txt"), p);
         let mut pinboard = pinboard.unwrap();
-        let pins = pinboard.cached_pins.take().unwrap();
-        let tags = pinboard.cached_tags.take().unwrap();
+        let pins = pinboard.cached_data.pins.take().unwrap();
+        let tags = pinboard.cached_data.tags.take().unwrap();
 
         thread::sleep(five_secs);
 
         println!("Running second update_cache");
-        pinboard.update_cache().unwrap_or_else(|e| panic!(e));
+        // pinboard.cached_data.update_cache(&pinboard.api).unwrap_or_else(|e| panic!(e));
+        pinboard.cached_data.load_cache_data_from_file().unwrap_or_else(|e| panic!(e));
+        assert!(pinboard.cached_data.cache_ok());
 
-        assert!(pinboard.cached_pins.is_some());
+        assert!(pinboard.cached_data.pins.is_some());
         println!(
             "{:?}\n\n{:?}\n\n",
             pins[20],
-            pinboard.cached_pins.as_ref().unwrap()[20]
+            pinboard.cached_data.pins.as_ref().unwrap()[20]
         );
-        assert_eq!(pins[20], pinboard.cached_pins.as_ref().unwrap()[20]);
-        assert_eq!(pins.len(), pinboard.cached_pins.as_ref().unwrap().len());
+        assert_eq!(pins[20], pinboard.cached_data.pins.as_ref().unwrap()[20]);
+        assert_eq!(pins.len(), pinboard.cached_data.pins.as_ref().unwrap().len());
 
-        assert!(pinboard.cached_tags.is_some());
+        assert!(pinboard.cached_data.tags.is_some());
         println!(
             "{:?}\n{:?}",
             tags[20],
-            pinboard.cached_tags.as_ref().unwrap()[20]
+            pinboard.cached_data.tags.as_ref().unwrap()[20]
         );
-        assert_eq!(tags[20], pinboard.cached_tags.as_ref().unwrap()[20]);
-        assert_eq!(tags.len(), pinboard.cached_tags.as_ref().unwrap().len());
+        assert_eq!(tags[20], pinboard.cached_data.tags.as_ref().unwrap()[20]);
+        assert_eq!(tags.len(), pinboard.cached_data.tags.as_ref().unwrap().len());
     }
 }

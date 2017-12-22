@@ -23,12 +23,6 @@ pub struct Pin {
     #[serde(skip)] hash: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub struct CachedPin {
-    pub pin: Pin,
-    pub tag_list: Vec<String>,
-}
-
 impl Pin {
     pub fn time(&self) -> DateTime<Utc> {
         self.time
@@ -166,7 +160,8 @@ mod tests {
 
     #[test]
     fn test_search_pins() {
-        let mut pinboard = ::pinboard::Pinboard::new(include_str!("auth_token.txt"))
+        let p: Option<String> = None;
+        let mut pinboard = ::pinboard::Pinboard::new(include_str!("auth_token.txt"), p)
             .expect("Unable to initiate Pinboard");
         pinboard.enable_tag_only_search(false);
         pinboard.enable_fuzzy_search(false);
