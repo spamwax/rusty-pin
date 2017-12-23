@@ -56,7 +56,6 @@ impl<'a> Pinboard<'a> {
             logme("pinb::new", "cache not missing");
         }
 
-
         let pinboard = Pinboard {
             api: api,
             cfg,
@@ -286,6 +285,11 @@ impl<'a> Pinboard<'a> {
             0 => Ok(None),
             _ => Ok(Some(results)),
         }
+    }
+
+    /// Update local cache
+    pub fn update_cache(&mut self) -> Result<(), String> {
+        self.cached_data.update_cache(&self.api)
     }
 
     /// Returns list of all Tags (tag, frequency)
