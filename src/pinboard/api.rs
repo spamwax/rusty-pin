@@ -96,6 +96,7 @@ impl<'a> Api<'a> {
 
         map.insert("url", url.clone());
         map.insert("description", p.title);
+        map.insert("tags", p.tags());
         map.insert("toread", p.toread);
         map.insert("extended", p.extended.unwrap_or_default());
         map.insert("shared", p.shared);
