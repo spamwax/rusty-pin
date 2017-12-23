@@ -37,7 +37,7 @@ mod tests {
         use serde_json;
 
         use pinboard::pin::{Pin, PinBuilder};
-//        use pinboard::cached_data::{CachedData, CachedPin};
+        //        use pinboard::cached_data::{CachedData, CachedPin};
 
         use test::Bencher;
 

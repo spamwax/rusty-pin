@@ -112,7 +112,8 @@ impl<'a> Pinboard<'a> {
         if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
                 let q = &q.to_lowercase();
-                self.cached_data.pins
+                self.cached_data
+                    .pins
                     .as_ref()
                     .unwrap()
                     .into_iter()
@@ -129,7 +130,8 @@ impl<'a> Pinboard<'a> {
                 fuzzy_string.insert_str(0, "(?i)");
                 let re = Regex::new(&fuzzy_string)
                     .map_err(|_| "Can't search for given query!".to_owned())?;
-                self.cached_data.pins
+                self.cached_data
+                    .pins
                     .as_ref()
                     .unwrap()
                     .into_iter()
@@ -152,7 +154,8 @@ impl<'a> Pinboard<'a> {
         if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
                 let q = &q.to_lowercase();
-                self.cached_data.tags
+                self.cached_data
+                    .tags
                     .as_ref()
                     .unwrap()
                     .into_iter()
@@ -168,7 +171,8 @@ impl<'a> Pinboard<'a> {
                 fuzzy_string.insert_str(0, "(?i)");
                 let re = Regex::new(&fuzzy_string)
                     .map_err(|_| "Can't search for given query!".to_owned())?;
-                self.cached_data.tags
+                self.cached_data
+                    .tags
                     .as_ref()
                     .unwrap()
                     .into_iter()
@@ -210,7 +214,8 @@ impl<'a> Pinboard<'a> {
         };
 
         let results = if !self.cfg.fuzzy_search {
-            self.cached_data.pins
+            self.cached_data
+                .pins
                 .as_ref()
                 .unwrap()
                 .into_iter()
@@ -251,7 +256,8 @@ impl<'a> Pinboard<'a> {
                         .expect("Couldn't build regex using given search query!")
                 })
                 .collect::<Vec<Regex>>();
-            self.cached_data.pins
+            self.cached_data
+                .pins
                 .as_ref()
                 .unwrap()
                 .into_iter()
@@ -299,7 +305,8 @@ impl<'a> Pinboard<'a> {
 
     /// Returns list of all bookmarks
     pub fn list_bookmarks(&self) -> Option<Vec<&Pin>> {
-        self.cached_data.pins
+        self.cached_data
+            .pins
             .as_ref()
             .map(|v| v.iter().map(|p| &p.pin).collect())
     }
@@ -690,7 +697,10 @@ mod tests {
 
         println!("Running second update_cache");
         // pinboard.cached_data.update_cache(&pinboard.api).unwrap_or_else(|e| panic!(e));
-        pinboard.cached_data.load_cache_data_from_file().unwrap_or_else(|e| panic!(e));
+        pinboard
+            .cached_data
+            .load_cache_data_from_file()
+            .unwrap_or_else(|e| panic!(e));
         assert!(pinboard.cached_data.cache_ok());
 
         assert!(pinboard.cached_data.pins.is_some());
@@ -700,7 +710,10 @@ mod tests {
             pinboard.cached_data.pins.as_ref().unwrap()[20]
         );
         assert_eq!(pins[20], pinboard.cached_data.pins.as_ref().unwrap()[20]);
-        assert_eq!(pins.len(), pinboard.cached_data.pins.as_ref().unwrap().len());
+        assert_eq!(
+            pins.len(),
+            pinboard.cached_data.pins.as_ref().unwrap().len()
+        );
 
         assert!(pinboard.cached_data.tags.is_some());
         println!(
@@ -709,6 +722,9 @@ mod tests {
             pinboard.cached_data.tags.as_ref().unwrap()[20]
         );
         assert_eq!(tags[20], pinboard.cached_data.tags.as_ref().unwrap()[20]);
-        assert_eq!(tags.len(), pinboard.cached_data.tags.as_ref().unwrap().len());
+        assert_eq!(
+            tags.len(),
+            pinboard.cached_data.tags.as_ref().unwrap().len()
+        );
     }
 }
