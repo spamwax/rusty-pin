@@ -150,7 +150,7 @@ impl<'a> Pinboard<'a> {
 
     /// Only looks up q within list of cached tags.
     /// This function honors [pinboard::config::Config] settings for fuzzy search.
-    pub fn search_list_of_tags(&mut self, q: &str) -> Result<Option<Vec<&Tag>>, String> {
+    pub fn search_list_of_tags(&self, q: &str) -> Result<Option<Vec<&Tag>>, String> {
         if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
                 let q = &q.to_lowercase();
