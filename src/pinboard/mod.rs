@@ -107,7 +107,7 @@ pub enum SearchType {
 // Search functions
 impl<'a> Pinboard<'a> {
     /// Searches all the fields within bookmarks to filter them.
-    /// This function honors [pinboard::config::Config] settings for fuzzy search.
+    /// This function honors [pinboard::config::Config] settings for fuzzy search & tag_only search.
     pub fn search_items(&mut self, q: &str) -> Result<Option<Vec<&Pin>>, String> {
         if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
@@ -117,7 +117,11 @@ impl<'a> Pinboard<'a> {
                     .as_ref()
                     .unwrap()
                     .into_iter()
-                    .filter(|item| item.pin.contains(q))
+                    .filter(|item| if self.cfg.tag_only_search {
+                        item.pin.tag_contains(q, None)
+                    } else {
+                        item.pin.contains(q)
+                    })
                     .map(|item| &item.pin)
                     .collect::<Vec<&Pin>>()
             } else {
@@ -135,7 +139,11 @@ impl<'a> Pinboard<'a> {
                     .as_ref()
                     .unwrap()
                     .into_iter()
-                    .filter(|item| item.pin.contains_fuzzy(&re))
+                    .filter(|item| if self.cfg.tag_only_search {
+                        item.pin.tag_contains("", Some(&re))
+                    } else {
+                        item.pin.contains_fuzzy(&re)
+                    })
                     .map(|item| &item.pin)
                     .collect::<Vec<&Pin>>()
             };
@@ -188,6 +196,8 @@ impl<'a> Pinboard<'a> {
         }
     }
 
+    /// Searches the selected `fields` within bookmarks to filter them.
+    /// This function honors [pinboard::config::Config] settings for fuzzy search only.
     pub fn search<'b, I, S>(
         &self,
         q: &'b I,

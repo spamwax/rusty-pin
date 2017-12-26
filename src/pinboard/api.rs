@@ -160,7 +160,7 @@ impl<'a> Api<'a> {
         for (k, v) in params {
             api_url.query_pairs_mut().append_pair(k, v);
         }
-        
+
         let mut resp = client.get(api_url).send().map_err(|e| e.to_string())?;
 
         // TODO: check for error status codes and return them instead of panicking.

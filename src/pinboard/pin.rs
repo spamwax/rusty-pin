@@ -175,6 +175,7 @@ mod tests {
         {
             // fuzzy search
             pinboard.enable_fuzzy_search(true);
+            pinboard.enable_tag_only_search(false);
             let pins = pinboard
                 .search_items("solvingbootp")
                 .unwrap_or_else(|e| panic!(e));
