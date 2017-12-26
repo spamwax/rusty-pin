@@ -108,7 +108,7 @@ pub enum SearchType {
 impl<'a> Pinboard<'a> {
     /// Searches all the fields within bookmarks to filter them.
     /// This function honors [pinboard::config::Config] settings for fuzzy search & tag_only search.
-    pub fn search_items(&mut self, q: &str) -> Result<Option<Vec<&Pin>>, String> {
+    pub fn search_items(&self, q: &str) -> Result<Option<Vec<&Pin>>, String> {
         if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
                 let q = &q.to_lowercase();
@@ -589,7 +589,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_search_1(b: &mut Bencher) {
+    fn bench_search_non_fuzzy(b: &mut Bencher) {
         let p: Option<PathBuf> = None;
         let mut pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
         pinboard.enable_fuzzy_search(false);
@@ -603,7 +603,7 @@ mod tests {
     }
 
     #[bench]
-    fn bench_search_2(b: &mut Bencher) {
+    fn bench_search_fuzzy(b: &mut Bencher) {
         let p: Option<PathBuf> = None;
         let mut pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
         pinboard.enable_fuzzy_search(true);
@@ -680,6 +680,7 @@ mod tests {
         }
     }
 
+    #[ignore]
     #[test]
     fn test_update_cache() {
         use std::{thread, time};

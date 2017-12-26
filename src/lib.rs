@@ -117,7 +117,7 @@ mod tests {
 
     } /* rmp_serde */
 
-    mod serde_json {
+    mod json_serde {
         use super::*;
         use url::Url;
         use chrono::prelude::*;
@@ -129,7 +129,7 @@ mod tests {
 
         #[test]
         fn deserialize_a_pin() {
-            let pin: Result<Pin, _> = serde_json::from_str(include_str!("../tests/PIN1.json"));
+            let pin: Result<Pin, _> = from_str(include_str!("../tests/PIN1.json"));
             assert!(pin.is_ok());
             let pin: Pin = pin.unwrap();
             // println!("{:?}", pin);
@@ -141,7 +141,7 @@ mod tests {
                 Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap()
             );
 
-            let pin: Result<Pin, _> = serde_json::from_str(include_str!("../tests/PIN2.json"));
+            let pin: Result<Pin, _> = from_str(include_str!("../tests/PIN2.json"));
             assert!(pin.is_ok());
             let pin: Pin = pin.unwrap();
             // println!("{:?}", pin);
@@ -162,7 +162,7 @@ mod tests {
                 include_str!("../tests/PIN1.json"),
                 include_str!("../tests/PIN2.json")
             );
-            let pins: Result<Vec<Pin>, _> = serde_json::from_str(&input);
+            let pins: Result<Vec<Pin>, _> = from_str(&input);
             if let Err(e) = pins {
                 println!("{:?}", e);
                 return;
@@ -176,7 +176,7 @@ mod tests {
         #[test]
         fn deserialize_lots_pins() {
             let input = include_str!("../sample.json");
-            let pins: Result<Vec<Pin>, _> = serde_json::from_str(input);
+            let pins: Result<Vec<Pin>, _> = from_str(input);
             assert!(pins.is_ok());
             let pins = pins.unwrap();
             assert_eq!(pins.len(), 472);
@@ -186,7 +186,7 @@ mod tests {
         fn bench_json(b: &mut Bencher) {
             let input = include_str!("../sample.json");
             b.iter(|| {
-                let _pins: Vec<Pin> = serde_json::from_str(input).unwrap();
+                let _pins: Vec<Pin> = from_str(input).unwrap();
             });
         }
 
@@ -200,7 +200,7 @@ mod tests {
                 .shared("no")
                 .into_pin();
             pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
-            let s = serde_json::to_string(&pin).unwrap();
+            let s = to_string(&pin).unwrap();
             assert_eq!(
                 r#"{"href":"https://danielkeep.github.io/tlborm/book/README.html",
 "description":"The Little Book of Rust Macros","tags":"Rust macros","shared":"no"
