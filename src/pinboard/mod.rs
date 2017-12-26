@@ -552,7 +552,7 @@ mod tests {
             let pins = pinboard
                 .search(&queries, &fields)
                 .unwrap_or_else(|e| panic!(e));
-            assert_eq!(4, pins.as_ref().unwrap().len());
+            assert_eq!(5, pins.as_ref().unwrap().len());
         }
 
         // title+url search non-fuzzy

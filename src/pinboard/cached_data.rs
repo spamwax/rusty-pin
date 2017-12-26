@@ -1,9 +1,12 @@
 use super::*;
+use std::io::BufReader;
 
 use super::pin::{Pin, Tag};
 
 const TAGS_CACHE_FN: &str = "tags.cache";
 const PINS_CACHE_FN: &str = "pins.cache";
+
+const FILE_BUF_SIZE: usize = 4 * 1024 * 1024;
 
 #[derive(Debug)]
 pub struct CachedData {
@@ -82,7 +85,8 @@ impl CachedData {
     fn read_cached_pins(&mut self) -> Result<(), String> {
         logme("read_cached_Pins", "was called");
         let fp = File::open(&self.pins_cache_file).map_err(|e| e.description().to_owned())?;
-        let mut de = Deserializer::from_read(fp);
+        let reader = BufReader::with_capacity(FILE_BUF_SIZE, fp);
+        let mut de = Deserializer::from_read(reader);
         self.pins = Deserialize::deserialize(&mut de).map_err(|e| e.description().to_owned())?;
         Ok(())
     }
@@ -90,7 +94,8 @@ impl CachedData {
     fn read_cached_tags(&mut self) -> Result<(), String> {
         logme("read_cached_tagS", "was called");
         let fp = File::open(&self.tags_cache_file).map_err(|e| e.description().to_owned())?;
-        let mut de = Deserializer::from_read(fp);
+        let reader = BufReader::with_capacity(FILE_BUF_SIZE, fp);
+        let mut de = Deserializer::from_read(reader);
         self.tags = Deserialize::deserialize(&mut de).map_err(|e| e.description().to_owned())?;
         Ok(())
     }
