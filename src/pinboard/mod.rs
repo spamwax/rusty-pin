@@ -9,6 +9,7 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 use rmps::{Deserializer, Serializer};
+use reqwest::IntoUrl;
 
 use chrono::prelude::*;
 use url::Url;
@@ -320,6 +321,11 @@ impl<'a> Pinboard<'a> {
             .as_ref()
             .map(|v| v.iter().map(|p| &p.pin).collect())
     }
+
+    /// Suggest a list of tags based on the provided URL
+    pub fn popular_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, String> {
+        self.api.suggest_tags(url)
+    }
 }
 
 #[cfg(test)]
@@ -462,6 +468,21 @@ mod tests {
         let p: Option<PathBuf> = None;
         let pinboard = Pinboard::new(include_str!("auth_token.txt"), p);
         assert!(pinboard.unwrap().list_bookmarks().is_some());
+    }
+
+    #[test]
+    fn popular_tags() {
+        let p: Option<PathBuf> = None;
+        let pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
+        let tags = pinboard.popular_tags("https://docs.rs/chrono/0.4.0/chrono");
+        assert!(tags.is_ok());
+        let tags = tags.unwrap();
+        assert!(tags.len() >= 2);
+
+        // Test invalid URL
+        let tags = pinboard.popular_tags("docs.rs/chrono/0.4.0/chrono");
+        assert!(tags.is_err());
+        assert_eq!("Invalid url.", &tags.unwrap_err());
     }
 
     #[test]
