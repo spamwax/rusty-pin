@@ -51,6 +51,27 @@ impl CachedData {
         Ok(data)
     }
 
+    /// Create an instance fo CachedData but don't load actual cached files.
+    pub fn init<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, String> {
+        let cached_dir = c_dir.map(|p| p.as_ref().to_path_buf()).unwrap_or_else(|| {
+            let mut dir = env::home_dir().unwrap_or_else(|| PathBuf::from(""));
+            dir.push(".cache");
+            dir.push("rusty-pin");
+            dir
+        });
+        let data = CachedData::create_cache_dir(cached_dir).and_then(|c_path| {
+            Ok(CachedData {
+                pins: None,
+                tags: None,
+                tags_cache_file: c_path.join(TAGS_CACHE_FN),
+                pins_cache_file: c_path.join(PINS_CACHE_FN),
+                cache_dir: c_path,
+                cache_files_valid: false,
+            })
+        })?;
+        Ok(data)
+    }
+
     fn create_cache_dir<P: AsRef<Path>>(cache_dir: P) -> Result<PathBuf, String> {
         use std::fs;
         fs::create_dir_all(&cache_dir)
@@ -81,6 +102,24 @@ impl CachedData {
             _ => Err("Missing cache files.".to_string()),
         }
     }
+
+    // pub fn load_cache_pins_from_file(&mut self) -> Result<(), String> {
+    //     if self.pins_cache_file.exists() {
+    //         self.read_cached_pins()?;
+    //         Ok(())
+    //     } else {
+    //         Err("Missing cache files.".to_string())
+    //     }
+    // }
+
+    // pub fn load_cache_tags_from_file(&mut self) -> Result<(), String> {
+    //     if self.tags_cache_file.exists() {
+    //         self.read_cached_tags()?;
+    //         Ok(())
+    //     } else {
+    //         Err("Missing cache files.".to_string())
+    //     }
+    // }
 
     fn read_cached_pins(&mut self) -> Result<(), String> {
         logme("read_cached_Pins", "was called");
