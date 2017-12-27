@@ -1,5 +1,5 @@
 use super::*;
-use std::io::BufReader;
+use std::io::{BufReader, BufWriter};
 
 use super::pin::{Pin, Tag};
 
@@ -107,7 +107,7 @@ impl CachedData {
     pub fn update_cache(&mut self, api: &api::Api) -> Result<(), String> {
         // Fetch & write all pins
         //
-        let mut f = File::create(&self.pins_cache_file).map_err(|e| e.description().to_owned())?;
+        let f = File::create(&self.pins_cache_file).map_err(|e| e.description().to_owned())?;
 
         // Sort pins in descending creation time order
         api.all_pins()
@@ -144,7 +144,10 @@ impl CachedData {
                 self.pins = Some(pins);
                 Ok(buf)
             })
-            .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
+            .and_then(|data| {
+                let mut writer = BufWriter::with_capacity(FILE_BUF_SIZE, f);
+                writer.write_all(&data).map_err(|e| e.to_string())
+            })?;
 
         if cfg!(any(
             target_os = "macos",
@@ -158,7 +161,7 @@ impl CachedData {
 
         // Fetch & write all tags
         //
-        let mut f = File::create(&self.tags_cache_file).map_err(|e| e.description().to_owned())?;
+        let f = File::create(&self.tags_cache_file).map_err(|e| e.description().to_owned())?;
 
         // Sort tags by frequency before writing
         api.tags_frequency()
@@ -174,7 +177,10 @@ impl CachedData {
                 self.tags = Some(tags_tuple);
                 Ok(buf)
             })
-            .and_then(|data| f.write_all(&data).map_err(|e| e.description().to_owned()))?;
+            .and_then(|data| {
+                let mut writer = BufWriter::with_capacity(FILE_BUF_SIZE, f);
+                writer.write_all(&data).map_err(|e| e.to_string())
+            })?;
 
         if cfg!(any(
             target_os = "macos",
