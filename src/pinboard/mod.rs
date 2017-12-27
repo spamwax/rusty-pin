@@ -118,10 +118,12 @@ impl<'a> Pinboard<'a> {
                     .as_ref()
                     .unwrap()
                     .into_iter()
-                    .filter(|item| if self.cfg.tag_only_search {
-                        item.pin.tag_contains(q, None)
-                    } else {
-                        item.pin.contains(q)
+                    .filter(|item| {
+                        if self.cfg.tag_only_search {
+                            item.pin.tag_contains(q, None)
+                        } else {
+                            item.pin.contains(q)
+                        }
                     })
                     .map(|item| &item.pin)
                     .collect::<Vec<&Pin>>()
@@ -140,10 +142,12 @@ impl<'a> Pinboard<'a> {
                     .as_ref()
                     .unwrap()
                     .into_iter()
-                    .filter(|item| if self.cfg.tag_only_search {
-                        item.pin.tag_contains("", Some(&re))
-                    } else {
-                        item.pin.contains_fuzzy(&re)
+                    .filter(|item| {
+                        if self.cfg.tag_only_search {
+                            item.pin.tag_contains("", Some(&re))
+                        } else {
+                            item.pin.contains_fuzzy(&re)
+                        }
                     })
                     .map(|item| &item.pin)
                     .collect::<Vec<&Pin>>()
