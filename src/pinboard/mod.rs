@@ -86,7 +86,7 @@ impl<'a> Pinboard<'a> {
         self.cfg.toread_new_pin = v;
     }
 
-    pub fn add_pin(self, p: Pin) -> Result<(), String> {
+    pub fn add_pin(&self, p: Pin) -> Result<(), String> {
         self.api.add_url(p)
     }
 
