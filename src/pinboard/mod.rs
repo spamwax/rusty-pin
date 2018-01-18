@@ -643,6 +643,10 @@ mod tests {
 
     #[test]
     fn serde_update_cache() {
+        // First remove cache files to force a cache update.
+        use std::fs;
+        fs::remove_file(&pinboard.cached_data.pins_cache_file);
+
         let p: Option<PathBuf> = None;
         let pinboard = Pinboard::new(include_str!("auth_token.txt"), p);
         let pinboard = pinboard.unwrap();
@@ -650,11 +654,9 @@ mod tests {
         // Get all pins directly from Pinboard.in (no caching)
         let fresh_pins = pinboard.api.all_pins().unwrap();
 
+
         let cached_pins = pinboard.list_bookmarks().unwrap();
-        assert_eq!(
-            fresh_pins.len(),
-            pinboard.cached_data.pins.as_ref().unwrap().len()
-        );
+        assert_eq!(fresh_pins.len(), cached_pins.len());
 
         // Pick 3 pins and compare them between cached dataset and freshly fetched from Pinboard's
         // API
