@@ -643,17 +643,18 @@ mod tests {
 
     #[test]
     fn serde_update_cache() {
-        // First remove cache files to force a cache update.
-        use std::fs;
-        fs::remove_file(&pinboard.cached_data.pins_cache_file);
+        use std::{thread, time};
 
         let p: Option<PathBuf> = None;
         let pinboard = Pinboard::new(include_str!("auth_token.txt"), p);
-        let pinboard = pinboard.unwrap();
+        let mut pinboard = pinboard.unwrap();
 
         // Get all pins directly from Pinboard.in (no caching)
         let fresh_pins = pinboard.api.all_pins().unwrap();
 
+        // Wait before another full fetch of pins.
+        thread::sleep(time::Duration::from_secs(3));
+        pinboard.update_cache();
 
         let cached_pins = pinboard.list_bookmarks().unwrap();
         assert_eq!(fresh_pins.len(), cached_pins.len());
@@ -661,7 +662,7 @@ mod tests {
         // Pick 3 pins and compare them between cached dataset and freshly fetched from Pinboard's
         // API
         for idx in [0u32, 10u32, 100u32].iter() {
-            println!(" Checking pin[{}]...", idx);
+            logme("serde_update_cache", &format!(" Checking pin[{}]...", idx));
             assert_eq!(
                 fresh_pins[*idx as usize].title.to_lowercase(),
                 cached_pins[*idx as usize].title.to_lowercase()
@@ -707,6 +708,7 @@ mod tests {
         }
     }
 
+    // I am not sure why I wrote this test as it is kind of similar to serde_update_cache
     #[ignore]
     #[test]
     fn test_update_cache() {
@@ -721,7 +723,6 @@ mod tests {
         dir.push("rusty-pin");
         fs::remove_dir_all(dir);
 
-        thread::sleep(five_secs);
         println!("Running first update_cache");
 
         // Pinboard::new() will call update_cache since we remove the cache folder.
@@ -734,7 +735,7 @@ mod tests {
         thread::sleep(five_secs);
 
         println!("Running second update_cache");
-        // pinboard.cached_data.update_cache(&pinboard.api).unwrap_or_else(|e| panic!(e));
+        pinboard.cached_data.update_cache(&pinboard.api).unwrap_or_else(|e| panic!(e));
         pinboard
             .cached_data
             .load_cache_data_from_file()

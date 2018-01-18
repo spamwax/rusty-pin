@@ -248,7 +248,7 @@ mod tests {
         let res = api.all_pins();
 
         if res.is_err() {
-            println!("{:?}", res)
+            panic!("{:?}", res);
         } else {
             println!("Got {} pins!!!", res.unwrap().len());
         }
