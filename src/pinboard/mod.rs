@@ -239,7 +239,9 @@ impl<'a> Pinboard<'a> {
                         let query = &s.as_ref().to_lowercase();
                         search_fields.iter().any(|search_type| match *search_type {
                             SearchType::TitleOnly => cached_pin.pin.title.contains(query),
-                            SearchType::TagOnly => cached_pin.tag_list.contains(query),
+                            SearchType::TagOnly => cached_pin.tag_list
+                                .iter()
+                                .any(|tag| tag.contains(query)),
                             SearchType::UrlOnly => cached_pin.pin.url.as_ref().contains(query),
                             SearchType::DescriptionOnly => {
                                 cached_pin.pin.extended.is_some()
@@ -577,6 +579,12 @@ mod tests {
                 .search(&queries, &fields)
                 .unwrap_or_else(|e| panic!(e));
             assert_eq!(3, pins.as_ref().unwrap().len());
+
+            let queries = ["keyboard", "lear"];
+            let pins = pinboard.search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(13, pins.as_ref().unwrap().len());
         }
 
         // Tag-only search with fuzzy search
@@ -641,6 +649,7 @@ mod tests {
         });
     }
 
+    #[ignore]
     #[test]
     fn serde_update_cache() {
         use std::{thread, time};
