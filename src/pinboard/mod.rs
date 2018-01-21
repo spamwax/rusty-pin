@@ -18,7 +18,7 @@ pub mod pin;
 pub use self::pin::{Pin, Tag};
 
 #[derive(Debug)]
-pub struct Config {
+struct Config {
     pub cache_dir: PathBuf,
     pub tag_only_search: bool,
     pub fuzzy_search: bool,

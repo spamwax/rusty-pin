@@ -95,8 +95,7 @@ mod tests {
 
         #[test]
         fn deserialize_lots_of_pins() {
-            serialize_lots_of_pins();
-            let fp = File::open("/tmp/test_rmp_serde-vec.bin").unwrap();
+            let fp = File::open("tests/test_rmp_serde-vec.bin").unwrap();
             let mut de = Deserializer::from_read(fp);
             let pins: Vec<Pin> = Deserialize::deserialize(&mut de).unwrap();
             assert_eq!(pins.len(), 472);
@@ -106,7 +105,7 @@ mod tests {
 
         #[bench]
         fn bench_rmp(b: &mut Bencher) {
-            let bytes = include_bytes!("/tmp/test_rmp_serde-vec.bin");
+            let bytes = include_bytes!("../tests/test_rmp_serde-vec.bin");
             b.iter(|| {
                 let _pins: Vec<Pin> =
                     Deserialize::deserialize(&mut Deserializer::from_slice(bytes)).unwrap();
