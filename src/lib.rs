@@ -102,7 +102,7 @@ mod tests {
             let fp = File::open("tests/test_rmp_serde-vec.bin").unwrap();
             let mut de = Deserializer::from_read(fp);
             let pins: Vec<Pin> = Deserialize::deserialize(&mut de).unwrap();
-            assert_eq!(pins.len(), 472);
+            assert_eq!(612, pins.len());
             fs::remove_file("/tmp/test_rmp_serde-vec.bin");
         }
 
