@@ -161,15 +161,10 @@ impl<'a> Api<'a> {
             api_url.query_pairs_mut().append_pair(k, v);
         }
 
-        let mut resp = client
-            .get(api_url)
-            .send()
-            .map_err(|e| {
-                match e.get_ref() {
-                    Some(e) => format!("{:?}", e.description()),
-                    None => format!("Serious error making network request."),
-                }
-            })?;
+        let mut resp = client.get(api_url).send().map_err(|e| match e.get_ref() {
+            Some(e) => format!("{}", e.description()),
+            None => format!("Serious error making network request."),
+        })?;
 
         // TODO: check for error status codes and return them instead of panicking.
         assert!(resp.status().is_success());
