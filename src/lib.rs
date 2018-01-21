@@ -86,11 +86,11 @@ mod tests {
         fn serialize_lots_of_pins() {
             let input = include_str!("../sample.json");
             let pins: Vec<Pin> = serde_json::from_str(input).unwrap();
-            assert_eq!(pins.len(), 472);
+            assert_eq!(612, pins.len());
 
             let mut buf: Vec<u8> = Vec::new();
             pins.serialize(&mut Serializer::new(&mut buf)).unwrap();
-            assert_eq!(79588, buf.len());
+            assert_eq!(115671, buf.len());
 
             let mut fp = File::create("/tmp/test_rmp_serde-vec.bin").unwrap();
             fp.write_all(buf.as_slice()).unwrap();
@@ -179,7 +179,7 @@ mod tests {
             let pins: Result<Vec<Pin>, _> = from_str(input);
             assert!(pins.is_ok());
             let pins = pins.unwrap();
-            assert_eq!(pins.len(), 472);
+            assert_eq!(612, pins.len());
         }
 
         #[bench]
