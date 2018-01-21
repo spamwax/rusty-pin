@@ -10,7 +10,6 @@ use url::Url;
 use std::io::Read;
 use std::collections::HashMap;
 
-//use super::{Pin, Tag};
 use super::pin::{Pin, Tag};
 
 #[derive(Serialize, Deserialize, Debug)]
