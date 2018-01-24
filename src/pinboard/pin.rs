@@ -11,16 +11,21 @@ pub struct Tag(pub String, pub usize);
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Pin {
-    #[serde(with = "url_serde", rename = "href")] pub url: Url,
-    #[serde(rename = "description")] pub title: String,
+    #[serde(with = "url_serde", rename = "href")]
+    pub url: Url,
+    #[serde(rename = "description")]
+    pub title: String,
     pub tags: String,
     pub shared: String,
     pub toread: String,
     // #[serde(skip_serializing_if = "Option::is_none")]
     pub extended: Option<String>,
-    #[serde(default = "Utc::now")] pub time: DateTime<Utc>,
-    #[serde(skip)] meta: Option<String>,
-    #[serde(skip)] hash: Option<String>,
+    #[serde(default = "Utc::now")]
+    pub time: DateTime<Utc>,
+    #[serde(skip)]
+    meta: Option<String>,
+    #[serde(skip)]
+    hash: Option<String>,
 }
 
 impl Pin {

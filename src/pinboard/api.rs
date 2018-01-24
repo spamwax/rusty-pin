@@ -29,7 +29,8 @@ impl ApiResult {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct UpdateTime {
-    #[serde(rename = "update_time")] datetime: DateTime<Utc>,
+    #[serde(rename = "update_time")]
+    datetime: DateTime<Utc>,
 }
 
 #[derive(Debug)]
