@@ -1,6 +1,11 @@
 use super::*;
+use std::io::Write;
 use std::io::{BufReader, BufWriter};
 use env_logger;
+
+use serde::Serialize;
+
+use failure::Error;
 
 use super::pin::{Pin, Tag};
 
@@ -27,7 +32,7 @@ pub struct CachedPin {
 }
 
 impl CachedData {
-    pub fn new<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, String> {
+    pub fn new<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, Error> {
         let _ = env_logger::try_init();
         info!("new: starting");
         let cached_dir = c_dir.map(|p| p.as_ref().to_path_buf()).unwrap_or_else(|| {
@@ -47,16 +52,14 @@ impl CachedData {
             })
         })?;
 
-        match data.load_cache_data_from_file() {
-            Ok(_) => data.cache_files_valid = true,
-            Err(ref e) if e == &"Missing cache files.".to_string() => (),
-            Err(e) => return Err(e),
-        };
+        if data.load_cache_data_from_file().is_err() {
+            data.cache_files_valid = false;
+        }
         Ok(data)
     }
 
     /// Create an instance for CachedData but don't load actual cached files.
-    pub fn init<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, String> {
+    pub fn init<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, Error> {
         let _ = env_logger::try_init();
         info!("init: starting");
         let cached_dir = c_dir.map(|p| p.as_ref().to_path_buf()).unwrap_or_else(|| {
@@ -78,19 +81,17 @@ impl CachedData {
         Ok(data)
     }
 
-    fn create_cache_dir<P: AsRef<Path>>(cache_dir: P) -> Result<PathBuf, String> {
+    fn create_cache_dir<P: AsRef<Path>>(cache_dir: P) -> Result<PathBuf, Error> {
         let _ = env_logger::try_init();
         info!("create_cache_dir: starting");
         use std::fs;
-        fs::create_dir_all(&cache_dir)
-            .map_err(|e| e.description().to_owned())
-            .and_then(|_| Ok(cache_dir.as_ref().to_path_buf()))
+        fs::create_dir_all(&cache_dir)?;
+        Ok(cache_dir.as_ref().to_path_buf())
     }
 }
 
 impl CachedData {
-    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), String> {
-        let _ = env_logger::try_init();
+    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), Error> {
         info!("set_cache_dir: starting");
         self.cache_dir = CachedData::create_cache_dir(p)?;
         self.tags_cache_file = self.cache_dir.join(TAGS_CACHE_FN);
@@ -101,8 +102,7 @@ impl CachedData {
         Ok(())
     }
 
-    pub fn load_cache_data_from_file(&mut self) -> Result<(), String> {
-        let _ = env_logger::try_init();
+    pub fn load_cache_data_from_file(&mut self) -> Result<(), Error> {
         info!("load_cache_data_from_file: starting");
         match (self.tags_cache_file.exists(), self.pins_cache_file.exists()) {
             (true, true) => {
@@ -111,64 +111,37 @@ impl CachedData {
                 self.cache_files_valid = true;
                 Ok(())
             }
-            _ => Err("Missing cache files.".to_string()),
+            _ => bail!("Missing cache files"),
         }
     }
 
-    // pub fn load_cache_pins_from_file(&mut self) -> Result<(), String> {
-    // let _ = env_logger::try_init();
-    // info!("load_cache_pins_from_file: starting");
-    //     if self.pins_cache_file.exists() {
-    //         self.read_cached_pins()?;
-    //         Ok(())
-    //     } else {
-    //         Err("Missing cache files.".to_string())
-    //     }
-    // }
-
-    // pub fn load_cache_tags_from_file(&mut self) -> Result<(), String> {
-    // let _ = env_logger::try_init();
-    // info!("load_cache_tags_from_file: starting");
-    //     if self.tags_cache_file.exists() {
-    //         self.read_cached_tags()?;
-    //         Ok(())
-    //     } else {
-    //         Err("Missing cache files.".to_string())
-    //     }
-    // }
-
-    fn read_cached_pins(&mut self) -> Result<(), String> {
-        let _ = env_logger::try_init();
+    fn read_cached_pins(&mut self) -> Result<(), Error> {
         info!("read_cached_pins: starting");
-        let fp = File::open(&self.pins_cache_file).map_err(|e| e.description().to_owned())?;
+        let fp = File::open(&self.pins_cache_file)?;
         let reader = BufReader::with_capacity(FILE_BUF_SIZE, fp);
         let mut de = Deserializer::from_read(reader);
-        self.pins = Deserialize::deserialize(&mut de).map_err(|e| e.description().to_owned())?;
+        self.pins = Deserialize::deserialize(&mut de)?;
         Ok(())
     }
 
-    fn read_cached_tags(&mut self) -> Result<(), String> {
-        let _ = env_logger::try_init();
+    fn read_cached_tags(&mut self) -> Result<(), Error> {
         info!("read_cached_tags: starting");
-        let fp = File::open(&self.tags_cache_file).map_err(|e| e.description().to_owned())?;
+        let fp = File::open(&self.tags_cache_file)?;
         let reader = BufReader::with_capacity(FILE_BUF_SIZE, fp);
         let mut de = Deserializer::from_read(reader);
-        self.tags = Deserialize::deserialize(&mut de).map_err(|e| e.description().to_owned())?;
+        self.tags = Deserialize::deserialize(&mut de)?;
         Ok(())
     }
 
     pub fn cache_ok(&self) -> bool {
-        let _ = env_logger::try_init();
         info!("cache_ok: starting");
         self.cache_files_valid
     }
 
-    pub fn update_cache(&mut self, api: &api::Api) -> Result<(), String> {
-        let _ = env_logger::try_init();
+    pub fn update_cache(&mut self, api: &api::Api) -> Result<(), Error> {
         info!("update_cache: starting");
         // Fetch & write all pins
-        //
-        let f = File::create(&self.pins_cache_file).map_err(|e| e.description().to_owned())?;
+        let f = File::create(&self.pins_cache_file)?;
 
         // Sort pins in descending creation time order
         api.all_pins()
@@ -200,14 +173,13 @@ impl CachedData {
             })
             .and_then(|pins: Vec<CachedPin>| {
                 let mut buf: Vec<u8> = Vec::with_capacity(CACHE_BUF_SIZE);
-                pins.serialize(&mut Serializer::new(&mut buf))
-                    .map_err(|e| e.description().to_owned())?;
+                pins.serialize(&mut Serializer::new(&mut buf))?;
                 self.pins = Some(pins);
                 Ok(buf)
             })
             .and_then(|data| {
                 let mut writer = BufWriter::with_capacity(FILE_BUF_SIZE, f);
-                writer.write_all(&data).map_err(|e| e.to_string())
+                Ok(writer.write_all(&data)?)
             })?;
 
         #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
@@ -217,7 +189,7 @@ impl CachedData {
 
         // Fetch & write all tags
         //
-        let f = File::create(&self.tags_cache_file).map_err(|e| e.description().to_owned())?;
+        let f = File::create(&self.tags_cache_file)?;
 
         // Sort tags by frequency before writing
         api.tags_frequency()
@@ -233,15 +205,13 @@ impl CachedData {
             })
             .and_then(|tags_tuple| {
                 let mut buf: Vec<u8> = Vec::with_capacity(CACHE_BUF_SIZE);
-                tags_tuple
-                    .serialize(&mut Serializer::new(&mut buf))
-                    .map_err(|e| e.description().to_owned())?;
+                tags_tuple.serialize(&mut Serializer::new(&mut buf))?;
                 self.tags = Some(tags_tuple);
                 Ok(buf)
             })
             .and_then(|data| {
                 let mut writer = BufWriter::with_capacity(FILE_BUF_SIZE, f);
-                writer.write_all(&data).map_err(|e| e.to_string())
+                Ok(writer.write_all(&data)?)
             })?;
 
         #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
@@ -254,7 +224,6 @@ impl CachedData {
 
     #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
     fn fix_cache_file_perm(&self, p: &PathBuf) {
-        let _ = env_logger::try_init();
         info!("fix_cache_file_perm: starting");
         // TODO: don't just unwrap, return a proper error.
         use std::fs::Permissions;

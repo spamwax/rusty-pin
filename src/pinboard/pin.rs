@@ -18,7 +18,6 @@ pub struct Pin {
     pub tags: String,
     pub shared: String,
     pub toread: String,
-    // #[serde(skip_serializing_if = "Option::is_none")]
     pub extended: Option<String>,
     #[serde(default = "Utc::now")]
     pub time: DateTime<Utc>,
@@ -147,9 +146,7 @@ mod tests {
             p.url,
             Url::parse("https://githuуй.com/Здравствуйт?q=13#fragment").unwrap()
         );
-        // assert_eq!(p.tag_list.len(), 2);
         assert_eq!(p.tags, "tag1 tag2".to_string());
-        // assert_eq!(p.tag_list, vec!["tag1", "tag2"]);
     }
 
     #[test]
@@ -173,7 +170,9 @@ mod tests {
     fn test_search_pins() {
         let _ = env_logger::try_init();
         info!("test_search_pins: starting");
+
         let (_m1, _m2) = create_mockito_servers();
+
         let mut _home = env::home_dir().unwrap();
         _home.push(".cache");
         _home.push("mockito-rusty-pin");
