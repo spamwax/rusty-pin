@@ -90,6 +90,10 @@ impl<'a> Pinboard<'a> {
         self.api.add_url(p)
     }
 
+    pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), String> {
+        self.api.delete(url)
+    }
+
     pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, String> {
         self.api
             .recent_update()
