@@ -90,6 +90,10 @@ impl<'a> Pinboard<'a> {
         self.api.add_url(p)
     }
 
+    pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), String> {
+        self.api.delete(url)
+    }
+
     pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, String> {
         self.api
             .recent_update()
@@ -552,7 +556,7 @@ mod tests {
             let pins = pinboard
                 .search(&queries, &fields)
                 .unwrap_or_else(|e| panic!(e));
-            assert_eq!(9, pins.as_ref().unwrap().len());
+            assert_eq!(8, pins.as_ref().unwrap().len());
         }
 
         // Fuzzy search unicode

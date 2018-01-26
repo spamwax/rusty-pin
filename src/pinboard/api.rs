@@ -94,7 +94,7 @@ impl<'a> Api<'a> {
         let mut map = HashMap::new();
         let url = p.url.into_string();
 
-        map.insert("url", url.clone());
+        map.insert("url", url);
         map.insert("description", p.title);
         map.insert("tags", p.tags);
         map.insert("toread", p.toread);
@@ -131,7 +131,7 @@ impl<'a> Api<'a> {
         let url = url.into_url()
             .map_err(|_| "Invalid url.".to_owned())?
             .to_string();
-        map.insert("url", url.clone());
+        map.insert("url", url);
         self.get_api_response("https://api.pinboard.in/v1/posts/delete", &map)
             .and_then(|res| {
                 serde_json::from_str(&res)
