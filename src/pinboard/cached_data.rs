@@ -7,6 +7,7 @@ const TAGS_CACHE_FN: &str = "tags.cache";
 const PINS_CACHE_FN: &str = "pins.cache";
 
 const FILE_BUF_SIZE: usize = 4 * 1024 * 1024;
+const CACHE_BUF_SIZE: usize = 1024;
 
 #[derive(Debug)]
 pub struct CachedData {
@@ -177,7 +178,7 @@ impl CachedData {
                     .collect())
             })
             .and_then(|pins: Vec<CachedPin>| {
-                let mut buf: Vec<u8> = Vec::new();
+                let mut buf: Vec<u8> = Vec::with_capacity(CACHE_BUF_SIZE);
                 pins.serialize(&mut Serializer::new(&mut buf))
                     .map_err(|e| e.description().to_owned())?;
                 self.pins = Some(pins);
@@ -209,7 +210,7 @@ impl CachedData {
                 Ok(tags)
             })
             .and_then(|tags_tuple| {
-                let mut buf: Vec<u8> = Vec::new();
+                let mut buf: Vec<u8> = Vec::with_capacity(CACHE_BUF_SIZE);
                 tags_tuple
                     .serialize(&mut Serializer::new(&mut buf))
                     .map_err(|e| e.description().to_owned())?;
