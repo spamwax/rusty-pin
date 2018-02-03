@@ -730,6 +730,7 @@ mod tests {
         use std::fs;
 
         let five_secs = time::Duration::from_secs(5);
+        const IDX: usize = 25;
 
         // First remove all folders to force a full update
         let mut dir = env::home_dir().unwrap_or_else(|| PathBuf::from(""));
@@ -741,10 +742,21 @@ mod tests {
 
         // Pinboard::new() will call update_cache since we remove the cache folder.
         let p: Option<PathBuf> = None;
-        let pinboard = Pinboard::new(include_str!("auth_token.txt"), p);
-        let mut pinboard = pinboard.unwrap();
-        let pins = pinboard.cached_data.pins.take().unwrap();
-        let tags = pinboard.cached_data.tags.take().unwrap();
+        let pb = Pinboard::new(include_str!("auth_token.txt"), p);
+        let mut pinboard = match pb {
+            Ok(v) => v,
+            Err(e) => panic!("{:?}", e),
+        };
+        let pins = match pinboard.cached_data.pins.take() {
+            Some(v) => v,
+            None => panic!("No pins found in cache!"),
+        };
+        let tags = match pinboard.cached_data.tags.take() {
+            Some(v) => v,
+            None => panic!("No tags found in cache!"),
+        };
+        assert!(pins.len() > IDX);
+        assert!(tags.len() > IDX);
 
         thread::sleep(five_secs);
 
@@ -762,10 +774,10 @@ mod tests {
         assert!(pinboard.cached_data.pins.is_some());
         println!(
             "{:?}\n\n{:?}\n\n",
-            pins[20],
-            pinboard.cached_data.pins.as_ref().unwrap()[20]
+            pins[IDX],
+            pinboard.cached_data.pins.as_ref().unwrap()[IDX]
         );
-        assert_eq!(pins[20], pinboard.cached_data.pins.as_ref().unwrap()[20]);
+        assert_eq!(pins[IDX], pinboard.cached_data.pins.as_ref().unwrap()[IDX]);
         assert_eq!(
             pins.len(),
             pinboard.cached_data.pins.as_ref().unwrap().len()
@@ -774,10 +786,10 @@ mod tests {
         assert!(pinboard.cached_data.tags.is_some());
         println!(
             "{:?}\n{:?}",
-            tags[20],
-            pinboard.cached_data.tags.as_ref().unwrap()[20]
+            tags[IDX],
+            pinboard.cached_data.tags.as_ref().unwrap()[IDX]
         );
-        assert_eq!(tags[20], pinboard.cached_data.tags.as_ref().unwrap()[20]);
+        assert_eq!(tags[IDX], pinboard.cached_data.tags.as_ref().unwrap()[IDX]);
         assert_eq!(
             tags.len(),
             pinboard.cached_data.tags.as_ref().unwrap().len()
