@@ -48,6 +48,7 @@ impl<'a> Pinboard<'a> {
     {
         let api = api::Api::new(auth_token);
         let cfg = Config::new();
+        logme("pinb::new", "calling CachedData::new");
         let mut cached_data = CachedData::new(cached_dir)?;
         if !cached_data.cache_ok() {
             logme("pinb::new", "cache file missing, calling update");
@@ -343,6 +344,8 @@ mod tests {
     // TODO: Add tests for case insensitivity searches of tags/pins
     use super::*;
     use test::Bencher;
+    use mockito::{mock, Matcher, Mock};
+    use std::env;
 
     #[test]
     fn test_cached_data() {
@@ -383,13 +386,18 @@ mod tests {
 
     #[test]
     fn test_search_items() {
-        let p: Option<PathBuf> = None;
-        let mut pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
+        let (_m1, _m2) = create_mockito_servers();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
+
+        let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
         pinboard.enable_fuzzy_search(false);
 
         {
             let pins = pinboard
-                .search_items("django")
+                .search_items("openpgp")
                 .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
         }
@@ -405,7 +413,7 @@ mod tests {
             // fuzzy search test
             pinboard.enable_fuzzy_search(true);
             let pins = pinboard
-                .search_items("funkYoumoth")
+                .search_items("gemhobi")
                 .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
             assert_eq!(1, pins.unwrap().len());
@@ -414,13 +422,18 @@ mod tests {
 
     #[test]
     fn search_tag_pairs() {
-        let p: Option<PathBuf> = None;
-        let mut pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
+        let (_m1, _m2) = create_mockito_servers();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
+
+        let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
         pinboard.enable_fuzzy_search(false);
 
         {
             let tags = pinboard
-                .search_list_of_tags("django")
+                .search_list_of_tags("ctags")
                 .unwrap_or_else(|e| panic!(e));
             assert!(tags.is_some());
         }
@@ -444,46 +457,64 @@ mod tests {
         {
             // non-fuzzy search test
             let tags = pinboard
-                .search_list_of_tags("Lumia920")
+                .search_list_of_tags("yubikey")
                 .unwrap_or_else(|e| panic!(e));
             assert!(tags.is_some());
             let tags = tags.unwrap();
             assert_eq!(tags.len(), 1);
-            assert_eq!(tags[0].1, 2);
+            assert_eq!(3, tags[0].1);
         }
 
         {
             // fuzzy search test
             pinboard.enable_fuzzy_search(true);
             let tags = pinboard
-                .search_list_of_tags("Lumia920")
+                .search_list_of_tags("mroooe")
                 .unwrap_or_else(|e| panic!(e));
             assert!(tags.is_some());
             let tags = tags.unwrap();
-            assert_eq!(tags.len(), 1);
-            assert_eq!(tags[0].1, 2);
+            assert_eq!(1, tags.len());
+            assert_eq!(5, tags[0].1);
         }
     }
 
     #[test]
     fn list_tags() {
-        let p: Option<PathBuf> = None;
-        let pinboard = Pinboard::new(include_str!("auth_token.txt"), p);
-        // println!("{:?}", pinboard);
-        assert!(pinboard.unwrap().list_tag_pairs().is_some());
+        let (_m1, _m2) = create_mockito_servers();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
+
+        let pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
+        assert!(pinboard.list_tag_pairs().is_some());
     }
 
     #[test]
     fn list_bookmarks() {
-        let p: Option<PathBuf> = None;
-        let pinboard = Pinboard::new(include_str!("auth_token.txt"), p);
-        assert!(pinboard.unwrap().list_bookmarks().is_some());
+        let (_m1, _m2) = create_mockito_servers();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
+
+        let pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
+        assert!(pinboard.list_bookmarks().is_some());
     }
 
     #[test]
     fn popular_tags() {
-        let p: Option<PathBuf> = None;
-        let pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
+        let _m1 = mock("GET", Matcher::Regex(r"^/posts/suggest.*$".to_string()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"[{"popular":["datetime","library","rust"]},{"recommended":["datetime","library","programming","rust"]}]"#)
+            .create();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
+
+        let pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
         let tags = pinboard.popular_tags("https://docs.rs/chrono/0.4.0/chrono");
         assert!(tags.is_ok());
         let tags = tags.unwrap();
@@ -497,12 +528,17 @@ mod tests {
 
     #[test]
     fn search_multi_query_multi_field() {
-        let p: Option<PathBuf> = None;
-        let mut pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
+        let (_m1, _m2) = create_mockito_servers();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
+
+        let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
         // Find pins that have all keywords almost anywhere
         {
             pinboard.enable_fuzzy_search(false);
-            let queries = ["rust", "python"];
+            let queries = ["eagle", "design", "fun"];
             let fields = vec![
                 SearchType::TitleOnly,
                 SearchType::TagOnly,
@@ -514,7 +550,7 @@ mod tests {
             assert!(pins.is_some());
 
             // Run same query, this time with Vec<String> instead of Vec<&str>
-            let queries = [String::from("rust"), String::from("python")];
+            let queries = ["eagle", "design", "fun"];
             let pins = pinboard
                 .search(&queries, &fields)
                 .unwrap_or_else(|e| panic!(e));
@@ -533,20 +569,18 @@ mod tests {
 
         // Find pins that have all keywords only in Url
         {
-            let queries = ["bashy"];
+            let queries = ["pixlas"];
             let fields = vec![SearchType::UrlOnly];
             let pins = pinboard
                 .search(&queries, &fields)
                 .unwrap_or_else(|e| panic!(e));
-            assert_eq!(2, pins.as_ref().unwrap().len());
+            assert_eq!(1, pins.as_ref().unwrap().len());
         }
 
         // Fuzzy search
         {
             pinboard.enable_fuzzy_search(true);
-            let queries = [
-                "rust", "python", "open", "handoff", "sony", "writing", "elseif", "osx"
-            ];
+            let queries = ["rust", "strange", "cross", "readme", "hint"];
             let fields = vec![
                 SearchType::TitleOnly,
                 SearchType::TagOnly,
@@ -556,7 +590,23 @@ mod tests {
             let pins = pinboard
                 .search(&queries, &fields)
                 .unwrap_or_else(|e| panic!(e));
-            assert_eq!(8, pins.as_ref().unwrap().len());
+            assert_eq!(3, pins.as_ref().unwrap().len());
+        }
+
+        // Fuzzy search unicode
+        {
+            pinboard.enable_fuzzy_search(true);
+            let queries = ["\u{0622}\u{0645}\u{0648}\u{0632}\u{0634}\u{06cc}"]; // آموزشی
+            let fields = vec![
+                SearchType::TitleOnly,
+                SearchType::TagOnly,
+                SearchType::DescriptionOnly,
+                SearchType::UrlOnly,
+            ];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert_eq!(1, pins.as_ref().unwrap().len());
         }
 
         // Fuzzy search unicode
@@ -572,46 +622,47 @@ mod tests {
             let pins = pinboard
                 .search(&queries, &fields)
                 .unwrap_or_else(|e| panic!(e));
-            assert_eq!(1, pins.as_ref().unwrap().len());
+            assert_eq!(3, pins.as_ref().unwrap().len());
         }
+
         // Tag-only search
         {
             pinboard.enable_fuzzy_search(false);
-            let queries = ["bestpractices"];
+            let queries = ["rust"];
             let fields = vec![SearchType::TagOnly];
             let pins = pinboard
                 .search(&queries, &fields)
                 .unwrap_or_else(|e| panic!(e));
-            assert_eq!(3, pins.as_ref().unwrap().len());
+            assert_eq!(10, pins.as_ref().unwrap().len());
 
-            let queries = ["keyboard", "lear"];
+            let queries = ["keyboard", "hacks"];
             let pins = pinboard
                 .search(&queries, &fields)
                 .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
-            assert_eq!(13, pins.as_ref().unwrap().len());
+            assert_eq!(1, pins.as_ref().unwrap().len());
         }
 
         // Tag-only search with fuzzy search
         {
             pinboard.enable_fuzzy_search(true);
-            let queries = ["bestpractices"];
+            let queries = ["backup"];
             let fields = vec![SearchType::TagOnly];
             let pins = pinboard
                 .search(&queries, &fields)
                 .unwrap_or_else(|e| panic!(e));
-            assert_eq!(5, pins.as_ref().unwrap().len());
+            assert_eq!(2, pins.as_ref().unwrap().len());
         }
 
         // title+url search non-fuzzy
         {
             pinboard.enable_fuzzy_search(false);
-            let queries = ["000", "intel"];
+            let queries = ["世", "macos"];
             let fields = vec![SearchType::TitleOnly, SearchType::UrlOnly];
             let pins = pinboard
                 .search(&queries, &fields)
                 .unwrap_or_else(|e| panic!(e));
-            assert_eq!(2, pins.as_ref().unwrap().len());
+            assert_eq!(1, pins.as_ref().unwrap().len());
         }
 
         // empty search query
@@ -628,8 +679,13 @@ mod tests {
 
     #[bench]
     fn bench_search_non_fuzzy(b: &mut Bencher) {
-        let p: Option<PathBuf> = None;
-        let mut pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
+        let (_m1, _m2) = create_mockito_servers();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
+
+        let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
         pinboard.enable_fuzzy_search(false);
         let queries = ["zfs", "fr"];
         let fields = vec![];
@@ -642,8 +698,13 @@ mod tests {
 
     #[bench]
     fn bench_search_fuzzy(b: &mut Bencher) {
-        let p: Option<PathBuf> = None;
-        let mut pinboard = Pinboard::new(include_str!("auth_token.txt"), p).unwrap();
+        let (_m1, _m2) = create_mockito_servers();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
+
+        let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
         pinboard.enable_fuzzy_search(true);
         let queries = ["zfs", "fr"];
         let fields = vec![];
@@ -657,17 +718,18 @@ mod tests {
     #[ignore]
     #[test]
     fn serde_update_cache() {
-        use std::{thread, time};
+        let (_m1, _m2) = create_mockito_servers();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
 
-        let p: Option<PathBuf> = None;
-        let pinboard = Pinboard::new(include_str!("auth_token.txt"), p);
-        let mut pinboard = pinboard.unwrap();
+        let p = Pinboard::new(include_str!("api_token.txt"), cache_path);
+        let mut pinboard = p.unwrap_or_else(|e| panic!("{:?}", e));
 
         // Get all pins directly from Pinboard.in (no caching)
         let fresh_pins = pinboard.api.all_pins().unwrap();
 
-        // Wait before another full fetch of pins.
-        thread::sleep(time::Duration::from_secs(3));
         pinboard.update_cache();
 
         let cached_pins = pinboard.list_bookmarks().unwrap();
@@ -675,7 +737,7 @@ mod tests {
 
         // Pick 3 pins and compare them between cached dataset and freshly fetched from Pinboard's
         // API
-        for idx in [0u32, 10u32, 100u32].iter() {
+        for idx in [0u32, 10u32, 50u32].iter() {
             logme("serde_update_cache", &format!(" Checking pin[{}]...", idx));
             assert_eq!(
                 fresh_pins[*idx as usize].title.to_lowercase(),
@@ -726,23 +788,24 @@ mod tests {
     #[ignore]
     #[test]
     fn test_update_cache() {
-        use std::{thread, time};
         use std::fs;
 
-        let five_secs = time::Duration::from_secs(5);
         const IDX: usize = 25;
 
-        // First remove all folders to force a full update
-        let mut dir = env::home_dir().unwrap_or_else(|| PathBuf::from(""));
-        dir.push(".cache");
-        dir.push("rusty-pin");
-        fs::remove_dir_all(dir);
+        let (_m1, _m2) = create_mockito_servers();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+
+        let cache_path = Some(_home.clone());
 
         println!("Running first update_cache");
 
+        // First remove all folders to force a full update
+        fs::remove_dir_all(_home);
+
         // Pinboard::new() will call update_cache since we remove the cache folder.
-        let p: Option<PathBuf> = None;
-        let pb = Pinboard::new(include_str!("auth_token.txt"), p);
+        let pb = Pinboard::new(include_str!("api_token.txt"), cache_path);
         let mut pinboard = match pb {
             Ok(v) => v,
             Err(e) => panic!("{:?}", e),
@@ -757,8 +820,6 @@ mod tests {
         };
         assert!(pins.len() > IDX);
         assert!(tags.len() > IDX);
-
-        thread::sleep(five_secs);
 
         println!("Running second update_cache");
         pinboard
@@ -789,10 +850,25 @@ mod tests {
             tags[IDX],
             pinboard.cached_data.tags.as_ref().unwrap()[IDX]
         );
-        assert_eq!(tags[IDX], pinboard.cached_data.tags.as_ref().unwrap()[IDX]);
         assert_eq!(
             tags.len(),
             pinboard.cached_data.tags.as_ref().unwrap().len()
         );
+        assert_eq!(tags[IDX], pinboard.cached_data.tags.as_ref().unwrap()[IDX]);
     }
+
+    fn create_mockito_servers() -> (Mock, Mock) {
+        let m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body_from_file("tests/all_pins_mockito.json")
+            .create();
+        let m2 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body_from_file("tests/all_tags_mockito.json")
+            .create();
+        (m1, m2)
+    }
+
 }

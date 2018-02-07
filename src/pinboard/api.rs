@@ -199,11 +199,11 @@ mod tests {
     #[test]
     fn get_latest_update_time() {
         let _m = mock("GET", Matcher::Regex(r"^/posts/update.*$".to_string()))
-            .with_status(201)
+            .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(r#"{"update_time":"2018-02-07T01:54:09Z"}"#)
             .create();
-        let api = Api::new(include_str!("auth_token.txt").to_string());
+        let api = Api::new(include_str!("api_token.txt").to_string());
         let r = api.recent_update();
         assert!(r.is_ok());
         println!("{:?}", r.unwrap());
@@ -212,10 +212,22 @@ mod tests {
     #[test]
     fn delete_a_pin() {
         add_a_url();
-        let api = Api::new(include_str!("auth_token.txt").to_string());
+        let _m1 = mock("GET", Matcher::Regex(r"^/posts/delete.*$".to_string()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"result_code":"done"}"#)
+            .create();
+        let api = Api::new(include_str!("api_token.txt").to_string());
         let r = api.delete(TEST_URL);
         r.expect("Error in deleting a pin.");
 
+        let _m2 = mock(
+            "GET",
+            Matcher::Regex(r"^/posts/delete.+fucking\.way.*$".to_string()),
+        ).with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"result_code":"item not found"}"#)
+            .create();
         let r = api.delete("http://no.fucking.way");
         assert_eq!(
             "item not found".to_owned(),
@@ -231,7 +243,12 @@ mod tests {
 
     #[test]
     fn add_a_url() {
-        let api = Api::new(include_str!("auth_token.txt").to_string());
+        let _m1 = mock("GET", Matcher::Regex(r"^/posts/add.*$".to_string()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"result_code":"done"}"#)
+            .create();
+        let api = Api::new(include_str!("api_token.txt").to_string());
         let p = PinBuilder::new(TEST_URL, "test bookmark/pin".to_string()).into_pin();
         let res = api.add_url(p);
         res.expect("Error in adding.");
@@ -239,10 +256,15 @@ mod tests {
 
     #[test]
     fn suggest_tags() {
-        let api = Api::new(include_str!("auth_token.txt").to_string());
+        let _m1 = mock("GET", Matcher::Regex(r"^/posts/suggest.*$".to_string()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"[{"popular":["datetime","library","rust"]},{"recommended":["datetime","library","programming","rust"]}]"#)
+            .create();
+        let api = Api::new(include_str!("api_token.txt").to_string());
         let url = "http://blog.com/";
         let res = api.suggest_tags(url);
-        assert_eq!(res.unwrap(), vec!["blog", "blogging", "free", "hosting"]);
+        assert_eq!(vec!["datetime", "library", "rust"], res.unwrap());
 
         let url = ":// bad url/#";
         let res = api.suggest_tags(url);
@@ -255,21 +277,28 @@ mod tests {
 
     #[test]
     fn test_tag_freq() {
-        let api = Api::new(include_str!("auth_token.txt").to_string());
+        let _m1 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body_from_file("tests/all_tags_mockito.json")
+            .create();
+        let api = Api::new(include_str!("api_token.txt").to_string());
         let res = api.tags_frequency();
-        assert!(res.is_ok());
+        let _r = res.unwrap_or_else(|e| panic!("{:?}", e));
     }
 
     #[ignore]
     #[test]
     fn test_all_pins() {
-        let api = Api::new(include_str!("auth_token.txt").to_string());
+        let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body_from_file("tests/all_pins_mockito.json")
+            .create();
+        let api = Api::new(include_str!("api_token.txt").to_string());
         let res = api.all_pins();
 
-        if res.is_err() {
-            panic!("{:?}", res);
-        } else {
-            println!("Got {} pins!!!", res.unwrap().len());
-        }
+        assert_eq!(57, res.unwrap_or_else(|e| panic!("{:?}", e)).len());
     }
 }
+
