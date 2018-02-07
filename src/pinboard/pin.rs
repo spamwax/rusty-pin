@@ -74,8 +74,8 @@ impl Pin {
 
     pub fn contains_fuzzy(&self, re: &Regex) -> bool {
         re.captures(&self.title).is_some() || re.captures(&self.tags).is_some()
-            || (self.extended.is_some() && re.captures(self.extended.as_ref().unwrap()).is_some())
             || re.captures(self.url.as_ref()).is_some()
+            || (self.extended.is_some() && re.captures(self.extended.as_ref().unwrap()).is_some())
     }
 }
 
@@ -130,6 +130,8 @@ impl PinBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use mockito::{mock, Matcher, Mock};
+    use std::env;
 
     #[test]
     fn test_builder() {
@@ -165,9 +167,15 @@ mod tests {
 
     #[test]
     fn test_search_pins() {
-        let p: Option<String> = None;
-        let mut pinboard = ::pinboard::Pinboard::new(include_str!("auth_token.txt"), p)
-            .expect("Unable to initiate Pinboard");
+        let (_m1, _m2) = create_mockito_servers();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
+        let p = ::pinboard::Pinboard::new(include_str!("api_token.txt"), cache_path)
+            .map_err(|e| format!("{:?}", e));
+        let mut pinboard = p.unwrap_or_else(|e| panic!("{:?}", e));
+
         pinboard.enable_tag_only_search(false);
         pinboard.enable_fuzzy_search(false);
 
@@ -182,7 +190,7 @@ mod tests {
             pinboard.enable_fuzzy_search(true);
             pinboard.enable_tag_only_search(false);
             let pins = pinboard
-                .search_items("solvingbootp")
+                .search_items(r#"openstm"#)
                 .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
         }
@@ -215,6 +223,20 @@ mod tests {
             assert_eq!(pins.len(), 1);
             assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
         }
+    }
+
+    fn create_mockito_servers() -> (Mock, Mock) {
+        let m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body_from_file("tests/all_pins_mockito.json")
+            .create();
+        let m2 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body_from_file("tests/all_tags_mockito.json")
+            .create();
+        (m1, m2)
     }
 
 }

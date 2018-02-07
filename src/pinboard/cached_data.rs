@@ -206,7 +206,13 @@ impl CachedData {
         // Sort tags by frequency before writing
         api.tags_frequency()
             .and_then(|mut tags| {
-                tags.sort_by(|t1, t2| t1.1.cmp(&t2.1).reverse());
+                tags.sort_by(|t1, t2| {
+                    if t1.1 != t2.1 {
+                        t1.1.cmp(&t2.1).reverse()
+                    } else {
+                        t1.0.cmp(&t2.0)
+                    }
+                });
                 Ok(tags)
             })
             .and_then(|tags_tuple| {

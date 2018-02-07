@@ -1,10 +1,10 @@
 #![feature(test)]
-
 extern crate test;
 
 extern crate chrono;
 extern crate url;
 
+extern crate mockito;
 extern crate regex;
 extern crate rmp_serde as rmps;
 #[macro_use]
@@ -19,6 +19,7 @@ pub mod pinboard;
 
 pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
 
+// TODO: Properly escape search queries that are used in regex for fuzzy option. <06-02-18, Hamid>
 // TODO: Fix tests so we don't have to pass --test-threads=1. It seems issue is related to
 // multithread access to cache files as some tests maybe deleting/updating while others reading.
 // TODO: Improve performance! Maybe use some other encoding for saving cache files.
@@ -118,7 +119,6 @@ mod tests {
     } /* rmp_serde */
 
     mod json_serde {
-        use super::*;
         use url::Url;
         use chrono::prelude::*;
 
