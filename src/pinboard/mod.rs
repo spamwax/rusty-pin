@@ -277,10 +277,9 @@ impl<'a> Pinboard<'a> {
                     // Set case-insensitive regex option.
                     let mut fuzzy_regex: String = String::with_capacity(fuzzy_string.len() + 2);
                     fuzzy_regex.extend("(?i)".chars().chain(fuzzy_string.chars()));
-                    // fuzzy_string = "(?i)".chars().chain(fuzzy_string.chars()).collect();
                     Regex::new(&fuzzy_string)
-                        .map_err(|_| "Can't search for given query!".to_owned())
-                        .expect("Couldn't build regex using given search query!")
+                        .map_err(|e| format!("{:?}", e))
+                        .expect("Couldn't build regex using given search query")
                 })
                 .collect::<Vec<Regex>>();
             self.cached_data
