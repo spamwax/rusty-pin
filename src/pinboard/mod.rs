@@ -265,13 +265,19 @@ impl<'a> Pinboard<'a> {
                 .map(|s| {
                     let query = &s.as_ref().to_lowercase();
                     // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
-                    let mut fuzzy_string = query
-                        .chars()
-                        .map(|c| c.to_string())
-                        .collect::<Vec<String>>()
-                        .join(r".*");
+                    let mut fuzzy_string = String::with_capacity(query.len() * query.len() * 2);
+                    fuzzy_string.extend(
+                        query
+                            .chars()
+                            .map(|c| c.to_string())
+                            .collect::<Vec<String>>()
+                            .join(r".*")
+                            .chars(),
+                    );
                     // Set case-insensitive regex option.
-                    fuzzy_string = "(?i)".chars().chain(fuzzy_string.chars()).collect();
+                    let mut fuzzy_regex: String = String::with_capacity(fuzzy_string.len() + 2);
+                    fuzzy_regex.extend("(?i)".chars().chain(fuzzy_string.chars()));
+                    // fuzzy_string = "(?i)".chars().chain(fuzzy_string.chars()).collect();
                     Regex::new(&fuzzy_string)
                         .map_err(|_| "Can't search for given query!".to_owned())
                         .expect("Couldn't build regex using given search query!")
