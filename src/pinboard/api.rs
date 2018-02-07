@@ -12,6 +12,14 @@ use std::collections::HashMap;
 
 use super::pin::{Pin, Tag};
 
+// #[cfg(not(test))]
+const BASE_URL: &'static str = "https://api.pinboard.in/v1";
+
+#[cfg(test)]
+use mockito;
+// #[cfg(test)]
+// const BASE_URL: &'static str = mockito::SERVER_URL;
+
 #[derive(Serialize, Deserialize, Debug)]
 struct ApiResult {
     result_code: String,
@@ -56,7 +64,7 @@ impl<'a> Api<'a> {
     }
 
     pub fn all_pins(&self) -> Result<Vec<Pin>, String> {
-        self.get_api_response("https://api.pinboard.in/v1/posts/all", &HashMap::new())
+        self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), &HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res)
                     .map_err(|_| "Unrecognized response from server API: posts/all".to_owned())
@@ -72,7 +80,7 @@ impl<'a> Api<'a> {
                 .to_string(),
         );
 
-        self.get_api_response("https://api.pinboard.in/v1/posts/suggest", &query)
+        self.get_api_response([BASE_URL, "/posts/suggest"].concat().as_str(), &query)
             .and_then(|res| {
                 serde_json::from_str::<Vec<serde_json::Value>>(&res)
                     .map_err(|_| "Bad JSON format from server API: posts/suggest".to_owned())
@@ -102,7 +110,7 @@ impl<'a> Api<'a> {
         map.insert("shared", p.shared);
         map.insert("replace", "yes".to_string());
 
-        self.get_api_response("https://api.pinboard.in/v1/posts/add", &map)
+        self.get_api_response([BASE_URL, "/posts/add"].concat().as_str(), &map)
             .and_then(|res| {
                 serde_json::from_str::<ApiResult>(&res)
                     .map_err(|_| "Unrecognized response from server API: posts/add".to_owned())
@@ -111,7 +119,7 @@ impl<'a> Api<'a> {
     }
 
     pub fn tags_frequency(&self) -> Result<Vec<Tag>, String> {
-        self.get_api_response("https://api.pinboard.in/v1/tags/get", &HashMap::new())
+        self.get_api_response([BASE_URL, "/tags/get"].concat().as_str(), &HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res)
                     .map_err(|_| "Unrecognized response from server API: tags/get".to_owned())
@@ -132,7 +140,7 @@ impl<'a> Api<'a> {
             .map_err(|_| "Invalid url.".to_owned())?
             .to_string();
         map.insert("url", url);
-        self.get_api_response("https://api.pinboard.in/v1/posts/delete", &map)
+        self.get_api_response([BASE_URL, "/posts/delete"].concat().as_str(), &map)
             .and_then(|res| {
                 serde_json::from_str(&res)
                     .map_err(|_| "Unrecognized response from server API: posts/delete".to_owned())
@@ -141,8 +149,10 @@ impl<'a> Api<'a> {
     }
 
     pub fn recent_update(&self) -> Result<DateTime<Utc>, String> {
-        self.get_api_response("https://api.pinboard.in/v1/posts/update", &HashMap::new())
-            .and_then(|res| {
+        self.get_api_response(
+            [BASE_URL, "/posts/update"].concat().as_str(),
+            &HashMap::new(),
+        ).and_then(|res| {
                 serde_json::from_str(&res)
                     .map_err(|_| "Unrecognized response from server API: posts/update".to_owned())
             })

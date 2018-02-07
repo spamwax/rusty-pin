@@ -1,10 +1,10 @@
 #![feature(test)]
-
 extern crate test;
 
 extern crate chrono;
 extern crate url;
 
+extern crate mockito;
 extern crate regex;
 extern crate rmp_serde as rmps;
 #[macro_use]
