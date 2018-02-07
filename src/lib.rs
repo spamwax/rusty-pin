@@ -4,6 +4,7 @@ extern crate test;
 extern crate chrono;
 extern crate url;
 
+#[cfg(test)]
 extern crate mockito;
 extern crate regex;
 extern crate rmp_serde as rmps;

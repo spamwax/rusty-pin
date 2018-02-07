@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use std::io::prelude::*;
 use std::error::Error;
 use std::path::{Path, PathBuf};
