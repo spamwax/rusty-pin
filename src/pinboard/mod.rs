@@ -193,7 +193,7 @@ impl<'a> Pinboard<'a> {
                     .as_ref()
                     .unwrap()
                     .into_iter()
-                    .filter(|item| re.captures(&item.0).is_some())
+                    .filter(|item| re.is_match(&item.0))
                     .collect::<Vec<&Tag>>()
             };
             match r.len() {
@@ -285,21 +285,18 @@ impl<'a> Pinboard<'a> {
                 .filter(|cached_pin: &&CachedPin| {
                     regex_queries.iter().all(|re| {
                         search_fields.iter().any(|search_type| match *search_type {
-                            SearchType::TitleOnly => re.captures(&cached_pin.pin.title).is_some(),
+                            SearchType::TitleOnly => re.is_match(&cached_pin.pin.title),
                             SearchType::TagOnly => {
-                                cached_pin.tag_list.iter().any(|t| re.captures(t).is_some())
+                                cached_pin.tag_list.iter().any(|t| re.is_match(t))
                             }
-                            SearchType::UrlOnly => {
-                                re.captures(cached_pin.pin.url.as_ref()).is_some()
-                            }
+                            SearchType::UrlOnly => re.is_match(cached_pin.pin.url.as_ref()),
                             SearchType::DescriptionOnly => {
                                 cached_pin.pin.extended.is_some()
-                                    && re.captures(cached_pin.pin.extended.as_ref().unwrap())
-                                        .is_some()
+                                    && re.is_match(cached_pin.pin.extended.as_ref().unwrap())
                             }
                             SearchType::TagTitleOnly => {
-                                re.captures(&cached_pin.pin.title).is_some()
-                                    || cached_pin.tag_list.iter().any(|t| re.captures(t).is_some())
+                                re.is_match(&cached_pin.pin.title)
+                                    || cached_pin.tag_list.iter().any(|t| re.is_match(t))
                             }
                         })
                     })
