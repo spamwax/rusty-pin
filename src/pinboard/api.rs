@@ -12,13 +12,13 @@ use std::collections::HashMap;
 
 use super::pin::{Pin, Tag};
 
-// #[cfg(not(test))]
+#[cfg(not(test))]
 const BASE_URL: &'static str = "https://api.pinboard.in/v1";
 
 #[cfg(test)]
 use mockito;
-// #[cfg(test)]
-// const BASE_URL: &'static str = mockito::SERVER_URL;
+#[cfg(test)]
+const BASE_URL: &'static str = mockito::SERVER_URL;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ApiResult {
@@ -190,6 +190,7 @@ impl<'a> Api<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use mockito::{mock, Matcher};
 
     use pinboard::pin::PinBuilder;
 
@@ -197,6 +198,11 @@ mod tests {
 
     #[test]
     fn get_latest_update_time() {
+        let _m = mock("GET", Matcher::Regex(r"^/posts/update.*$".to_string()))
+            .with_status(201)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"update_time":"2018-02-07T01:54:09Z"}"#)
+            .create();
         let api = Api::new(include_str!("auth_token.txt").to_string());
         let r = api.recent_update();
         assert!(r.is_ok());
