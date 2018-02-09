@@ -33,7 +33,7 @@ mod tests {
         use url::Url;
         use chrono::prelude::*;
         use std::fs::File;
-        use std::fs;
+        use std::{env, fs};
         use std::io::prelude::*;
         use rmps::{Deserializer, Serializer};
         use serde::{Deserialize, Serialize};
@@ -60,14 +60,20 @@ mod tests {
             pin.serialize(&mut Serializer::new(&mut buf)).unwrap();
             assert_eq!(133, buf.len());
 
-            let mut fp = File::create("/tmp/test_rmp_serde.bin").unwrap();
+            let mut dir = env::temp_dir();
+            dir.push("test_rmp_serde.bin");
+
+            let mut fp = File::create(dir).expect("Couldn't create temp file test_rmp_serde.bin");
             fp.write_all(buf.as_slice()).unwrap();
         }
 
         #[test]
         fn deserialize_a_pin() {
             serialize_a_pin();
-            let fp = File::open("/tmp/test_rmp_serde.bin").unwrap();
+
+            let mut dir = env::temp_dir();
+            dir.push("test_rmp_serde.bin");
+            let fp = File::open(&dir).expect("Couldn't read temp ifle test_rmp_serde.bin");
 
             let mut de = Deserializer::from_read(fp);
             let pin: Pin = Deserialize::deserialize(&mut de).unwrap();
@@ -81,7 +87,7 @@ mod tests {
                 pin.url,
                 Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap()
             );
-            fs::remove_file("/tmp/test_rmp_serde.bin");
+            fs::remove_file(dir);
         }
 
         #[test]
@@ -94,18 +100,24 @@ mod tests {
             pins.serialize(&mut Serializer::new(&mut buf)).unwrap();
             assert_eq!(115671, buf.len());
 
-            let mut fp = File::create("/tmp/test_rmp_serde-vec.bin").unwrap();
+            let mut dir = env::temp_dir();
+            dir.push("test_rmp_serde-vec.bin");
+            let mut fp = File::create(dir).expect("Couldn't create temp file test_rmp_serde.bin");
             fp.write_all(buf.as_slice()).unwrap();
         }
 
         #[test]
         fn deserialize_lots_of_pins() {
             serialize_lots_of_pins();
-            let fp = File::open("tests/test_rmp_serde-vec.bin").unwrap();
+
+            let mut dir = env::temp_dir();
+            dir.push("test_rmp_serde-vec.bin");
+
+            let fp = File::open(&dir).expect("Couldn't create temp file test_rmp_serde.bin");
             let mut de = Deserializer::from_read(fp);
             let pins: Vec<Pin> = Deserialize::deserialize(&mut de).unwrap();
             assert_eq!(612, pins.len());
-            fs::remove_file("/tmp/test_rmp_serde-vec.bin");
+            fs::remove_file(dir);
         }
 
         #[bench]
