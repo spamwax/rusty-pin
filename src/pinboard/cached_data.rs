@@ -189,13 +189,6 @@ impl CachedData {
                 writer.write_all(&data).map_err(|e| e.to_string())
             })?;
 
-        // if cfg!(any(
-        //     target_os = "macos",
-        //     target_os = "linux",
-        //     target_os = "freebsd"
-        // )) {
-        //     self.fix_cache_file_perm(&self.pins_cache_file);
-        // }
         #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
         self.fix_cache_file_perm(&self.pins_cache_file);
 
@@ -230,13 +223,6 @@ impl CachedData {
                 writer.write_all(&data).map_err(|e| e.to_string())
             })?;
 
-        // if cfg!(any(
-        //     target_os = "macos",
-        //     target_os = "linux",
-        //     target_os = "freebsd"
-        // )) {
-        //     self.fix_cache_file_perm(&self.pins_cache_file);
-        // }
         #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
         self.fix_cache_file_perm(&self.pins_cache_file);
 
