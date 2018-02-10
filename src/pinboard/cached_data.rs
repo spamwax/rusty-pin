@@ -55,7 +55,7 @@ impl CachedData {
         Ok(data)
     }
 
-    /// Create an instance fo CachedData but don't load actual cached files.
+    /// Create an instance for CachedData but don't load actual cached files.
     pub fn init<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, String> {
         let _ = env_logger::try_init();
         info!("init: starting");
