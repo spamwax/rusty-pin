@@ -7,6 +7,8 @@ use reqwest::IntoUrl;
 use chrono::prelude::*;
 use url::Url;
 
+use env_logger;
+
 use std::io::Read;
 use std::collections::HashMap;
 
@@ -99,6 +101,7 @@ impl<'a> Api<'a> {
     }
 
     pub fn add_url(&self, p: Pin) -> Result<(), String> {
+        let _ = env_logger::try_init();
         let mut map = HashMap::new();
         let url = p.url.into_string();
 
@@ -110,6 +113,7 @@ impl<'a> Api<'a> {
         map.insert("shared", p.shared);
         map.insert("replace", "yes".to_string());
 
+        info!("Sending payload to: {}/posts/add\n\t{:?}", BASE_URL, map);
         self.get_api_response([BASE_URL, "/posts/add"].concat().as_str(), &map)
             .and_then(|res| {
                 serde_json::from_str::<ApiResult>(&res)
@@ -249,7 +253,11 @@ mod tests {
             .with_body(r#"{"result_code":"done"}"#)
             .create();
         let api = Api::new(include_str!("api_token.txt").to_string());
-        let p = PinBuilder::new(TEST_URL, "test bookmark/pin".to_string()).into_pin();
+        let p = PinBuilder::new(TEST_URL, "test bookmark/pin".to_string())
+            .tags("tagestan what".to_string())
+            .description("russian website!".to_string())
+            .shared("yes")
+            .into_pin();
         let res = api.add_url(p);
         res.expect("Error in adding.");
     }
@@ -259,7 +267,7 @@ mod tests {
         let _m1 = mock("GET", Matcher::Regex(r"^/posts/suggest.*$".to_string()))
             .with_status(200)
             .with_header("content-type", "application/json")
-            .with_body(r#"[{"popular":["datetime","library","rust"]},{"recommended":["datetime","library","programming","rust"]}]"#)
+            .with_body_from_file("tests/suggested_tags_mockito.json")
             .create();
         let api = Api::new(include_str!("api_token.txt").to_string());
         let url = "http://blog.com/";
@@ -301,4 +309,3 @@ mod tests {
         assert_eq!(57, res.unwrap_or_else(|e| panic!("{:?}", e)).len());
     }
 }
-
