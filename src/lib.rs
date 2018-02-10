@@ -16,6 +16,10 @@ extern crate serde;
 extern crate serde_json;
 extern crate url_serde;
 
+extern crate env_logger;
+#[macro_use]
+extern crate log;
+
 pub mod pinboard;
 
 pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};

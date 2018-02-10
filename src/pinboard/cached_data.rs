@@ -123,7 +123,7 @@ impl CachedData {
     // }
 
     fn read_cached_pins(&mut self) -> Result<(), String> {
-        logme("read_cached_Pins", "was called");
+        info!("read_cached_Pins: was called");
         let fp = File::open(&self.pins_cache_file).map_err(|e| e.description().to_owned())?;
         let reader = BufReader::with_capacity(FILE_BUF_SIZE, fp);
         let mut de = Deserializer::from_read(reader);
@@ -132,7 +132,7 @@ impl CachedData {
     }
 
     fn read_cached_tags(&mut self) -> Result<(), String> {
-        logme("read_cached_tagS", "was called");
+        info!("read_cached_tagS: was called");
         let fp = File::open(&self.tags_cache_file).map_err(|e| e.description().to_owned())?;
         let reader = BufReader::with_capacity(FILE_BUF_SIZE, fp);
         let mut de = Deserializer::from_read(reader);

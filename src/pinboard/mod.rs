@@ -15,6 +15,9 @@ use url::Url;
 
 use regex::Regex;
 
+use log::Level;
+use env_logger;
+
 mod api;
 mod config;
 mod cached_data;
@@ -24,13 +27,6 @@ use self::config::Config;
 use self::cached_data::*;
 
 pub use self::pin::{Pin, PinBuilder, Tag};
-
-const DEBUG: bool = false;
-fn logme(from: &str, msg: &str) {
-    if DEBUG {
-        println!("** In {:?}: {:?}", from, msg);
-    }
-}
 
 #[derive(Debug)]
 pub struct Pinboard<'a> {
@@ -45,16 +41,18 @@ impl<'a> Pinboard<'a> {
         S: Into<Cow<'a, str>>,
         P: AsRef<Path>,
     {
+        let _ = env_logger::try_init();
         let api = api::Api::new(auth_token);
         let cfg = Config::new();
-        logme("pinb::new", "calling CachedData::new");
+
+        info!("pinb::new: calling CachedData::new");
         let mut cached_data = CachedData::new(cached_dir)?;
         if !cached_data.cache_ok() {
-            logme("pinb::new", "cache file missing, calling update");
+            info!("pinb::new: cache file missing, calling update");
             cached_data.update_cache(&api)?;
-            logme("pinb::new", "  update done.");
+            info!("pinb::new:   update done.");
         } else {
-            logme("pinb::new", "cache not missing");
+            info!("pinb::new: cache not missing");
         }
 
         let pinboard = Pinboard {
@@ -494,12 +492,13 @@ mod tests {
     #[test]
     fn list_bookmarks() {
         let (_m1, _m2) = create_mockito_servers();
-        let mut _home = env::home_dir().unwrap();
+        let mut _home = env::home_dir().expect("Can't find home dir");
         _home.push(".cache");
         _home.push("mockito-rusty-pin");
         let cache_path = Some(_home);
 
-        let pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
+        let pinboard =
+            Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
         assert!(pinboard.list_bookmarks().is_some());
     }
 
@@ -739,7 +738,7 @@ mod tests {
         // Pick 3 pins and compare them between cached dataset and freshly fetched from Pinboard's
         // API
         for idx in [0u32, 10u32, 50u32].iter() {
-            logme("serde_update_cache", &format!(" Checking pin[{}]...", idx));
+            info!("serde_update_cache: Checking pin[{}]", idx);
             assert_eq!(
                 fresh_pins[*idx as usize].title.to_lowercase(),
                 cached_pins[*idx as usize].title.to_lowercase()
