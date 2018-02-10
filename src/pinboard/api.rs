@@ -59,6 +59,8 @@ impl<'a> Api<'a> {
     }
 
     fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
+        let _ = env_logger::try_init();
+        info!("add_auth_token: starting.");
         Url::parse_with_params(
             url.into_url().unwrap().as_ref(),
             &[("format", "json"), ("auth_token", &self.auth_token)],
@@ -66,6 +68,8 @@ impl<'a> Api<'a> {
     }
 
     pub fn all_pins(&self) -> Result<Vec<Pin>, String> {
+        let _ = env_logger::try_init();
+        info!("all_pins: starting.");
         self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), &HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res)
@@ -74,6 +78,8 @@ impl<'a> Api<'a> {
     }
 
     pub fn suggest_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, String> {
+        let _ = env_logger::try_init();
+        info!("suggest_tags: starting.");
         let mut query = HashMap::new();
         query.insert(
             "url",
@@ -101,6 +107,7 @@ impl<'a> Api<'a> {
     }
 
     pub fn add_url(&self, p: Pin) -> Result<(), String> {
+        info!("add_url: starting.");
         let _ = env_logger::try_init();
         let mut map = HashMap::new();
         let url = p.url.into_string();
@@ -123,6 +130,8 @@ impl<'a> Api<'a> {
     }
 
     pub fn tags_frequency(&self) -> Result<Vec<Tag>, String> {
+        let _ = env_logger::try_init();
+        info!("tags_frequency: starting.");
         self.get_api_response([BASE_URL, "/tags/get"].concat().as_str(), &HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res)
@@ -139,6 +148,8 @@ impl<'a> Api<'a> {
     }
 
     pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), String> {
+        let _ = env_logger::try_init();
+        info!("delete: starting.");
         let mut map = HashMap::new();
         let url = url.into_url()
             .map_err(|_| "Invalid url.".to_owned())?
@@ -153,6 +164,7 @@ impl<'a> Api<'a> {
     }
 
     pub fn recent_update(&self) -> Result<DateTime<Utc>, String> {
+        info!("recent_update: starting.");
         self.get_api_response(
             [BASE_URL, "/posts/update"].concat().as_str(),
             &HashMap::new(),
@@ -168,6 +180,8 @@ impl<'a> Api<'a> {
         endpoint: T,
         params: &HashMap<&str, String>,
     ) -> Result<String, String> {
+        let _ = env_logger::try_init();
+        info!("get_api_response: starting.");
         let client = reqwest::Client::new();
         let mut api_url = self.add_auth_token(endpoint);
 
@@ -199,9 +213,10 @@ mod tests {
     use pinboard::pin::PinBuilder;
 
     const TEST_URL: &str = "https://githuуй.com/Здравствуйт?q=13#fragment";
-
     #[test]
     fn get_latest_update_time() {
+        let _ = env_logger::try_init();
+        info!("get_latest_update_time: starting.");
         let _m = mock("GET", Matcher::Regex(r"^/posts/update.*$".to_string()))
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -215,6 +230,8 @@ mod tests {
 
     #[test]
     fn delete_a_pin() {
+        let _ = env_logger::try_init();
+        info!("delete_a_pin: starting.");
         add_a_url();
         let _m1 = mock("GET", Matcher::Regex(r"^/posts/delete.*$".to_string()))
             .with_status(200)
@@ -247,6 +264,8 @@ mod tests {
 
     #[test]
     fn add_a_url() {
+        let _ = env_logger::try_init();
+        info!("add_a_url: starting.");
         let _m1 = mock("GET", Matcher::Regex(r"^/posts/add.*$".to_string()))
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -264,6 +283,8 @@ mod tests {
 
     #[test]
     fn suggest_tags() {
+        let _ = env_logger::try_init();
+        info!("suggest_tags: starting.");
         let _m1 = mock("GET", Matcher::Regex(r"^/posts/suggest.*$".to_string()))
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -285,6 +306,8 @@ mod tests {
 
     #[test]
     fn test_tag_freq() {
+        let _ = env_logger::try_init();
+        info!("test_tag_freq: starting.");
         let _m1 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -298,6 +321,8 @@ mod tests {
     #[ignore]
     #[test]
     fn test_all_pins() {
+        let _ = env_logger::try_init();
+        info!("test_all_pins: starting.");
         let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
             .with_status(200)
             .with_header("content-type", "application/json")

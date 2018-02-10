@@ -42,6 +42,7 @@ mod tests {
         use rmps::{Deserializer, Serializer};
         use serde::{Deserialize, Serialize};
         use serde_json;
+        use env_logger;
 
         use pinboard::pin::{Pin, PinBuilder};
         //        use pinboard::cached_data::{CachedData, CachedPin};
@@ -50,6 +51,8 @@ mod tests {
 
         #[test]
         fn serialize_a_pin() {
+            let _ = env_logger::try_init();
+            info!("serialize_a_pin: starting");
             let mut pin = PinBuilder::new(
                 "https://danielkeep.github.io/tlborm/book/README.html",
                 "The Little Book of Rust Macros".to_string(),
@@ -73,6 +76,8 @@ mod tests {
 
         #[test]
         fn deserialize_a_pin() {
+            let _ = env_logger::try_init();
+            info!("deserialize_a_pin: starting");
             serialize_a_pin();
 
             let mut dir = env::temp_dir();
@@ -96,6 +101,8 @@ mod tests {
 
         #[test]
         fn serialize_lots_of_pins() {
+            let _ = env_logger::try_init();
+            info!("serialize_lots_of_pins: starting");
             let input = include_str!("../sample.json");
             let pins: Vec<Pin> = serde_json::from_str(input).unwrap();
             assert_eq!(612, pins.len());
@@ -112,6 +119,8 @@ mod tests {
 
         #[test]
         fn deserialize_lots_of_pins() {
+            let _ = env_logger::try_init();
+            info!("deserialize_lots_of_pins: starting");
             serialize_lots_of_pins();
 
             let mut dir = env::temp_dir();
@@ -126,6 +135,8 @@ mod tests {
 
         #[bench]
         fn bench_rmp(b: &mut Bencher) {
+            let _ = env_logger::try_init();
+            info!("bench_rmp: starting");
             let bytes = include_bytes!("../tests/test_rmp_serde-vec.bin");
             b.iter(|| {
                 let _pins: Vec<Pin> =
@@ -138,6 +149,7 @@ mod tests {
     mod json_serde {
         use url::Url;
         use chrono::prelude::*;
+        use env_logger;
 
         use pinboard::pin::{Pin, PinBuilder};
         use serde_json::{from_str, to_string};
@@ -146,6 +158,8 @@ mod tests {
 
         #[test]
         fn deserialize_a_pin() {
+            let _ = env_logger::try_init();
+            info!("deserialize_a_pin: starting");
             let pin: Result<Pin, _> = from_str(include_str!("../tests/PIN1.json"));
             assert!(pin.is_ok());
             let pin: Pin = pin.unwrap();
@@ -174,6 +188,8 @@ mod tests {
 
         #[test]
         fn deserialize_two_pins() {
+            let _ = env_logger::try_init();
+            info!("deserialize_two_pins: starting");
             let input = format!(
                 "[{},{}]",
                 include_str!("../tests/PIN1.json"),
@@ -192,6 +208,8 @@ mod tests {
 
         #[test]
         fn deserialize_lots_pins() {
+            let _ = env_logger::try_init();
+            info!("deserialize_lots_pins: starting");
             let input = include_str!("../sample.json");
             let pins: Result<Vec<Pin>, _> = from_str(input);
             assert!(pins.is_ok());
@@ -201,6 +219,8 @@ mod tests {
 
         #[bench]
         fn bench_json(b: &mut Bencher) {
+            let _ = env_logger::try_init();
+            info!("bench_json: starting");
             let input = include_str!("../sample.json");
             b.iter(|| {
                 let _pins: Vec<Pin> = from_str(input).unwrap();
@@ -209,6 +229,8 @@ mod tests {
 
         #[test]
         fn serialize_a_pin() {
+            let _ = env_logger::try_init();
+            info!("serialize_a_pin: starting");
             let mut pin = PinBuilder::new(
                 "https://danielkeep.github.io/tlborm/book/README.html",
                 "The Little Book of Rust Macros".to_string(),
