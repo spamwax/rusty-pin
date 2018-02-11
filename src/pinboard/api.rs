@@ -200,11 +200,6 @@ impl<'a> Api<'a> {
         let r = client.get(api_url).send();
 
         let mut resp = r.map_err(|e| {
-            println!(
-                "client: {:?}\nserver: {:?}\n",
-                e.is_client_error(),
-                e.is_server_error()
-            );
             use std::io;
             if e.get_ref()
                 .and_then(|k| k.downcast_ref::<io::Error>())
