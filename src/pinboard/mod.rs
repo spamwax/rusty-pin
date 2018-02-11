@@ -356,7 +356,10 @@ mod tests {
     // TODO: Add tests for case insensitivity searches of tags/pins
     use super::*;
     use std::env;
+
+    #[cfg(feature = "bench")]
     use test::Bencher;
+
     use url;
     use mockito::{mock, Matcher, Mock};
 
@@ -714,6 +717,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "bench")]
     #[bench]
     fn bench_search_non_fuzzy(b: &mut Bencher) {
         let _ = env_logger::try_init();
@@ -735,6 +739,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "bench")]
     #[bench]
     fn bench_search_fuzzy(b: &mut Bencher) {
         let _ = env_logger::try_init();
