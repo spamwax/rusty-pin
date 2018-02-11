@@ -1,21 +1,19 @@
-use std::io::prelude::*;
-use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::env;
 use std::fs::File;
 use std::borrow::Cow;
-use std::fmt::Debug;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use rmps::{Deserializer, Serializer};
 use reqwest::IntoUrl;
 
 use chrono::prelude::*;
 use url::Url;
 
+use failure::Error;
+
 use regex::Regex;
 
-use log::Level;
 use env_logger;
 
 mod api;
@@ -36,7 +34,7 @@ pub struct Pinboard<'a> {
 }
 
 impl<'a> Pinboard<'a> {
-    pub fn new<S, P>(auth_token: S, cached_dir: Option<P>) -> Result<Self, String>
+    pub fn new<S, P>(auth_token: S, cached_dir: Option<P>) -> Result<Self, Error>
     where
         S: Into<Cow<'a, str>>,
         P: AsRef<Path>,
@@ -63,51 +61,43 @@ impl<'a> Pinboard<'a> {
         Ok(pinboard)
     }
 
-    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), String> {
-        let _ = env_logger::try_init();
+    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), Error> {
         info!("set_cache_dir: starting.");
         self.cached_data.set_cache_dir(p)?;
         self.cached_data.load_cache_data_from_file()
     }
 
     pub fn enable_tag_only_search(&mut self, v: bool) {
-        let _ = env_logger::try_init();
         info!("enable_tag_only_search: starting.");
         self.cfg.tag_only_search = v;
     }
 
     pub fn enable_fuzzy_search(&mut self, v: bool) {
-        let _ = env_logger::try_init();
         info!("enable_fuzzy_search: starting.");
         self.cfg.fuzzy_search = v;
     }
 
     pub fn enable_private_new_pin(&mut self, v: bool) {
-        let _ = env_logger::try_init();
         info!("enable_private_new_pin: starting.");
         self.cfg.private_new_pin = v;
     }
 
     pub fn enable_toread_new_pin(&mut self, v: bool) {
-        let _ = env_logger::try_init();
         info!("enable_toread_new_pin: starting.");
         self.cfg.toread_new_pin = v;
     }
 
-    pub fn add_pin(&self, p: Pin) -> Result<(), String> {
-        let _ = env_logger::try_init();
+    pub fn add_pin(&self, p: Pin) -> Result<(), Error> {
         info!("add_pin: starting.");
         self.api.add_url(p)
     }
 
-    pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), String> {
-        let _ = env_logger::try_init();
+    pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), Error> {
         info!("delete: starting.");
         self.api.delete(url)
     }
 
-    pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, String> {
-        let _ = env_logger::try_init();
+    pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, Error> {
         info!("is_cache_outdated: starting.");
         self.api
             .recent_update()
@@ -127,8 +117,7 @@ pub enum SearchType {
 impl<'a> Pinboard<'a> {
     /// Searches all the fields within bookmarks to filter them.
     /// This function honors [pinboard::config::Config] settings for fuzzy search & tag_only search.
-    pub fn search_items(&self, q: &str) -> Result<Option<Vec<&Pin>>, String> {
-        let _ = env_logger::try_init();
+    pub fn search_items(&self, q: &str) -> Result<Option<Vec<&Pin>>, Error> {
         info!("search_items: starting.");
         if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
@@ -155,8 +144,8 @@ impl<'a> Pinboard<'a> {
                     .join(r".*");
                 // Set case-insensitive regex option.
                 fuzzy_string.insert_str(0, "(?i)");
-                let re = Regex::new(&fuzzy_string)
-                    .map_err(|_| "Can't search for given query!".to_owned())?;
+                let re = Regex::new(&fuzzy_string)?;
+                // .map_err(|_| "Can't search for given query!".to_owned())?;
                 self.cached_data
                     .pins
                     .as_ref()
@@ -177,14 +166,13 @@ impl<'a> Pinboard<'a> {
                 _ => Ok(Some(r)),
             }
         } else {
-            Err("Tags cache data is invalid.".to_string())
+            bail!("Tags cache data is invalid")
         }
     }
 
     /// Only looks up q within list of cached tags.
     /// This function honors [pinboard::config::Config] settings for fuzzy search.
-    pub fn search_list_of_tags(&self, q: &str) -> Result<Option<Vec<&Tag>>, String> {
-        let _ = env_logger::try_init();
+    pub fn search_list_of_tags(&self, q: &str) -> Result<Option<Vec<&Tag>>, Error> {
         info!("search_list_of_tags: starting.");
         if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
@@ -204,8 +192,8 @@ impl<'a> Pinboard<'a> {
                     .join(r".*");
                 // Set case-insensitive regex option.
                 fuzzy_string.insert_str(0, "(?i)");
-                let re = Regex::new(&fuzzy_string)
-                    .map_err(|_| "Can't search for given query!".to_owned())?;
+                let re = Regex::new(&fuzzy_string)?;
+                // .map_err(|_| "Can't search for given query!".to_owned())?;
                 self.cached_data
                     .tags
                     .as_ref()
@@ -219,7 +207,7 @@ impl<'a> Pinboard<'a> {
                 _ => Ok(Some(r)),
             }
         } else {
-            Err("Tags cache data is invalid.".to_string())
+            bail!("Tags cache data is invalid")
         }
     }
 
@@ -229,15 +217,14 @@ impl<'a> Pinboard<'a> {
         &self,
         q: &'b I,
         fields: &[SearchType],
-    ) -> Result<Option<Vec<&Pin>>, String>
+    ) -> Result<Option<Vec<&Pin>>, Error>
     where
         &'b I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        let _ = env_logger::try_init();
         info!("search: starting.");
         if !self.cached_data.cache_ok() {
-            return Err(String::from("Cache data is invalid."));
+            bail!("Cache data is invalid.");
         }
         // When no field is specified, search everywhere
         let all_fields = vec![
@@ -337,22 +324,19 @@ impl<'a> Pinboard<'a> {
     }
 
     /// Update local cache
-    pub fn update_cache(&mut self) -> Result<(), String> {
-        let _ = env_logger::try_init();
+    pub fn update_cache(&mut self) -> Result<(), Error> {
         info!("update_cache: starting.");
         self.cached_data.update_cache(&self.api)
     }
 
     /// Returns list of all Tags (tag, frequency)
     pub fn list_tag_pairs(&self) -> &Option<Vec<Tag>> {
-        let _ = env_logger::try_init();
         info!("list_tag_pairs: starting.");
         &self.cached_data.tags
     }
 
     /// Returns list of all bookmarks
     pub fn list_bookmarks(&self) -> Option<Vec<&Pin>> {
-        let _ = env_logger::try_init();
         info!("list_bookmarks: starting.");
         self.cached_data
             .pins
@@ -361,8 +345,7 @@ impl<'a> Pinboard<'a> {
     }
 
     /// Suggest a list of tags based on the provided URL
-    pub fn popular_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, String> {
-        let _ = env_logger::try_init();
+    pub fn popular_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, Error> {
         info!("popular_tags: starting.");
         self.api.suggest_tags(url)
     }
@@ -372,9 +355,10 @@ impl<'a> Pinboard<'a> {
 mod tests {
     // TODO: Add tests for case insensitivity searches of tags/pins
     use super::*;
-    use test::Bencher;
-    use mockito::{mock, Matcher, Mock};
     use std::env;
+    use test::Bencher;
+    use url;
+    use mockito::{mock, Matcher, Mock};
 
     #[test]
     fn test_cached_data() {
@@ -565,9 +549,16 @@ mod tests {
         assert!(tags.len() >= 2);
 
         // Test invalid URL
-        let tags = pinboard.popular_tags("docs.rs/chrono/0.4.0/chrono");
-        assert!(tags.is_err());
-        assert_eq!("Invalid url.", &tags.unwrap_err());
+        let error = pinboard
+            .popular_tags("docs.rs/chrono/0.4.0/chrono")
+            .expect_err("Suggested tags for malformed url");
+        assert_eq!(
+            &url::ParseError::RelativeUrlWithoutBase,
+            error
+                .root_cause()
+                .downcast_ref::<url::ParseError>()
+                .unwrap()
+        );
     }
 
     #[test]
@@ -782,7 +773,7 @@ mod tests {
         // Get all pins directly from Pinboard.in (no caching)
         let fresh_pins = pinboard.api.all_pins().unwrap();
 
-        pinboard.update_cache();
+        let _ = pinboard.update_cache().expect("Couldn't update the cache");
 
         let cached_pins = pinboard.list_bookmarks().unwrap();
         assert_eq!(fresh_pins.len(), cached_pins.len());
@@ -856,7 +847,7 @@ mod tests {
         println!("Running first update_cache");
 
         // First remove all folders to force a full update
-        fs::remove_dir_all(_home);
+        let _ = fs::remove_dir_all(_home).expect("Can' remove dir to prepare the test");
 
         // Pinboard::new() will call update_cache since we remove the cache folder.
         let pb = Pinboard::new(include_str!("api_token.txt"), cache_path);

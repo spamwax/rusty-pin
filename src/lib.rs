@@ -16,6 +16,11 @@ extern crate serde;
 extern crate serde_json;
 extern crate url_serde;
 
+#[macro_use]
+extern crate failure;
+#[macro_use]
+extern crate failure_derive;
+
 extern crate env_logger;
 #[macro_use]
 extern crate log;
@@ -96,7 +101,7 @@ mod tests {
                 pin.url,
                 Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap()
             );
-            fs::remove_file(dir);
+            let _ = fs::remove_file(dir).expect("Can't delete temp test file");
         }
 
         #[test]
@@ -130,7 +135,7 @@ mod tests {
             let mut de = Deserializer::from_read(fp);
             let pins: Vec<Pin> = Deserialize::deserialize(&mut de).unwrap();
             assert_eq!(612, pins.len());
-            fs::remove_file(dir);
+            let _ = fs::remove_file(dir).expect("Can't delete temp test file");
         }
 
         #[bench]

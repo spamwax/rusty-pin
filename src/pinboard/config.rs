@@ -1,5 +1,3 @@
-use super::*;
-
 #[derive(Debug)]
 pub struct Config {
     pub tag_only_search: bool,
