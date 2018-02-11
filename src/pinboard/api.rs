@@ -55,7 +55,9 @@ pub enum ApiError {
     #[fail(display = "invalid url: {}", _0)]
     UrlError(String),
     #[fail(display = "invalid server response: {}", _0)]
-    InvalidResponse(String),
+    UnrecognizedResponse(String),
+    #[fail(display = "Server couldn't fulfill request: {}", _0)]
+    ServerError(String),
     #[fail(display = "network error: {}", _0)]
     Network(String),
 }
@@ -84,7 +86,7 @@ impl<'a> Api<'a> {
         self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), &HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res)
-                    .map_err(|e| From::from(ApiError::InvalidResponse(e.to_string())))
+                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
             })
     }
 
@@ -96,7 +98,7 @@ impl<'a> Api<'a> {
         self.get_api_response([BASE_URL, "/posts/suggest"].concat().as_str(), &query)
             .and_then(|res| {
                 serde_json::from_str::<Vec<serde_json::Value>>(&res)
-                    .map_err(|e| From::from(ApiError::InvalidResponse(e.to_string())))
+                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
             })?
             .into_iter()
             .find(|item| !item["popular"].is_null())
@@ -108,7 +110,7 @@ impl<'a> Api<'a> {
                     .map(|v| v.as_str().unwrap().to_string())
                     .collect::<Vec<String>>()
             })
-            .ok_or(From::from(ApiError::InvalidResponse(
+            .ok_or(From::from(ApiError::UnrecognizedResponse(
                 "Unrecognized response from server API: posts/suggest".to_string(),
             )))
     }
@@ -130,7 +132,7 @@ impl<'a> Api<'a> {
         self.get_api_response([BASE_URL, "/posts/add"].concat().as_str(), &map)
             .and_then(|res| {
                 serde_json::from_str::<ApiResult>(&res)
-                    .map_err(|e| From::from(ApiError::InvalidResponse(e.to_string())))
+                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
             })
             .and_then(|r| r.ok())
     }
@@ -140,7 +142,7 @@ impl<'a> Api<'a> {
         self.get_api_response([BASE_URL, "/tags/get"].concat().as_str(), &HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res)
-                    .map_err(|e| From::from(ApiError::InvalidResponse(e.to_string())))
+                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
             })
             .and_then(|res: HashMap<String, String>| {
                 Ok(res.into_iter()
@@ -161,7 +163,7 @@ impl<'a> Api<'a> {
         self.get_api_response([BASE_URL, "/posts/delete"].concat().as_str(), &map)
             .and_then(|res| {
                 serde_json::from_str(&res)
-                    .map_err(|e| From::from(ApiError::InvalidResponse(e.to_string())))
+                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
             })
             .and_then(|r: ApiResult| r.ok())
     }
@@ -173,7 +175,7 @@ impl<'a> Api<'a> {
             &HashMap::new(),
         ).and_then(|res| {
                 serde_json::from_str(&res)
-                    .map_err(|e| From::from(ApiError::InvalidResponse(e.to_string())))
+                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
             })
             .and_then(|date: UpdateTime| Ok(date.datetime))
     }
@@ -216,17 +218,18 @@ impl<'a> Api<'a> {
             }
         })?;
 
-        use reqwest::StatusCode;
-        if !resp.status().is_success() {
-            match resp.status() {
-                StatusCode::TooManyRequests => bail!("Too many request"),
-                _ => bail!(resp.status().canonical_reason().unwrap()),
-            };
+        if resp.status().is_success() {
+            let mut content = String::with_capacity(2 * 1024);
+            let _bytes_read = resp.read_to_string(&mut content)?;
+            Ok(content)
+        } else {
+            Err(From::from(ApiError::ServerError(
+                resp.status()
+                    .canonical_reason()
+                    .expect("UNKNOWN RESPONSE")
+                    .to_string(),
+            )))
         }
-
-        let mut content = String::with_capacity(2 * 1024);
-        let _bytes_read = resp.read_to_string(&mut content)?;
-        Ok(content)
     }
 }
 
@@ -263,7 +266,7 @@ mod tests {
         let api = Api::new(include_str!("api_token.txt").to_string());
         let r = api.delete(TEST_URL);
         assert_eq!(
-            "Too many request",
+            "Server couldn't fulfill request: Too Many Requests",
             r.expect_err("Expected Not Found").root_cause().to_string()
         );
     }
