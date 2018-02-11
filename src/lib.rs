@@ -1,4 +1,13 @@
-#![feature(test)]
+#![cfg_attr(feature = "dev", feature(plugin))]
+#![cfg_attr(feature = "bench", feature(test))]
+#![cfg_attr(feature = "dev", plugin(clippy))]
+#![cfg_attr(feature = "dev",
+            warn(cast_possible_truncation, cast_possible_wrap, cast_precision_loss,
+                 cast_sign_loss, mut_mut, non_ascii_literal, option_unwrap_used,
+                 result_unwrap_used, shadow_reuse, shadow_same, unicode_not_nfc,
+                 wrong_self_convention, wrong_pub_self_convention))]
+
+#[cfg(feature = "bench")]
 extern crate test;
 
 extern crate chrono;
@@ -52,6 +61,7 @@ mod tests {
         use pinboard::pin::{Pin, PinBuilder};
         //        use pinboard::cached_data::{CachedData, CachedPin};
 
+        #[cfg(feature = "bench")]
         use test::Bencher;
 
         #[test]
@@ -138,6 +148,7 @@ mod tests {
             let _ = fs::remove_file(dir).expect("Can't delete temp test file");
         }
 
+        #[cfg(feature = "bench")]
         #[bench]
         fn bench_rmp(b: &mut Bencher) {
             let _ = env_logger::try_init();
@@ -159,6 +170,7 @@ mod tests {
         use pinboard::pin::{Pin, PinBuilder};
         use serde_json::{from_str, to_string};
 
+        #[cfg(feature = "bench")]
         use test::Bencher;
 
         #[test]
@@ -222,6 +234,7 @@ mod tests {
             assert_eq!(612, pins.len());
         }
 
+        #[cfg(feature = "bench")]
         #[bench]
         fn bench_json(b: &mut Bencher) {
             let _ = env_logger::try_init();
