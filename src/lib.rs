@@ -86,7 +86,8 @@ mod tests {
             dir.push("test_rmp_serde.bin");
 
             let mut fp = File::create(dir).expect("Couldn't create temp file test_rmp_serde.bin");
-            fp.write_all(buf.as_slice()).unwrap();
+            fp.write_all(buf.as_slice())
+                .expect("Can't delete temp file");
         }
 
         #[test]
@@ -97,7 +98,7 @@ mod tests {
 
             let mut dir = env::temp_dir();
             dir.push("test_rmp_serde.bin");
-            let fp = File::open(&dir).expect("Couldn't read temp ifle test_rmp_serde.bin");
+            let fp = File::open(&dir).expect("Couldn't read temp file test_rmp_serde.bin");
 
             let mut de = Deserializer::from_read(fp);
             let pin: Pin = Deserialize::deserialize(&mut de).unwrap();
