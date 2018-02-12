@@ -117,11 +117,11 @@ pub enum SearchType {
 impl<'a> Pinboard<'a> {
     /// Searches all the fields within bookmarks to filter them.
     /// This function honors [pinboard::config::Config] settings for fuzzy search & tag_only search.
-    pub fn search_items(&self, q: &str) -> Result<Option<Vec<&Pin>>, Error> {
+    pub fn search_items(&self, query: &str) -> Result<Option<Vec<&Pin>>, Error> {
         info!("search_items: starting.");
         if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
-                let q = &q.to_lowercase();
+                let q = &query.to_lowercase();
                 self.cached_data
                     .pins
                     .as_ref()
@@ -138,7 +138,8 @@ impl<'a> Pinboard<'a> {
                     .collect::<Vec<&Pin>>()
             } else {
                 // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
-                let mut fuzzy_string = q.chars()
+                let mut fuzzy_string = query
+                    .chars()
                     .map(|c| c.to_string())
                     .collect::<Vec<String>>()
                     .join(r".*");
@@ -172,11 +173,11 @@ impl<'a> Pinboard<'a> {
 
     /// Only looks up q within list of cached tags.
     /// This function honors [pinboard::config::Config] settings for fuzzy search.
-    pub fn search_list_of_tags(&self, q: &str) -> Result<Option<Vec<&Tag>>, Error> {
+    pub fn search_list_of_tags(&self, query: &str) -> Result<Option<Vec<&Tag>>, Error> {
         info!("search_list_of_tags: starting.");
         if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
-                let q = &q.to_lowercase();
+                let q = &query.to_lowercase();
                 self.cached_data
                     .tags
                     .as_ref()
@@ -186,7 +187,8 @@ impl<'a> Pinboard<'a> {
                     .collect::<Vec<&Tag>>()
             } else {
                 // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
-                let mut fuzzy_string = q.chars()
+                let mut fuzzy_string = query
+                    .chars()
                     .map(|c| format!("{}", c))
                     .collect::<Vec<String>>()
                     .join(r".*");

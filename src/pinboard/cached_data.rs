@@ -153,7 +153,8 @@ impl CachedData {
                 // Lower case all fields of each pin
                 Ok(pins.into_iter()
                     .map(|pin| {
-                        let url_lowered = Url::parse(pin.url.as_str()).unwrap();
+                        let url_lowered = Url::parse(pin.url.as_str())
+                            .expect("Invalid url stored in a pin, impossible?");
                         let mut pb = PinBuilder::new(url_lowered, pin.title.to_lowercase())
                             .tags(pin.tags.to_lowercase())
                             .shared(&pin.shared)
@@ -163,11 +164,10 @@ impl CachedData {
                         }
                         let mut newpin = pb.into_pin();
                         newpin.time = pin.time;
-                        let cached_pin = CachedPin {
+                        CachedPin {
                             pin: newpin,
                             tag_list: pin.tags.split_whitespace().map(|s| s.to_string()).collect(),
-                        };
-                        cached_pin
+                        }
                     })
                     .collect())
             })
@@ -179,7 +179,8 @@ impl CachedData {
             })
             .and_then(|data| {
                 let mut writer = BufWriter::with_capacity(FILE_BUF_SIZE, f);
-                Ok(writer.write_all(&data)?)
+                writer.write_all(&data)?;
+                Ok(())
             })?;
 
         #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
@@ -211,7 +212,8 @@ impl CachedData {
             })
             .and_then(|data| {
                 let mut writer = BufWriter::with_capacity(FILE_BUF_SIZE, f);
-                Ok(writer.write_all(&data)?)
+                writer.write_all(&data)?; // write_all resturn Result<()>
+                Ok(())
             })?;
 
         #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
@@ -232,7 +234,7 @@ impl CachedData {
         let permissions = Permissions::from_mode(0o600);
         set_permissions(p, permissions)
             .map_err(|e| e.to_string())
-            .unwrap();
+            .expect("Couludn't set file permissiion");
     }
 }
 

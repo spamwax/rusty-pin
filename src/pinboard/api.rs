@@ -12,17 +12,17 @@ use env_logger;
 use std::io::Read;
 use std::collections::HashMap;
 
-use failure::Error;
+use failure::{err_msg, Error};
 
 use super::pin::{Pin, Tag};
 
 #[cfg(not(test))]
-const BASE_URL: &'static str = "https://api.pinboard.in/v1";
+const BASE_URL: &str = "https://api.pinboard.in/v1";
 
 #[cfg(test)]
 use mockito;
 #[cfg(test)]
-const BASE_URL: &'static str = mockito::SERVER_URL;
+const BASE_URL: &str = mockito::SERVER_URL;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ApiResult {
@@ -76,9 +76,9 @@ impl<'a> Api<'a> {
     fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
         info!("add_auth_token: starting.");
         Url::parse_with_params(
-            url.into_url().unwrap().as_ref(),
+            url.into_url().expect("invalid url").as_ref(),
             &[("format", "json"), ("auth_token", &self.auth_token)],
-        ).unwrap()
+        ).expect("invalid parameters")
     }
 
     pub fn all_pins(&self) -> Result<Vec<Pin>, Error> {
@@ -110,9 +110,11 @@ impl<'a> Api<'a> {
                     .map(|v| v.as_str().unwrap().to_string())
                     .collect::<Vec<String>>()
             })
-            .ok_or(From::from(ApiError::UnrecognizedResponse(
-                "Unrecognized response from server API: posts/suggest".to_string(),
-            )))
+            .ok_or_else(|| {
+                From::from(ApiError::UnrecognizedResponse(
+                    "Unrecognized response from API: posts/suggest".to_string(),
+                ))
+            })
     }
 
     pub fn add_url(&self, p: Pin) -> Result<(), Error> {
@@ -207,7 +209,7 @@ impl<'a> Api<'a> {
                 .and_then(|k| k.downcast_ref::<io::Error>())
                 .is_some()
             {
-                format_err!("Network IO error")
+                err_msg("Network IO error")
             } else {
                 use std::error::Error as StdError;
                 let api_err: Error = From::from(ApiError::Network(format!(

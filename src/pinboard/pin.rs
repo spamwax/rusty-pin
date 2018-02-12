@@ -85,7 +85,7 @@ pub struct PinBuilder {
 impl PinBuilder {
     pub fn new<T: IntoUrl>(url: T, title: String) -> Self {
         let pin = Pin {
-            url: url.into_url().unwrap(),
+            url: url.into_url().expect("Invalid url"),
             title,
             time: Utc::now(),
             tags: String::new(),
