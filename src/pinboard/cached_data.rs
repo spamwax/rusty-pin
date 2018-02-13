@@ -34,7 +34,7 @@ pub struct CachedPin {
 impl CachedData {
     pub fn new<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, Error> {
         let _ = env_logger::try_init();
-        info!("new: starting");
+        debug!("new: starting");
         let cached_dir = c_dir.map(|p| p.as_ref().to_path_buf()).unwrap_or_else(|| {
             let mut dir = env::home_dir().unwrap_or_else(|| PathBuf::from(""));
             dir.push(".cache");
@@ -61,7 +61,7 @@ impl CachedData {
     /// Create an instance for CachedData but don't load actual cached files.
     pub fn init<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, Error> {
         let _ = env_logger::try_init();
-        info!("init: starting");
+        debug!("init: starting");
         let cached_dir = c_dir.map(|p| p.as_ref().to_path_buf()).unwrap_or_else(|| {
             let mut dir = env::home_dir().unwrap_or_else(|| PathBuf::from(""));
             dir.push(".cache");
@@ -83,7 +83,7 @@ impl CachedData {
 
     fn create_cache_dir<P: AsRef<Path>>(cache_dir: P) -> Result<PathBuf, Error> {
         let _ = env_logger::try_init();
-        info!("create_cache_dir: starting");
+        debug!("create_cache_dir: starting");
         use std::fs;
         fs::create_dir_all(&cache_dir)?;
         Ok(cache_dir.as_ref().to_path_buf())
@@ -92,7 +92,7 @@ impl CachedData {
 
 impl CachedData {
     pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), Error> {
-        info!("set_cache_dir: starting");
+        debug!("set_cache_dir: starting");
         self.cache_dir = CachedData::create_cache_dir(p)?;
         self.tags_cache_file = self.cache_dir.join(TAGS_CACHE_FN);
         self.pins_cache_file = self.cache_dir.join(PINS_CACHE_FN);
@@ -103,7 +103,7 @@ impl CachedData {
     }
 
     pub fn load_cache_data_from_file(&mut self) -> Result<(), Error> {
-        info!("load_cache_data_from_file: starting");
+        debug!("load_cache_data_from_file: starting");
         match (self.tags_cache_file.exists(), self.pins_cache_file.exists()) {
             (true, true) => {
                 self.read_cached_pins()?;
@@ -116,7 +116,7 @@ impl CachedData {
     }
 
     fn read_cached_pins(&mut self) -> Result<(), Error> {
-        info!("read_cached_pins: starting");
+        debug!("read_cached_pins: starting");
         let fp = File::open(&self.pins_cache_file)?;
         let reader = BufReader::with_capacity(FILE_BUF_SIZE, fp);
         let mut de = Deserializer::from_read(reader);
@@ -125,7 +125,7 @@ impl CachedData {
     }
 
     fn read_cached_tags(&mut self) -> Result<(), Error> {
-        info!("read_cached_tags: starting");
+        debug!("read_cached_tags: starting");
         let fp = File::open(&self.tags_cache_file)?;
         let reader = BufReader::with_capacity(FILE_BUF_SIZE, fp);
         let mut de = Deserializer::from_read(reader);
@@ -134,12 +134,12 @@ impl CachedData {
     }
 
     pub fn cache_ok(&self) -> bool {
-        info!("cache_ok: starting");
+        debug!("cache_ok: starting");
         self.cache_files_valid
     }
 
     pub fn update_cache(&mut self, api: &api::Api) -> Result<(), Error> {
-        info!("update_cache: starting");
+        debug!("update_cache: starting");
         // Fetch & write all pins
         let f = File::create(&self.pins_cache_file)?;
 
@@ -226,7 +226,7 @@ impl CachedData {
 
     #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
     fn fix_cache_file_perm(&self, p: &PathBuf) {
-        info!("fix_cache_file_perm: starting");
+        debug!("fix_cache_file_perm: starting");
         // TODO: don't just unwrap, return a proper error.
         use std::fs::Permissions;
         use std::os::unix::fs::PermissionsExt;
@@ -246,7 +246,7 @@ mod tests {
     #[test]
     fn serde_a_cached_pin() {
         let _ = env_logger::try_init();
-        info!("serde_a_cached_pin: starting");
+        debug!("serde_a_cached_pin: starting");
         let mut pin = PinBuilder::new(
             "https://danielkeep.github.io/tlborm/book/README.html",
             "The Little Book of Rust Macros".to_string(),

@@ -128,14 +128,16 @@ impl PinBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mockito::{mock, Matcher, Mock};
+
     use std::env;
     use env_logger;
+
+    use pinboard::mockito_helper::create_mockito_servers;
 
     #[test]
     fn test_builder() {
         let _ = env_logger::try_init();
-        info!("test_builder: starting");
+        debug!("test_builder: starting");
         let p = PinBuilder::new(
             "https://githuуй.com/Здравствуйт?q=13#fragment",
             "title".to_string(),
@@ -152,7 +154,7 @@ mod tests {
     #[test]
     fn test_pin_contain() {
         let _ = env_logger::try_init();
-        info!("test_pin_contain: starting");
+        debug!("test_pin_contain: starting");
         let p = PinBuilder::new(
             "http://правительство.рф",
             "An open source ecosystem for IoT development · PlatformIO".to_string(),
@@ -169,7 +171,7 @@ mod tests {
     #[test]
     fn test_search_pins() {
         let _ = env_logger::try_init();
-        info!("test_search_pins: starting");
+        debug!("test_search_pins: starting");
 
         let (_m1, _m2) = create_mockito_servers();
 
@@ -229,21 +231,4 @@ mod tests {
             assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
         }
     }
-
-    fn create_mockito_servers() -> (Mock, Mock) {
-        let _ = env_logger::try_init();
-        info!("create_mockito_servers: starting");
-        let m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body_from_file("tests/all_pins_mockito.json")
-            .create();
-        let m2 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body_from_file("tests/all_tags_mockito.json")
-            .create();
-        (m1, m2)
-    }
-
 }

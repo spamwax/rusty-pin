@@ -19,6 +19,10 @@ use env_logger;
 mod api;
 mod config;
 mod cached_data;
+
+#[cfg(test)]
+mod mockito_helper;
+
 pub mod pin;
 
 use self::config::Config;
@@ -43,14 +47,14 @@ impl<'a> Pinboard<'a> {
         let api = api::Api::new(auth_token);
         let cfg = Config::new();
 
-        info!("pinb::new: calling CachedData::new");
+        debug!("pinb::new: calling CachedData::new");
         let mut cached_data = CachedData::new(cached_dir)?;
         if !cached_data.cache_ok() {
-            info!("pinb::new: cache file missing, calling update");
+            debug!("pinb::new: cache file missing, calling update");
             cached_data.update_cache(&api)?;
-            info!("pinb::new:   update done.");
+            debug!("pinb::new:   update done.");
         } else {
-            info!("pinb::new: cache not missing");
+            debug!("pinb::new: cache not missing");
         }
 
         let pinboard = Pinboard {
@@ -62,43 +66,43 @@ impl<'a> Pinboard<'a> {
     }
 
     pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), Error> {
-        info!("set_cache_dir: starting.");
+        debug!("set_cache_dir: starting.");
         self.cached_data.set_cache_dir(p)?;
         self.cached_data.load_cache_data_from_file()
     }
 
     pub fn enable_tag_only_search(&mut self, v: bool) {
-        info!("enable_tag_only_search: starting.");
+        debug!("enable_tag_only_search: starting.");
         self.cfg.tag_only_search = v;
     }
 
     pub fn enable_fuzzy_search(&mut self, v: bool) {
-        info!("enable_fuzzy_search: starting.");
+        debug!("enable_fuzzy_search: starting.");
         self.cfg.fuzzy_search = v;
     }
 
     pub fn enable_private_new_pin(&mut self, v: bool) {
-        info!("enable_private_new_pin: starting.");
+        debug!("enable_private_new_pin: starting.");
         self.cfg.private_new_pin = v;
     }
 
     pub fn enable_toread_new_pin(&mut self, v: bool) {
-        info!("enable_toread_new_pin: starting.");
+        debug!("enable_toread_new_pin: starting.");
         self.cfg.toread_new_pin = v;
     }
 
     pub fn add_pin(&self, p: Pin) -> Result<(), Error> {
-        info!("add_pin: starting.");
+        debug!("add_pin: starting.");
         self.api.add_url(p)
     }
 
     pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), Error> {
-        info!("delete: starting.");
+        debug!("delete: starting.");
         self.api.delete(url)
     }
 
     pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, Error> {
-        info!("is_cache_outdated: starting.");
+        debug!("is_cache_outdated: starting.");
         self.api
             .recent_update()
             .and_then(|res| Ok(last_update < res))
@@ -118,7 +122,7 @@ impl<'a> Pinboard<'a> {
     /// Searches all the fields within bookmarks to filter them.
     /// This function honors [pinboard::config::Config] settings for fuzzy search & tag_only search.
     pub fn search_items(&self, query: &str) -> Result<Option<Vec<&Pin>>, Error> {
-        info!("search_items: starting.");
+        debug!("search_items: starting.");
         if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
                 let q = &query.to_lowercase();
@@ -174,7 +178,7 @@ impl<'a> Pinboard<'a> {
     /// Only looks up q within list of cached tags.
     /// This function honors [pinboard::config::Config] settings for fuzzy search.
     pub fn search_list_of_tags(&self, query: &str) -> Result<Option<Vec<&Tag>>, Error> {
-        info!("search_list_of_tags: starting.");
+        debug!("search_list_of_tags: starting.");
         if self.cached_data.cache_ok() {
             let r = if !self.cfg.fuzzy_search {
                 let q = &query.to_lowercase();
@@ -224,7 +228,7 @@ impl<'a> Pinboard<'a> {
         &'b I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        info!("search: starting.");
+        debug!("search: starting.");
         if !self.cached_data.cache_ok() {
             bail!("Cache data is invalid.");
         }
@@ -327,19 +331,19 @@ impl<'a> Pinboard<'a> {
 
     /// Update local cache
     pub fn update_cache(&mut self) -> Result<(), Error> {
-        info!("update_cache: starting.");
+        debug!("update_cache: starting.");
         self.cached_data.update_cache(&self.api)
     }
 
     /// Returns list of all Tags (tag, frequency)
     pub fn list_tag_pairs(&self) -> &Option<Vec<Tag>> {
-        info!("list_tag_pairs: starting.");
+        debug!("list_tag_pairs: starting.");
         &self.cached_data.tags
     }
 
     /// Returns list of all bookmarks
     pub fn list_bookmarks(&self) -> Option<Vec<&Pin>> {
-        info!("list_bookmarks: starting.");
+        debug!("list_bookmarks: starting.");
         self.cached_data
             .pins
             .as_ref()
@@ -348,7 +352,7 @@ impl<'a> Pinboard<'a> {
 
     /// Suggest a list of tags based on the provided URL
     pub fn popular_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, Error> {
-        info!("popular_tags: starting.");
+        debug!("popular_tags: starting.");
         self.api.suggest_tags(url)
     }
 }
@@ -363,12 +367,13 @@ mod tests {
     use test::Bencher;
 
     use url;
-    use mockito::{mock, Matcher, Mock};
+    use mockito::{mock, Matcher};
+    use self::mockito_helper::create_mockito_servers;
 
     #[test]
     fn test_cached_data() {
         let _ = env_logger::try_init();
-        info!("test_cached_data: starting.");
+        debug!("test_cached_data: starting.");
         let mut h = env::home_dir().unwrap();
         h.push(".cache");
         h.push("rusty-pin");
@@ -390,7 +395,7 @@ mod tests {
     #[test]
     fn test_set_cache_dir() {
         let _ = env_logger::try_init();
-        info!("test_set_cache_dir: starting.");
+        debug!("test_set_cache_dir: starting.");
         let mut h = env::home_dir().unwrap();
         let p: Option<PathBuf> = None;
         let mut c = CachedData::new(p).expect("Can't initiate 'CachedData'.");
@@ -409,7 +414,7 @@ mod tests {
     #[test]
     fn test_search_items() {
         let _ = env_logger::try_init();
-        info!("test_search_items: starting.");
+        debug!("test_search_items: starting.");
         let (_m1, _m2) = create_mockito_servers();
         let mut _home = env::home_dir().unwrap();
         _home.push(".cache");
@@ -447,7 +452,7 @@ mod tests {
     #[test]
     fn search_tag_pairs() {
         let _ = env_logger::try_init();
-        info!("search_tag_pairs: starting.");
+        debug!("search_tag_pairs: starting.");
         let (_m1, _m2) = create_mockito_servers();
         let mut _home = env::home_dir().unwrap();
         _home.push(".cache");
@@ -507,7 +512,7 @@ mod tests {
     #[test]
     fn list_tags() {
         let _ = env_logger::try_init();
-        info!("list_tags: starting.");
+        debug!("list_tags: starting.");
         let (_m1, _m2) = create_mockito_servers();
         let mut _home = env::home_dir().unwrap();
         _home.push(".cache");
@@ -521,7 +526,7 @@ mod tests {
     #[test]
     fn list_bookmarks() {
         let _ = env_logger::try_init();
-        info!("list_bookmarks: starting.");
+        debug!("list_bookmarks: starting.");
         let (_m1, _m2) = create_mockito_servers();
         let mut _home = env::home_dir().expect("Can't find home dir");
         _home.push(".cache");
@@ -536,7 +541,7 @@ mod tests {
     #[test]
     fn popular_tags() {
         let _ = env_logger::try_init();
-        info!("popular_tags: starting.");
+        debug!("popular_tags: starting.");
         let _m1 = mock("GET", Matcher::Regex(r"^/posts/suggest.*$".to_string()))
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -569,7 +574,7 @@ mod tests {
     #[test]
     fn search_multi_query_multi_field() {
         let _ = env_logger::try_init();
-        info!("search_multi_query_multi_field: starting.");
+        debug!("search_multi_query_multi_field: starting.");
         let (_m1, _m2) = create_mockito_servers();
         let mut _home = env::home_dir().unwrap();
         _home.push(".cache");
@@ -723,7 +728,7 @@ mod tests {
     #[bench]
     fn bench_search_non_fuzzy(b: &mut Bencher) {
         let _ = env_logger::try_init();
-        info!("bench_search_non_fuzzy: starting.");
+        debug!("bench_search_non_fuzzy: starting.");
         let (_m1, _m2) = create_mockito_servers();
         let mut _home = env::home_dir().unwrap();
         _home.push(".cache");
@@ -745,7 +750,7 @@ mod tests {
     #[bench]
     fn bench_search_fuzzy(b: &mut Bencher) {
         let _ = env_logger::try_init();
-        info!("bench_search_fuzzy: starting.");
+        debug!("bench_search_fuzzy: starting.");
         let (_m1, _m2) = create_mockito_servers();
         let mut _home = env::home_dir().unwrap();
         _home.push(".cache");
@@ -763,11 +768,10 @@ mod tests {
         });
     }
 
-    #[ignore]
     #[test]
     fn serde_update_cache() {
         let _ = env_logger::try_init();
-        info!("serde_update_cache: starting.");
+        debug!("serde_update_cache: starting.");
         let (_m1, _m2) = create_mockito_servers();
         let mut _home = env::home_dir().unwrap();
         _home.push(".cache");
@@ -788,7 +792,7 @@ mod tests {
         // Pick 3 pins and compare them between cached dataset and freshly fetched from Pinboard's
         // API
         for idx in [0u32, 10u32, 50u32].iter() {
-            info!("serde_update_cache: Checking pin[{}]", idx);
+            debug!("serde_update_cache: Checking pin[{}]", idx);
             assert_eq!(
                 fresh_pins[*idx as usize].title.to_lowercase(),
                 cached_pins[*idx as usize].title.to_lowercase()
@@ -835,11 +839,10 @@ mod tests {
     }
 
     // I am not sure why I wrote this test as it is kind of similar to serde_update_cache
-    #[ignore]
     #[test]
     fn test_update_cache() {
         let _ = env_logger::try_init();
-        info!("test_update_cache: starting.");
+        debug!("test_update_cache: starting.");
         use std::fs;
 
         const IDX: usize = 25;
@@ -851,7 +854,7 @@ mod tests {
 
         let cache_path = Some(_home.clone());
 
-        println!("Running first update_cache");
+        debug!("Running first update_cache");
 
         // First remove all folders to force a full update
         let _ = fs::remove_dir_all(_home).expect("Can' remove dir to prepare the test");
@@ -873,7 +876,7 @@ mod tests {
         assert!(pins.len() > IDX);
         assert!(tags.len() > IDX);
 
-        println!("Running second update_cache");
+        debug!("Running second update_cache");
         pinboard
             .cached_data
             .update_cache(&pinboard.api)
@@ -885,7 +888,7 @@ mod tests {
         assert!(pinboard.cached_data.cache_ok());
 
         assert!(pinboard.cached_data.pins.is_some());
-        println!(
+        debug!(
             "{:?}\n\n{:?}\n\n",
             pins[IDX],
             pinboard.cached_data.pins.as_ref().unwrap()[IDX]
@@ -897,7 +900,7 @@ mod tests {
         );
 
         assert!(pinboard.cached_data.tags.is_some());
-        println!(
+        debug!(
             "{:?}\n{:?}",
             tags[IDX],
             pinboard.cached_data.tags.as_ref().unwrap()[IDX]
@@ -908,21 +911,4 @@ mod tests {
         );
         assert_eq!(tags[IDX], pinboard.cached_data.tags.as_ref().unwrap()[IDX]);
     }
-
-    fn create_mockito_servers() -> (Mock, Mock) {
-        let _ = env_logger::try_init();
-        info!("create_mockito_servers: starting.");
-        let m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body_from_file("tests/all_pins_mockito.json")
-            .create();
-        let m2 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body_from_file("tests/all_tags_mockito.json")
-            .create();
-        (m1, m2)
-    }
-
 }

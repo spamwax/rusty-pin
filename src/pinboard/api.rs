@@ -74,7 +74,7 @@ impl<'a> Api<'a> {
     }
 
     fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
-        info!("add_auth_token: starting.");
+        debug!("add_auth_token: starting.");
         Url::parse_with_params(
             url.into_url().expect("invalid url").as_ref(),
             &[("format", "json"), ("auth_token", &self.auth_token)],
@@ -82,7 +82,7 @@ impl<'a> Api<'a> {
     }
 
     pub fn all_pins(&self) -> Result<Vec<Pin>, Error> {
-        info!("all_pins: starting.");
+        debug!("all_pins: starting.");
         self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), &HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res)
@@ -91,7 +91,7 @@ impl<'a> Api<'a> {
     }
 
     pub fn suggest_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, Error> {
-        info!("suggest_tags: starting.");
+        debug!("suggest_tags: starting.");
         let mut query = HashMap::new();
         query.insert("url", url.into_url()?.to_string());
 
@@ -118,7 +118,7 @@ impl<'a> Api<'a> {
     }
 
     pub fn add_url(&self, p: Pin) -> Result<(), Error> {
-        info!("add_url: starting.");
+        debug!("add_url: starting.");
         let mut map = HashMap::new();
         let url = p.url.into_string();
 
@@ -130,7 +130,7 @@ impl<'a> Api<'a> {
         map.insert("shared", p.shared);
         map.insert("replace", "yes".to_string());
 
-        info!("Sending payload to: {}/posts/add\n\t{:?}", BASE_URL, map);
+        debug!("Sending payload to: {}/posts/add\n\t{:?}", BASE_URL, map);
         self.get_api_response([BASE_URL, "/posts/add"].concat().as_str(), &map)
             .and_then(|res| {
                 serde_json::from_str::<ApiResult>(&res)
@@ -140,7 +140,7 @@ impl<'a> Api<'a> {
     }
 
     pub fn tags_frequency(&self) -> Result<Vec<Tag>, Error> {
-        info!("tags_frequency: starting.");
+        debug!("tags_frequency: starting.");
         self.get_api_response([BASE_URL, "/tags/get"].concat().as_str(), &HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res)
@@ -157,7 +157,7 @@ impl<'a> Api<'a> {
     }
 
     pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), Error> {
-        info!("delete: starting.");
+        debug!("delete: starting.");
         let mut map = HashMap::new();
         let url = url.into_url()?.to_string();
         map.insert("url", url);
@@ -171,7 +171,7 @@ impl<'a> Api<'a> {
     }
 
     pub fn recent_update(&self) -> Result<DateTime<Utc>, Error> {
-        info!("recent_update: starting.");
+        debug!("recent_update: starting.");
         self.get_api_response(
             [BASE_URL, "/posts/update"].concat().as_str(),
             &HashMap::new(),
@@ -187,7 +187,7 @@ impl<'a> Api<'a> {
         endpoint: T,
         params: &HashMap<&str, String>,
     ) -> Result<String, Error> {
-        info!("get_api_response: starting.");
+        debug!("get_api_response: starting.");
 
         let endpoint_string = endpoint.as_ref().to_string();
         let base_url = endpoint.into_url().map_err(|_| {
@@ -239,20 +239,21 @@ impl<'a> Api<'a> {
 mod tests {
     use super::*;
     use url::ParseError;
-    use mockito::{mock, Matcher};
 
     use pinboard::pin::PinBuilder;
+    use pinboard::mockito_helper::create_mockito_server;
+    use pinboard::mockito_helper::create_mockito_server_from_file;
 
     const TEST_URL: &str = "https://githuуй.com/Здравствуйт?q=13#fragment";
     #[test]
     fn get_latest_update_time() {
         let _ = env_logger::try_init();
-        info!("get_latest_update_time: starting.");
-        let _m = mock("GET", Matcher::Regex(r"^/posts/update.*$".to_string()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"update_time":"2018-02-07T01:54:09Z"}"#)
-            .create();
+        debug!("get_latest_update_time: starting.");
+        let _m = create_mockito_server(
+            r"^/posts/update.*$".to_string(),
+            200,
+            r#"{"update_time":"2018-02-07T01:54:09Z"}"#,
+        );
         let api = Api::new(include_str!("api_token.txt").to_string());
         let r = api.recent_update();
         assert!(r.is_ok());
@@ -260,11 +261,11 @@ mod tests {
 
     #[test]
     fn too_many_requests() {
-        let _m1 = mock("GET", Matcher::Regex(r"^/posts/delete.*$".to_string()))
-            .with_status(429)
-            .with_header("content-type", "application/json")
-            .with_body(r#"Back off"#)
-            .create();
+        let _m1 = create_mockito_server(
+            r"^/posts/delete.*$".to_string(),
+            429,
+            r#"Back off"#,
+        );
         let api = Api::new(include_str!("api_token.txt").to_string());
         let r = api.delete(TEST_URL);
         assert_eq!(
@@ -276,25 +277,23 @@ mod tests {
     #[test]
     fn delete_a_pin() {
         let _ = env_logger::try_init();
-        info!("delete_a_pin: starting.");
+        debug!("delete_a_pin: starting.");
         add_a_url();
-        let _m1 = mock("GET", Matcher::Regex(r"^/posts/delete.*$".to_string()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"result_code":"done"}"#)
-            .create();
+        let _m1 = create_mockito_server(
+            r"^/posts/delete.*$".to_string(),
+            200,
+            r#"{"result_code":"done"}"#,
+        );
         let api = Api::new(include_str!("api_token.txt").to_string());
         let r = api.delete(TEST_URL);
         r.expect("Error in deleting a pin.");
 
         // Deleting non-existing bookmark
-        let _m2 = mock(
-            "GET",
-            Matcher::Regex(r"^/posts/delete.+fucking\.way.*$".to_string()),
-        ).with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"result_code":"item not found"}"#)
-            .create();
+        let _m2 = create_mockito_server(
+            r"^/posts/delete.+fucking\.way.*$".to_string(),
+            200,
+            r#"{"result_code":"item not found"}"#,
+        );
         let r = api.delete("http://no.fucking.way")
             .expect_err("Deleted non-existing pin");
         assert_eq!("item not found".to_string(), r.cause().to_string());
@@ -320,12 +319,12 @@ mod tests {
     #[test]
     fn add_a_url() {
         let _ = env_logger::try_init();
-        info!("add_a_url: starting.");
-        let _m1 = mock("GET", Matcher::Regex(r"^/posts/add.*$".to_string()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"result_code":"done"}"#)
-            .create();
+        debug!("add_a_url: starting.");
+        let _m1 = create_mockito_server(
+            r"^/posts/add.*$".to_string(),
+            200,
+            r#"{"result_code":"done"}"#,
+        );
         let api = Api::new(include_str!("api_token.txt").to_string());
         let p = PinBuilder::new(TEST_URL, "test bookmark/pin".to_string())
             .tags("tagestan what".to_string())
@@ -339,12 +338,12 @@ mod tests {
     #[test]
     fn suggest_tags() {
         let _ = env_logger::try_init();
-        info!("suggest_tags: starting.");
-        let _m1 = mock("GET", Matcher::Regex(r"^/posts/suggest.*$".to_string()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body_from_file("tests/suggested_tags_mockito.json")
-            .create();
+        debug!("suggest_tags: starting.");
+        let _m1 = create_mockito_server_from_file(
+            r"^/posts/suggest.*$".to_string(),
+            200,
+            "tests/suggested_tags_mockito.json",
+        );
         let api = Api::new(include_str!("api_token.txt").to_string());
         let url = "http://blog.com/";
         let res = api.suggest_tags(url);
@@ -363,27 +362,26 @@ mod tests {
     #[test]
     fn test_tag_freq() {
         let _ = env_logger::try_init();
-        info!("test_tag_freq: starting.");
-        let _m1 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body_from_file("tests/all_tags_mockito.json")
-            .create();
+        debug!("test_tag_freq: starting.");
+        let _m1 = create_mockito_server_from_file(
+            r"^/tags/get.*$".to_string(),
+            200,
+            "tests/all_tags_mockito.json",
+        );
         let api = Api::new(include_str!("api_token.txt").to_string());
         let res = api.tags_frequency();
         let _r = res.unwrap_or_else(|e| panic!("{:?}", e));
     }
 
-    #[ignore]
     #[test]
     fn test_all_pins() {
         let _ = env_logger::try_init();
-        info!("test_all_pins: starting.");
-        let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body_from_file("tests/all_pins_mockito.json")
-            .create();
+        debug!("test_all_pins: starting.");
+        let _m1 = create_mockito_server_from_file(
+            r"^/posts/all.*$".to_string(),
+            200,
+            "tests/all_pins_mockito.json",
+        );
         let api = Api::new(include_str!("api_token.txt").to_string());
         let res = api.all_pins();
 
