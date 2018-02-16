@@ -238,19 +238,19 @@ impl<'a> Api<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
     use url::ParseError;
 
     use pinboard::pin::PinBuilder;
-    use pinboard::mockito_helper::create_mockito_server;
-    use pinboard::mockito_helper::create_mockito_server_from_file;
+    use pinboard::mockito_helper::start_mockito_server;
 
     const TEST_URL: &str = "https://githuуй.com/Здравствуйт?q=13#fragment";
     #[test]
     fn get_latest_update_time() {
         let _ = env_logger::try_init();
         debug!("get_latest_update_time: starting.");
-        let _m = create_mockito_server(
-            r"^/posts/update.*$".to_string(),
+        let _m = start_mockito_server(
+            r"^/posts/update.*$",
             200,
             r#"{"update_time":"2018-02-07T01:54:09Z"}"#,
         );
@@ -261,11 +261,7 @@ mod tests {
 
     #[test]
     fn too_many_requests() {
-        let _m1 = create_mockito_server(
-            r"^/posts/delete.*$".to_string(),
-            429,
-            r#"Back off"#,
-        );
+        let _m1 = start_mockito_server(r"^/posts/delete.*$", 429, r#"Back off"#);
         let api = Api::new(include_str!("api_token.txt").to_string());
         let r = api.delete(TEST_URL);
         assert_eq!(
@@ -279,18 +275,14 @@ mod tests {
         let _ = env_logger::try_init();
         debug!("delete_a_pin: starting.");
         add_a_url();
-        let _m1 = create_mockito_server(
-            r"^/posts/delete.*$".to_string(),
-            200,
-            r#"{"result_code":"done"}"#,
-        );
+        let _m1 = start_mockito_server(r#"^/posts/delete.*$"#, 200, r#"{"result_code":"done"}"#);
         let api = Api::new(include_str!("api_token.txt").to_string());
         let r = api.delete(TEST_URL);
         r.expect("Error in deleting a pin.");
 
         // Deleting non-existing bookmark
-        let _m2 = create_mockito_server(
-            r"^/posts/delete.+fucking\.way.*$".to_string(),
+        let _m2 = start_mockito_server(
+            r"^/posts/delete.+fucking\.way.*$",
             200,
             r#"{"result_code":"item not found"}"#,
         );
@@ -320,11 +312,7 @@ mod tests {
     fn add_a_url() {
         let _ = env_logger::try_init();
         debug!("add_a_url: starting.");
-        let _m1 = create_mockito_server(
-            r"^/posts/add.*$".to_string(),
-            200,
-            r#"{"result_code":"done"}"#,
-        );
+        let _m1 = start_mockito_server(r"^/posts/add.*$", 200, r#"{"result_code":"done"}"#);
         let api = Api::new(include_str!("api_token.txt").to_string());
         let p = PinBuilder::new(TEST_URL, "test bookmark/pin".to_string())
             .tags("tagestan what".to_string())
@@ -339,10 +327,10 @@ mod tests {
     fn suggest_tags() {
         let _ = env_logger::try_init();
         debug!("suggest_tags: starting.");
-        let _m1 = create_mockito_server_from_file(
-            r"^/posts/suggest.*$".to_string(),
+        let _m1 = start_mockito_server(
+            r"^/posts/suggest.*$",
             200,
-            "tests/suggested_tags_mockito.json",
+            PathBuf::from("tests/suggested_tags_mockito.json"),
         );
         let api = Api::new(include_str!("api_token.txt").to_string());
         let url = "http://blog.com/";
@@ -363,10 +351,10 @@ mod tests {
     fn test_tag_freq() {
         let _ = env_logger::try_init();
         debug!("test_tag_freq: starting.");
-        let _m1 = create_mockito_server_from_file(
-            r"^/tags/get.*$".to_string(),
+        let _m1 = start_mockito_server(
+            r"^/tags/get.*$",
             200,
-            "tests/all_tags_mockito.json",
+            PathBuf::from("tests/all_tags_mockito.json"),
         );
         let api = Api::new(include_str!("api_token.txt").to_string());
         let res = api.tags_frequency();
@@ -377,10 +365,10 @@ mod tests {
     fn test_all_pins() {
         let _ = env_logger::try_init();
         debug!("test_all_pins: starting.");
-        let _m1 = create_mockito_server_from_file(
-            r"^/posts/all.*$".to_string(),
+        let _m1 = start_mockito_server(
+            r"^/posts/all.*$",
             200,
-            "tests/all_pins_mockito.json",
+            PathBuf::from("tests/all_pins_mockito.json"),
         );
         let api = Api::new(include_str!("api_token.txt").to_string());
         let res = api.all_pins();
