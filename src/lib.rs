@@ -42,9 +42,9 @@ pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
 // TODO: Fix tests so we don't have to pass --test-threads=1. It seems issue is related to
 // multithread access to cache files as some tests maybe deleting/updating while others reading.
 // TODO: Improve performance! Maybe use some other encoding for saving cache files.
-// TODO: Use buffer reading/writing when dealing with cache files.
 // TODO: Use 'failure' crate for better error handling.
 // TODO: Use threads to improve search speed?
+// TODO: Use Cow<'a, str> for user facing API? <19-02-18, Hamid>
 #[cfg(test)]
 mod tests {
     mod rmp_serde {
