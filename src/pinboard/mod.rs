@@ -130,8 +130,8 @@ impl<'a> Pinboard<'a> {
                     .pins
                     .as_ref()
                     .unwrap()
-                    .into_iter()
-                    .filter(|item| {
+                    .iter()
+                    .filter(|item: &&CachedPin| {
                         if self.cfg.tag_only_search {
                             item.pin.tag_contains(q, None)
                         } else {
@@ -150,12 +150,11 @@ impl<'a> Pinboard<'a> {
                 // Set case-insensitive regex option.
                 fuzzy_string.insert_str(0, "(?i)");
                 let re = Regex::new(&fuzzy_string)?;
-                // .map_err(|_| "Can't search for given query!".to_owned())?;
                 self.cached_data
                     .pins
                     .as_ref()
                     .unwrap()
-                    .into_iter()
+                    .iter()
                     .filter(|item| {
                         if self.cfg.tag_only_search {
                             item.pin.tag_contains("", Some(&re))
@@ -722,6 +721,54 @@ mod tests {
                 .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
         }
+    }
+
+    #[cfg(feature = "bench")]
+    #[bench]
+    fn bench_search_items_openpgp(b: &mut Bencher) {
+        let _ = env_logger::try_init();
+        debug!("bench_search_items_non_fuzzy: starting.");
+        let (_m1, _m2) = create_mockito_servers();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
+
+        let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
+        pinboard.enable_fuzzy_search(false);
+        pinboard.enable_tag_only_search(false);
+        let query = "openpgp";
+        b.iter(|| {
+            let _ = pinboard.search_items(query).unwrap_or_else(|e| panic!(e));
+        })
+    }
+
+    #[cfg(feature = "bench")]
+    #[bench]
+    fn bench_search_openpgp(b: &mut Bencher) {
+        let _ = env_logger::try_init();
+        debug!("bench_search_openpgp: starting.");
+        let (_m1, _m2) = create_mockito_servers();
+        let mut _home = env::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
+
+        let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
+        pinboard.enable_fuzzy_search(false);
+        pinboard.enable_tag_only_search(false);
+        let queries = ["openpgp"];
+        let fields = vec![
+            SearchType::TitleOnly,
+            SearchType::TagOnly,
+            SearchType::UrlOnly,
+            SearchType::DescriptionOnly,
+        ];
+        b.iter(|| {
+            let _pins = pinboard
+                .search(&queries, fields.as_slice())
+                .unwrap_or_else(|e| panic!(e));
+        });
     }
 
     #[cfg(feature = "bench")]

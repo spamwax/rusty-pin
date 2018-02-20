@@ -39,6 +39,7 @@ pub mod pinboard;
 pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
 
 // TODO: Properly escape search queries that are used in regex for fuzzy option. <06-02-18, Hamid>
+//       Some special chars to escape: (  ) | ? * + [  ]
 // TODO: Fix tests so we don't have to pass --test-threads=1. It seems issue is related to
 // multithread access to cache files as some tests maybe deleting/updating while others reading.
 // TODO: Improve performance! Maybe use some other encoding for saving cache files.
