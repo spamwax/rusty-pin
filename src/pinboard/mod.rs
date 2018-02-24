@@ -812,7 +812,7 @@ mod tests {
         debug!("Running first update_cache");
 
         // First remove all folders to force a full update
-        let _ = fs::remove_dir_all(_home).expect("Can' remove dir to prepare the test");
+        let _ = fs::remove_dir_all(_home).expect("Can't remove dir to prepare the test");
 
         // Pinboard::new() will call update_cache since we remove the cache folder.
         let pb = Pinboard::new(include_str!("api_token.txt"), cache_path);

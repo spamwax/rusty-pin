@@ -80,7 +80,8 @@ mod tests {
             pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
 
             let mut buf: Vec<u8> = Vec::new();
-            pin.serialize(&mut Serializer::new(&mut buf)).unwrap();
+            pin.serialize(&mut Serializer::new(&mut buf))
+                .expect("Couldn't serialize");
             assert_eq!(133, buf.len());
 
             let mut dir = env::temp_dir();
@@ -88,7 +89,7 @@ mod tests {
 
             let mut fp = File::create(dir).expect("Couldn't create temp file test_rmp_serde.bin");
             fp.write_all(buf.as_slice())
-                .expect("Can't delete temp file");
+                .expect("Can't write to test_rmp_serde.bin");
         }
 
         #[test]
@@ -102,13 +103,14 @@ mod tests {
             let fp = File::open(&dir).expect("Couldn't read temp file test_rmp_serde.bin");
 
             let mut de = Deserializer::from_read(fp);
-            let pin: Pin = Deserialize::deserialize(&mut de).unwrap();
+            let pin: Pin =
+                Deserialize::deserialize(&mut de).expect("Couldn't deserialize into pin.");
 
             assert_eq!(pin.title, "The Little Book of Rust Macros");
             assert_eq!(pin.time(), Utc.ymd(2017, 5, 22).and_hms(17, 46, 54));
             assert_eq!(pin.tags, "Rust macros");
             assert_eq!("yes", &pin.toread);
-            assert_eq!("WoW!!!", &pin.extended.unwrap());
+            assert_eq!("WoW!!!", &pin.extended.expect("pin.extended can't be None"));
             assert_eq!(
                 pin.url,
                 Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap()
@@ -121,17 +123,20 @@ mod tests {
             let _ = env_logger::try_init();
             debug!("serialize_lots_of_pins: starting");
             let input = include_str!("../sample.json");
-            let pins: Vec<Pin> = serde_json::from_str(input).unwrap();
+            let pins: Vec<Pin> = serde_json::from_str(input).expect("Couldn't read sample.json");
             assert_eq!(612, pins.len());
 
             let mut buf: Vec<u8> = Vec::new();
-            pins.serialize(&mut Serializer::new(&mut buf)).unwrap();
+            pins.serialize(&mut Serializer::new(&mut buf))
+                .expect("Couldn't serialize lots of pins");
             assert_eq!(115671, buf.len());
 
             let mut dir = env::temp_dir();
             dir.push("test_rmp_serde-vec.bin");
-            let mut fp = File::create(dir).expect("Couldn't create temp file test_rmp_serde.bin");
-            fp.write_all(buf.as_slice()).unwrap();
+            let mut fp =
+                File::create(dir).expect("Couldn't create temp file test_rmp_serde-vec.bin");
+            fp.write_all(buf.as_slice())
+                .expect("Can't write to test_rmp_serde-vec.bin");
         }
 
         #[test]
@@ -145,7 +150,8 @@ mod tests {
 
             let fp = File::open(&dir).expect("Couldn't create temp file test_rmp_serde.bin");
             let mut de = Deserializer::from_read(fp);
-            let pins: Vec<Pin> = Deserialize::deserialize(&mut de).unwrap();
+            let pins: Vec<Pin> =
+                Deserialize::deserialize(&mut de).expect("Couldn't deserialize into Vec<Pin>.");
             assert_eq!(612, pins.len());
             let _ = fs::remove_file(dir).expect("Can't delete temp test file");
         }
@@ -157,8 +163,9 @@ mod tests {
             debug!("bench_rmp: starting");
             let bytes = include_bytes!("../tests/test_rmp_serde-vec.bin");
             b.iter(|| {
-                let _pins: Vec<Pin> =
-                    Deserialize::deserialize(&mut Deserializer::from_slice(bytes)).unwrap();
+                let _pins: Vec<Pin> = Deserialize::deserialize(&mut Deserializer::from_slice(
+                    bytes,
+                )).expect("Couldn't deserialize lots of pins");
             })
         }
 
@@ -182,7 +189,7 @@ mod tests {
             let pin: Result<Pin, _> = from_str(include_str!("../tests/PIN1.json"));
             assert!(pin.is_ok());
             let pin: Pin = pin.unwrap();
-            // println!("{:?}", pin);
+
             assert_eq!(pin.title, "The Little Book of Rust Macros");
             assert_eq!(pin.time(), Utc.ymd(2017, 5, 22).and_hms(17, 46, 54));
             assert_eq!(pin.tags, "Rust macros");
@@ -243,7 +250,7 @@ mod tests {
             debug!("bench_json: starting");
             let input = include_str!("../sample.json");
             b.iter(|| {
-                let _pins: Vec<Pin> = from_str(input).unwrap();
+                let _pins: Vec<Pin> = from_str(input).expect("Couldn't deserialize");
             });
         }
 
@@ -259,7 +266,7 @@ mod tests {
                 .shared("no")
                 .into_pin();
             pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
-            let s = to_string(&pin).unwrap();
+            let s = to_string(&pin).expect("Couldn't serialize");
             assert_eq!(
                 r#"{"href":"https://danielkeep.github.io/tlborm/book/README.html",
 "description":"The Little Book of Rust Macros","tags":"Rust macros","shared":"no"
