@@ -274,7 +274,8 @@ mod tests {
         assert_eq!(147, buf.len());
 
         let mut de = Deserializer::from_slice(&buf);
-        let new_cached: CachedPin = Deserialize::deserialize(&mut de).unwrap();
+        let new_cached: CachedPin =
+            Deserialize::deserialize(&mut de).expect("Couldn't deserialize a cached pin");
 
         assert_eq!(
             "The Little Book of Rust Macros".to_string(),

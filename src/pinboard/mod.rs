@@ -58,7 +58,7 @@ impl<'a> Pinboard<'a> {
         }
 
         let pinboard = Pinboard {
-            api: api,
+            api,
             cfg,
             cached_data,
         };
