@@ -121,6 +121,7 @@ impl<'a> Api<'a> {
         debug!("add_url: starting.");
         let mut map = HashMap::new();
         let url = p.url.into_string();
+        debug!(" url: {}", url);
 
         map.insert("url", url);
         map.insert("description", p.title);
@@ -160,8 +161,9 @@ impl<'a> Api<'a> {
         debug!("delete: starting.");
         let mut map = HashMap::new();
         let url = url.into_url()?.to_string();
+        debug!(" url: {}", url);
         map.insert("url", url);
-        map.insert(" ", "?".to_string());
+
         self.get_api_response([BASE_URL, "/posts/delete"].concat().as_str(), &map)
             .and_then(|res| {
                 serde_json::from_str(&res)
@@ -320,7 +322,7 @@ mod tests {
             .shared("yes")
             .into_pin();
         let res = api.add_url(p);
-        res.expect("Error in adding.");
+        res.expect("Error in adding a pin.");
     }
 
     #[test]

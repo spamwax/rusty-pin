@@ -59,6 +59,7 @@ impl CachedData {
     }
 
     /// Create an instance for CachedData but don't load actual cached files.
+    #[allow(dead_code)]
     pub fn init<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, Error> {
         let _ = env_logger::try_init();
         debug!("init: starting");
