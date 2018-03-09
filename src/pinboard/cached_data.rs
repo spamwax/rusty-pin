@@ -232,9 +232,12 @@ impl CachedData {
         use std::os::unix::fs::PermissionsExt;
         use std::fs::set_permissions;
         let permissions = Permissions::from_mode(0o600);
-        set_permissions(p, permissions)
-            .map_err(|e| e.to_string())
-            .expect("Couludn't set file permissiion");
+        if let Err(e) = set_permissions(p, permissions) {
+            error!(
+                "Couldn't set proper file permission for cache files: {:?}",
+                e
+            );
+        }
     }
 }
 
