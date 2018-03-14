@@ -834,7 +834,7 @@ mod tests {
         debug!("Running second update_cache");
         pinboard
             .cached_data
-            .update_cache(&pinboard.api)
+            .update_cache(pinboard.api)
             .unwrap_or_else(|e| panic!(e));
         pinboard
             .cached_data
