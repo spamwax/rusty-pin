@@ -253,11 +253,11 @@ mod tests {
         debug!("serde_a_cached_pin: starting");
         let mut pin = PinBuilder::new(
             "https://danielkeep.github.io/tlborm/book/README.html",
-            "The Little Book of Rust Macros".to_string(),
-        ).tags("Rust macros".to_string())
+            "The Little Book of Rust Macros",
+        ).tags("Rust macros")
             .toread("yes")
             .shared("no")
-            .description("WoW!!!".to_string())
+            .description("WoW!!!")
             .into_pin();
         pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
 
@@ -277,23 +277,20 @@ mod tests {
         let new_cached: CachedPin =
             Deserialize::deserialize(&mut de).expect("Couldn't deserialize a cached pin");
 
-        assert_eq!(
-            "The Little Book of Rust Macros".to_string(),
-            new_cached.pin.title
-        );
+        assert_eq!("The Little Book of Rust Macros", new_cached.pin.title);
         assert_eq!(
             "https://danielkeep.github.io/tlborm/book/README.html",
             new_cached.pin.url.as_ref()
         );
-        assert_eq!("yes".to_string(), new_cached.pin.toread);
-        assert_eq!("no".to_string(), new_cached.pin.shared);
-        assert_eq!("WoW!!!".to_string(), new_cached.pin.extended.unwrap());
+        assert_eq!("yes", new_cached.pin.toread);
+        assert_eq!("no", new_cached.pin.shared);
+        assert_eq!("WoW!!!", new_cached.pin.extended.unwrap());
         assert_eq!(
             Utc.ymd(2017, 5, 22).and_hms(17, 46, 54),
             new_cached.pin.time
         );
         assert_eq!(
-            vec!["Rust".to_string(), "macros".to_string()],
+            vec![String::from("Rust"), String::from("macros")],
             new_cached.tag_list
         );
     }

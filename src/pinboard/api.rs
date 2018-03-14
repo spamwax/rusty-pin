@@ -258,7 +258,7 @@ mod tests {
             200,
             r#"{"update_time":"2018-02-07T01:54:09Z"}"#,
         );
-        let api = Api::new(include_str!("api_token.txt").to_string());
+        let api = Api::new(include_str!("api_token.txt"));
         let r = api.recent_update();
         assert!(r.is_ok());
     }
@@ -266,7 +266,7 @@ mod tests {
     #[test]
     fn too_many_requests() {
         let _m1 = start_mockito_server(r"^/posts/delete.*$", 429, r#"Back off"#);
-        let api = Api::new(include_str!("api_token.txt").to_string());
+        let api = Api::new(include_str!("api_token.txt"));
         let r = api.delete(TEST_URL);
         assert_eq!(
             "Server couldn't fulfill request: Too Many Requests",
@@ -280,7 +280,7 @@ mod tests {
         debug!("delete_a_pin: starting.");
         add_a_url();
         let _m1 = start_mockito_server(r#"^/posts/delete.*$"#, 200, r#"{"result_code":"done"}"#);
-        let api = Api::new(include_str!("api_token.txt").to_string());
+        let api = Api::new(include_str!("api_token.txt"));
         let r = api.delete(TEST_URL);
         r.expect("Error in deleting a pin.");
 
@@ -317,10 +317,10 @@ mod tests {
         let _ = env_logger::try_init();
         debug!("add_a_url: starting.");
         let _m1 = start_mockito_server(r"^/posts/add.*$", 200, r#"{"result_code":"done"}"#);
-        let api = Api::new(include_str!("api_token.txt").to_string());
-        let p = PinBuilder::new(TEST_URL, "test bookmark/pin".to_string())
-            .tags("tagestan what".to_string())
-            .description("russian website!".to_string())
+        let api = Api::new(include_str!("api_token.txt"));
+        let p = PinBuilder::new(TEST_URL, "test bookmark/pin")
+            .tags("tagestan what")
+            .description("russian website!")
             .shared("yes")
             .into_pin();
         let res = api.add_url(p);
@@ -336,7 +336,7 @@ mod tests {
             200,
             PathBuf::from("tests/suggested_tags_mockito.json"),
         );
-        let api = Api::new(include_str!("api_token.txt").to_string());
+        let api = Api::new(include_str!("api_token.txt"));
         let url = "http://blog.com/";
         let res = api.suggest_tags(url);
         assert_eq!(vec!["datetime", "library", "rust"], res.unwrap());
@@ -360,7 +360,7 @@ mod tests {
             200,
             PathBuf::from("tests/all_tags_mockito.json"),
         );
-        let api = Api::new(include_str!("api_token.txt").to_string());
+        let api = Api::new(include_str!("api_token.txt"));
         let res = api.tags_frequency();
         let _r = res.unwrap_or_else(|e| panic!("{:?}", e));
     }
@@ -374,7 +374,7 @@ mod tests {
             200,
             PathBuf::from("tests/all_pins_mockito.json"),
         );
-        let api = Api::new(include_str!("api_token.txt").to_string());
+        let api = Api::new(include_str!("api_token.txt"));
         let res = api.all_pins();
 
         assert_eq!(57, res.unwrap_or_else(|e| panic!("{:?}", e)).len());

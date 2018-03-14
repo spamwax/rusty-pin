@@ -139,15 +139,15 @@ mod tests {
         debug!("test_builder: starting");
         let p = PinBuilder::new(
             "https://githuуй.com/Здравствуйт?q=13#fragment",
-            "title".to_string(),
-        ).tags("tag1 tag2".to_string())
+            "title",
+        ).tags("tag1 tag2")
             .into_pin();
         assert_eq!(p.title, "title");
         assert_eq!(
             p.url,
             Url::parse("https://githuуй.com/Здравствуйт?q=13#fragment").unwrap()
         );
-        assert_eq!(p.tags, "tag1 tag2".to_string());
+        assert_eq!(p.tags, "tag1 tag2");
     }
 
     #[test]
@@ -156,8 +156,8 @@ mod tests {
         debug!("test_pin_contain: starting");
         let p = PinBuilder::new(
             "http://правительство.рф",
-            "An open source ecosystem for IoT development · PlatformIO".to_string(),
-        ).tags("tag1 tag2".to_string())
+            "An open source ecosystem for IoT development · PlatformIO",
+        ).tags("tag1 tag2")
             .into_pin();
 
         assert!(p.contains("·"));

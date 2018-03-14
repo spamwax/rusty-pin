@@ -69,11 +69,11 @@ mod tests {
             debug!("serialize_a_pin: starting");
             let mut pin = PinBuilder::new(
                 "https://danielkeep.github.io/tlborm/book/README.html",
-                "The Little Book of Rust Macros".to_string(),
-            ).tags("Rust macros".to_string())
+                "The Little Book of Rust Macros",
+            ).tags("Rust macros")
                 .toread("yes")
                 .shared("no")
-                .description("WoW!!!".to_string())
+                .description("WoW!!!")
                 .into_pin();
             pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
 
@@ -258,8 +258,8 @@ mod tests {
             debug!("serialize_a_pin: starting");
             let mut pin = PinBuilder::new(
                 "https://danielkeep.github.io/tlborm/book/README.html",
-                "The Little Book of Rust Macros".to_string(),
-            ).tags("Rust macros".to_string())
+                "The Little Book of Rust Macros",
+            ).tags("Rust macros")
                 .toread("no")
                 .shared("no")
                 .into_pin();
