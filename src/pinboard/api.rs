@@ -45,9 +45,9 @@ struct UpdateTime {
     datetime: DateTime<Utc>,
 }
 
-#[derive(Debug)]
-pub struct Api<'a> {
-    auth_token: Cow<'a, str>,
+#[derive(Debug, Clone)]
+pub struct Api<'api> {
+    auth_token: Cow<'api, str>,
 }
 
 #[derive(Debug, Fail)]
@@ -62,10 +62,10 @@ pub enum ApiError {
     Network(String),
 }
 
-impl<'a> Api<'a> {
+impl<'api, 'pin> Api<'api> {
     pub fn new<S>(auth_token: S) -> Self
     where
-        S: Into<Cow<'a, str>>,
+        S: Into<Cow<'api, str>>,
     {
         let _ = env_logger::try_init();
         Api {
@@ -81,9 +81,9 @@ impl<'a> Api<'a> {
         ).expect("invalid parameters")
     }
 
-    pub fn all_pins(&self) -> Result<Vec<Pin>, Error> {
+    pub fn all_pins(&'api self) -> Result<Vec<Pin<'pin>>, Error> {
         debug!("all_pins: starting.");
-        self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), &HashMap::new())
+        self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res)
                     .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
@@ -92,10 +92,11 @@ impl<'a> Api<'a> {
 
     pub fn suggest_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, Error> {
         debug!("suggest_tags: starting.");
-        let mut query = HashMap::new();
-        query.insert("url", url.into_url()?.to_string());
+        let u = &url.into_url()?.to_string();
+        let mut query: HashMap<&str, &str> = HashMap::new();
+        query.insert("url", u);
 
-        self.get_api_response([BASE_URL, "/posts/suggest"].concat().as_str(), &query)
+        self.get_api_response([BASE_URL, "/posts/suggest"].concat().as_str(), query)
             .and_then(|res| {
                 serde_json::from_str::<Vec<serde_json::Value>>(&res)
                     .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
@@ -119,20 +120,21 @@ impl<'a> Api<'a> {
 
     pub fn add_url(&self, p: Pin) -> Result<(), Error> {
         debug!("add_url: starting.");
-        let mut map = HashMap::new();
-        let url = p.url.into_string();
+        let url = &p.url.into_string();
+        let extended = &p.extended.unwrap_or_default();
+        let mut map: HashMap<&str, &str> = HashMap::new();
         debug!(" url: {}", url);
 
         map.insert("url", url);
-        map.insert("description", p.title);
-        map.insert("tags", p.tags);
-        map.insert("toread", p.toread);
-        map.insert("extended", p.extended.unwrap_or_default());
-        map.insert("shared", p.shared);
-        map.insert("replace", "yes".to_string());
+        map.insert("description", &p.title);
+        map.insert("tags", &p.tags);
+        map.insert("toread", &p.toread);
+        map.insert("extended", extended);
+        map.insert("shared", &p.shared);
+        map.insert("replace", "yes");
 
         debug!("Sending payload to: {}/posts/add\n\t{:?}", BASE_URL, map);
-        self.get_api_response([BASE_URL, "/posts/add"].concat().as_str(), &map)
+        self.get_api_response([BASE_URL, "/posts/add"].concat().as_str(), map)
             .and_then(|res| {
                 serde_json::from_str::<ApiResult>(&res)
                     .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
@@ -142,7 +144,7 @@ impl<'a> Api<'a> {
 
     pub fn tags_frequency(&self) -> Result<Vec<Tag>, Error> {
         debug!("tags_frequency: starting.");
-        self.get_api_response([BASE_URL, "/tags/get"].concat().as_str(), &HashMap::new())
+        self.get_api_response([BASE_URL, "/tags/get"].concat().as_str(), HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res)
                     .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
@@ -159,12 +161,12 @@ impl<'a> Api<'a> {
 
     pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), Error> {
         debug!("delete: starting.");
-        let mut map = HashMap::new();
-        let url = url.into_url()?.to_string();
+        let url = &url.into_url()?.to_string();
+        let mut map: HashMap<&str, &str> = HashMap::new();
         debug!(" url: {}", url);
         map.insert("url", url);
 
-        self.get_api_response([BASE_URL, "/posts/delete"].concat().as_str(), &map)
+        self.get_api_response([BASE_URL, "/posts/delete"].concat().as_str(), map)
             .and_then(|res| {
                 serde_json::from_str(&res)
                     .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
@@ -176,7 +178,7 @@ impl<'a> Api<'a> {
         debug!("recent_update: starting.");
         self.get_api_response(
             [BASE_URL, "/posts/update"].concat().as_str(),
-            &HashMap::new(),
+            HashMap::new(),
         ).and_then(|res| {
                 serde_json::from_str(&res)
                     .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
@@ -187,7 +189,7 @@ impl<'a> Api<'a> {
     fn get_api_response<T: IntoUrl + AsRef<str>>(
         &self,
         endpoint: T,
-        params: &HashMap<&str, String>,
+        params: HashMap<&str, &str>,
     ) -> Result<String, Error> {
         debug!("get_api_response: starting.");
 

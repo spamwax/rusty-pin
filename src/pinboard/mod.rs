@@ -31,16 +31,16 @@ use self::cached_data::*;
 pub use self::pin::{Pin, PinBuilder, Tag};
 
 #[derive(Debug)]
-pub struct Pinboard<'a> {
-    api: api::Api<'a>,
+pub struct Pinboard<'api, 'pin> {
+    api: api::Api<'api>,
     cfg: Config,
-    cached_data: CachedData,
+    cached_data: CachedData<'pin>,
 }
 
-impl<'a> Pinboard<'a> {
+impl<'api: 'pin, 'pin> Pinboard<'api, 'pin> {
     pub fn new<S, P>(auth_token: S, cached_dir: Option<P>) -> Result<Self, Error>
     where
-        S: Into<Cow<'a, str>>,
+        S: Into<Cow<'api, str>>,
         P: AsRef<Path>,
     {
         let _ = env_logger::try_init();
@@ -51,7 +51,7 @@ impl<'a> Pinboard<'a> {
         let mut cached_data = CachedData::new(cached_dir)?;
         if !cached_data.cache_ok() {
             debug!("pinb::new: cache file missing, calling update");
-            cached_data.update_cache(&api)?;
+            cached_data.update_cache(api.clone())?;
             debug!("pinb::new:   update done.");
         } else {
             debug!("pinb::new: cache not missing");
@@ -118,7 +118,7 @@ pub enum SearchType {
 }
 
 // Search functions
-impl<'a> Pinboard<'a> {
+impl<'api: 'pin, 'pin> Pinboard<'api, 'pin> {
     /// Searches all the fields within bookmarks to filter them.
     /// This function honors [pinboard::config::Config] settings for fuzzy search & tag_only search.
     pub fn search_items(&self, query: &str) -> Result<Option<Vec<&Pin>>, Error> {
@@ -331,7 +331,7 @@ impl<'a> Pinboard<'a> {
     /// Update local cache
     pub fn update_cache(&mut self) -> Result<(), Error> {
         debug!("update_cache: starting.");
-        self.cached_data.update_cache(&self.api)
+        self.cached_data.update_cache(self.api.clone())
     }
 
     /// Returns list of all Tags (tag, frequency)

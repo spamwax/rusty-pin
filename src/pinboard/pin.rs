@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use url_serde;
 use reqwest::IntoUrl;
 
@@ -10,20 +11,20 @@ use regex::Regex;
 pub struct Tag(pub String, pub usize);
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub struct Pin {
+pub struct Pin<'pin> {
     #[serde(with = "url_serde", rename = "href")]
     pub url: Url,
     #[serde(rename = "description")]
-    pub title: String,
-    pub tags: String,
-    pub shared: String,
-    pub toread: String,
-    pub extended: Option<String>,
+    pub title: Cow<'pin, str>,
+    pub tags: Cow<'pin, str>,
+    pub shared: Cow<'pin, str>,
+    pub toread: Cow<'pin, str>,
+    pub extended: Option<Cow<'pin, str>>,
     #[serde(default = "Utc::now")]
     pub time: DateTime<Utc>,
 }
 
-impl Pin {
+impl<'pin> Pin<'pin> {
     pub fn time(&self) -> DateTime<Utc> {
         self.time
     }
@@ -74,47 +75,51 @@ impl Pin {
 }
 
 #[derive(Debug)]
-pub struct PinBuilder {
-    pin: Pin,
+pub struct PinBuilder<'pin> {
+    pin: Pin<'pin>,
 }
 
-impl PinBuilder {
-    pub fn new<T: IntoUrl>(url: T, title: String) -> Self {
+impl<'pin> PinBuilder<'pin> {
+    pub fn new<T, S>(url: T, title: S) -> Self
+    where
+        T: IntoUrl,
+        S: Into<Cow<'pin, str>>,
+    {
         let pin = Pin {
             url: url.into_url().expect("Invalid url"),
-            title,
+            title: title.into(),
             time: Utc::now(),
-            tags: String::new(),
-            shared: String::new(),
-            toread: String::new(),
+            tags: Cow::from(""),
+            shared: Cow::from(""),
+            toread: Cow::from(""),
             extended: None,
         };
         PinBuilder { pin }
     }
 }
 
-impl PinBuilder {
-    pub fn tags(mut self, t: String) -> Self {
-        self.pin.tags = t;
+impl<'pin> PinBuilder<'pin> {
+    pub fn tags<S: Into<Cow<'pin, str>>>(mut self, t: S) -> Self {
+        self.pin.tags = t.into();
         self
     }
 
-    pub fn shared(mut self, f: &str) -> Self {
-        self.pin.shared = f.to_string();
+    pub fn shared<S: Into<Cow<'pin, str>>>(mut self, f: S) -> Self {
+        self.pin.shared = f.into();
         self
     }
 
-    pub fn toread(mut self, f: &str) -> Self {
-        self.pin.toread = f.to_string();
+    pub fn toread<S: Into<Cow<'pin, str>>>(mut self, f: S) -> Self {
+        self.pin.toread = f.into();
         self
     }
 
-    pub fn description(mut self, x: String) -> Self {
-        self.pin.extended = Some(x);
+    pub fn description<S: Into<Cow<'pin, str>>>(mut self, x: S) -> Self {
+        self.pin.extended = Some(x.into());
         self
     }
 
-    pub fn into_pin(self) -> Pin {
+    pub fn into_pin(self) -> Pin<'pin> {
         self.pin
     }
 }
