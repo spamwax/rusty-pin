@@ -21,10 +21,6 @@ pub struct Pin {
     pub extended: Option<String>,
     #[serde(default = "Utc::now")]
     pub time: DateTime<Utc>,
-    #[serde(skip)]
-    meta: Option<String>,
-    #[serde(skip)]
-    hash: Option<String>,
 }
 
 impl Pin {
@@ -92,8 +88,6 @@ impl PinBuilder {
             shared: String::new(),
             toread: String::new(),
             extended: None,
-            meta: None,
-            hash: None,
         };
         PinBuilder { pin }
     }
