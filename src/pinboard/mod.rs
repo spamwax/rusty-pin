@@ -37,7 +37,7 @@ pub struct Pinboard<'api, 'pin> {
     cached_data: CachedData<'pin>,
 }
 
-impl<'api: 'pin, 'pin> Pinboard<'api, 'pin> {
+impl<'api, 'pin> Pinboard<'api, 'pin> {
     pub fn new<S, P>(auth_token: S, cached_dir: Option<P>) -> Result<Self, Error>
     where
         S: Into<Cow<'api, str>>,
@@ -118,7 +118,7 @@ pub enum SearchType {
 }
 
 // Search functions
-impl<'api: 'pin, 'pin> Pinboard<'api, 'pin> {
+impl<'api, 'pin> Pinboard<'api, 'pin> {
     /// Searches all the fields within bookmarks to filter them.
     /// This function honors [pinboard::config::Config] settings for fuzzy search & tag_only search.
     pub fn search_items(&self, query: &str) -> Result<Option<Vec<&Pin>>, Error> {

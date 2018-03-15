@@ -81,7 +81,7 @@ impl<'api, 'pin> Api<'api> {
         ).expect("invalid parameters")
     }
 
-    pub fn all_pins(&'api self) -> Result<Vec<Pin<'pin>>, Error> {
+    pub fn all_pins(&self) -> Result<Vec<Pin<'pin>>, Error> {
         debug!("all_pins: starting.");
         self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), HashMap::new())
             .and_then(|res| {
@@ -92,8 +92,8 @@ impl<'api, 'pin> Api<'api> {
 
     pub fn suggest_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, Error> {
         debug!("suggest_tags: starting.");
-        let u = &url.into_url()?.to_string();
-        let mut query: HashMap<&str, &str> = HashMap::new();
+        let u: &str = &url.into_url()?.to_string();
+        let mut query = HashMap::new();
         query.insert("url", u);
 
         self.get_api_response([BASE_URL, "/posts/suggest"].concat().as_str(), query)
@@ -120,9 +120,9 @@ impl<'api, 'pin> Api<'api> {
 
     pub fn add_url(&self, p: Pin) -> Result<(), Error> {
         debug!("add_url: starting.");
-        let url = &p.url.into_string();
+        let url: &str = &p.url.into_string();
         let extended = &p.extended.unwrap_or_default();
-        let mut map: HashMap<&str, &str> = HashMap::new();
+        let mut map = HashMap::new();
         debug!(" url: {}", url);
 
         map.insert("url", url);
@@ -161,8 +161,8 @@ impl<'api, 'pin> Api<'api> {
 
     pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), Error> {
         debug!("delete: starting.");
-        let url = &url.into_url()?.to_string();
-        let mut map: HashMap<&str, &str> = HashMap::new();
+        let url: &str = &url.into_url()?.to_string();
+        let mut map = HashMap::new();
         debug!(" url: {}", url);
         map.insert("url", url);
 
