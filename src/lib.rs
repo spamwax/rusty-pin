@@ -41,8 +41,8 @@ pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
 // TODO: Properly escape search queries that are used in regex for fuzzy option. <06-02-18, Hamid>
 //       Some special chars to escape: (  ) | ? * + [  ]
 // TODO: Fix tests so we don't have to pass --test-threads=1. It seems issue is related to
-// multithread access to cache files as some tests maybe deleting/updating while others reading.
-// TODO: Use Cow<'a, str> for user facing API? <19-02-18, Hamid>
+//       multithread access to cache files as some tests maybe
+//       deleting/updating while others reading.
 
 #[cfg(test)]
 mod tests {
@@ -58,7 +58,6 @@ mod tests {
         use env_logger;
 
         use pinboard::pin::{Pin, PinBuilder};
-        //        use pinboard::cached_data::{CachedData, CachedPin};
 
         #[cfg(feature = "bench")]
         use test::Bencher;
