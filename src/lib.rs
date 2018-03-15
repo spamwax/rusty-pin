@@ -41,8 +41,8 @@ pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
 // TODO: Properly escape search queries that are used in regex for fuzzy option. <06-02-18, Hamid>
 //       Some special chars to escape: (  ) | ? * + [  ]
 // TODO: Fix tests so we don't have to pass --test-threads=1. It seems issue is related to
-// multithread access to cache files as some tests maybe deleting/updating while others reading.
-// TODO: Use Cow<'a, str> for user facing API? <19-02-18, Hamid>
+//       multithread access to cache files as some tests maybe
+//       deleting/updating while others reading.
 
 #[cfg(test)]
 mod tests {
@@ -58,7 +58,6 @@ mod tests {
         use env_logger;
 
         use pinboard::pin::{Pin, PinBuilder};
-        //        use pinboard::cached_data::{CachedData, CachedPin};
 
         #[cfg(feature = "bench")]
         use test::Bencher;
@@ -69,11 +68,11 @@ mod tests {
             debug!("serialize_a_pin: starting");
             let mut pin = PinBuilder::new(
                 "https://danielkeep.github.io/tlborm/book/README.html",
-                "The Little Book of Rust Macros".to_string(),
-            ).tags("Rust macros".to_string())
+                "The Little Book of Rust Macros",
+            ).tags("Rust macros")
                 .toread("yes")
                 .shared("no")
-                .description("WoW!!!".to_string())
+                .description("WoW!!!")
                 .into_pin();
             pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
 
@@ -258,8 +257,8 @@ mod tests {
             debug!("serialize_a_pin: starting");
             let mut pin = PinBuilder::new(
                 "https://danielkeep.github.io/tlborm/book/README.html",
-                "The Little Book of Rust Macros".to_string(),
-            ).tags("Rust macros".to_string())
+                "The Little Book of Rust Macros",
+            ).tags("Rust macros")
                 .toread("no")
                 .shared("no")
                 .into_pin();

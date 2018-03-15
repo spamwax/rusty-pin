@@ -16,8 +16,8 @@ const FILE_BUF_SIZE: usize = 4 * 1024 * 1024;
 const CACHE_BUF_SIZE: usize = 1024;
 
 #[derive(Debug)]
-pub struct CachedData {
-    pub pins: Option<Vec<CachedPin>>,
+pub struct CachedData<'pin> {
+    pub pins: Option<Vec<CachedPin<'pin>>>,
     pub tags: Option<Vec<Tag>>,
     pub cache_dir: PathBuf,
     pub tags_cache_file: PathBuf,
@@ -26,12 +26,12 @@ pub struct CachedData {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-pub struct CachedPin {
-    pub pin: Pin,
+pub struct CachedPin<'pin> {
+    pub pin: Pin<'pin>,
     pub tag_list: Vec<String>,
 }
 
-impl CachedData {
+impl<'pin> CachedData<'pin> {
     pub fn new<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, Error> {
         let _ = env_logger::try_init();
         debug!("new: starting");
@@ -91,7 +91,7 @@ impl CachedData {
     }
 }
 
-impl CachedData {
+impl<'pin> CachedData<'pin> {
     pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), Error> {
         debug!("set_cache_dir: starting");
         self.cache_dir = CachedData::create_cache_dir(p)?;
@@ -139,7 +139,7 @@ impl CachedData {
         self.cache_files_valid
     }
 
-    pub fn update_cache(&mut self, api: &api::Api) -> Result<(), Error> {
+    pub fn update_cache(&mut self, api: api::Api) -> Result<(), Error> {
         debug!("update_cache: starting");
         // Fetch & write all pins
         let f = File::create(&self.pins_cache_file)?;
@@ -158,8 +158,8 @@ impl CachedData {
                             .expect("Invalid url stored in a pin, impossible?");
                         let mut pb = PinBuilder::new(url_lowered, pin.title.to_lowercase())
                             .tags(pin.tags.to_lowercase())
-                            .shared(&pin.shared)
-                            .toread(&pin.toread);
+                            .shared(pin.shared)
+                            .toread(pin.toread);
                         if pin.extended.is_some() {
                             pb = pb.description(pin.extended.map(|s| s.to_lowercase()).unwrap());
                         }
@@ -253,11 +253,11 @@ mod tests {
         debug!("serde_a_cached_pin: starting");
         let mut pin = PinBuilder::new(
             "https://danielkeep.github.io/tlborm/book/README.html",
-            "The Little Book of Rust Macros".to_string(),
-        ).tags("Rust macros".to_string())
+            "The Little Book of Rust Macros",
+        ).tags("Rust macros")
             .toread("yes")
             .shared("no")
-            .description("WoW!!!".to_string())
+            .description("WoW!!!")
             .into_pin();
         pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
 
@@ -277,23 +277,20 @@ mod tests {
         let new_cached: CachedPin =
             Deserialize::deserialize(&mut de).expect("Couldn't deserialize a cached pin");
 
-        assert_eq!(
-            "The Little Book of Rust Macros".to_string(),
-            new_cached.pin.title
-        );
+        assert_eq!("The Little Book of Rust Macros", new_cached.pin.title);
         assert_eq!(
             "https://danielkeep.github.io/tlborm/book/README.html",
             new_cached.pin.url.as_ref()
         );
-        assert_eq!("yes".to_string(), new_cached.pin.toread);
-        assert_eq!("no".to_string(), new_cached.pin.shared);
-        assert_eq!("WoW!!!".to_string(), new_cached.pin.extended.unwrap());
+        assert_eq!("yes", new_cached.pin.toread);
+        assert_eq!("no", new_cached.pin.shared);
+        assert_eq!("WoW!!!", new_cached.pin.extended.unwrap());
         assert_eq!(
             Utc.ymd(2017, 5, 22).and_hms(17, 46, 54),
             new_cached.pin.time
         );
         assert_eq!(
-            vec!["Rust".to_string(), "macros".to_string()],
+            vec![String::from("Rust"), String::from("macros")],
             new_cached.tag_list
         );
     }
