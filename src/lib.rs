@@ -52,6 +52,7 @@ mod tests {
         use std::fs::File;
         use std::{env, fs};
         use std::io::prelude::*;
+        use std::io::{BufReader, BufWriter};
         use rmps::{Deserializer, Serializer};
         use serde::{Deserialize, Serialize};
         use serde_json;
@@ -84,8 +85,9 @@ mod tests {
             let mut dir = env::temp_dir();
             dir.push("test_rmp_serde.bin");
 
-            let mut fp = File::create(dir).expect("Couldn't create temp file test_rmp_serde.bin");
-            fp.write_all(buf.as_slice())
+            let fp = File::create(dir).expect("Couldn't create temp file test_rmp_serde.bin");
+            let mut writer = BufWriter::with_capacity(256, fp);
+            writer.write_all(buf.as_slice())
                 .expect("Can't write to test_rmp_serde.bin");
         }
 
@@ -97,9 +99,10 @@ mod tests {
 
             let mut dir = env::temp_dir();
             dir.push("test_rmp_serde.bin");
-            let fp = File::open(&dir).expect("Couldn't read temp file test_rmp_serde.bin");
+            let fp = File::open(&dir).expect("Couldn't open temp file test_rmp_serde.bin");
+            let reader = BufReader::with_capacity(256, fp);
 
-            let mut de = Deserializer::from_read(fp);
+            let mut de = Deserializer::from_read(reader);
             let pin: Pin =
                 Deserialize::deserialize(&mut de).expect("Couldn't deserialize into pin.");
 
@@ -130,9 +133,10 @@ mod tests {
 
             let mut dir = env::temp_dir();
             dir.push("test_rmp_serde-vec.bin");
-            let mut fp =
+            let fp =
                 File::create(dir).expect("Couldn't create temp file test_rmp_serde-vec.bin");
-            fp.write_all(buf.as_slice())
+            let mut writer = BufWriter::with_capacity(128_000, fp);
+            writer.write_all(buf.as_slice())
                 .expect("Can't write to test_rmp_serde-vec.bin");
         }
 
@@ -145,8 +149,9 @@ mod tests {
             let mut dir = env::temp_dir();
             dir.push("test_rmp_serde-vec.bin");
 
-            let fp = File::open(&dir).expect("Couldn't create temp file test_rmp_serde.bin");
-            let mut de = Deserializer::from_read(fp);
+            let fp = File::open(&dir).expect("Couldn't open temp file test_rmp_serde.bin");
+            let reader = BufReader::with_capacity(128_000, fp);
+            let mut de = Deserializer::from_read(reader);
             let pins: Vec<Pin> =
                 Deserialize::deserialize(&mut de).expect("Couldn't deserialize into Vec<Pin>.");
             assert_eq!(612, pins.len());
