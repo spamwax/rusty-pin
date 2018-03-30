@@ -87,7 +87,8 @@ mod tests {
 
             let fp = File::create(dir).expect("Couldn't create temp file test_rmp_serde.bin");
             let mut writer = BufWriter::with_capacity(256, fp);
-            writer.write_all(buf.as_slice())
+            writer
+                .write_all(buf.as_slice())
                 .expect("Can't write to test_rmp_serde.bin");
         }
 
@@ -133,10 +134,10 @@ mod tests {
 
             let mut dir = env::temp_dir();
             dir.push("test_rmp_serde-vec.bin");
-            let fp =
-                File::create(dir).expect("Couldn't create temp file test_rmp_serde-vec.bin");
+            let fp = File::create(dir).expect("Couldn't create temp file test_rmp_serde-vec.bin");
             let mut writer = BufWriter::with_capacity(128_000, fp);
-            writer.write_all(buf.as_slice())
+            writer
+                .write_all(buf.as_slice())
                 .expect("Can't write to test_rmp_serde-vec.bin");
         }
 
