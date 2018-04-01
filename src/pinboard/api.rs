@@ -1,16 +1,16 @@
 use std::borrow::Cow;
 
-use serde_json;
 use reqwest;
 use reqwest::IntoUrl;
+use serde_json;
 
 use chrono::prelude::*;
 use url::Url;
 
 use env_logger;
 
-use std::io::Read;
 use std::collections::HashMap;
+use std::io::Read;
 
 use failure::{err_msg, Error};
 
@@ -75,10 +75,13 @@ impl<'api, 'pin> Api<'api> {
 
     fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
         debug!("add_auth_token: starting.");
-        Url::parse_with_params(
+        debug!("  token: `{}`", &self.auth_token);
+        let u = Url::parse_with_params(
             url.into_url().expect("invalid url").as_ref(),
             &[("format", "json"), ("auth_token", &self.auth_token)],
-        ).expect("invalid parameters")
+        ).expect("invalid parameters");
+        debug!(" url: {:?}", u);
+        return u;
     }
 
     pub fn all_pins(&self) -> Result<Vec<Pin<'pin>>, Error> {
@@ -245,8 +248,8 @@ mod tests {
     use std::path::PathBuf;
     use url::ParseError;
 
-    use pinboard::pin::PinBuilder;
     use pinboard::mockito_helper::start_mockito_server;
+    use pinboard::pin::PinBuilder;
 
     const TEST_URL: &str = "https://githuуй.com/Здравствуйт?q=13#fragment";
     #[test]
