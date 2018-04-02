@@ -1,11 +1,11 @@
-use std::path::{Path, PathBuf};
+use std::borrow::Cow;
 use std::env;
 use std::fs::File;
-use std::borrow::Cow;
+use std::path::{Path, PathBuf};
 
-use serde::Deserialize;
-use rmps::{Deserializer, Serializer};
 use reqwest::IntoUrl;
+use rmps::{Deserializer, Serializer};
+use serde::Deserialize;
 
 use chrono::prelude::*;
 use url::Url;
@@ -17,16 +17,16 @@ use regex::Regex;
 use env_logger;
 
 mod api;
-mod config;
 mod cached_data;
+mod config;
 
 #[cfg(test)]
 mod mockito_helper;
 
 pub mod pin;
 
-use self::config::Config;
 use self::cached_data::*;
+use self::config::Config;
 
 pub use self::pin::{Pin, PinBuilder, Tag};
 
@@ -51,7 +51,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
         let mut cached_data = CachedData::new(cached_dir)?;
         if !cached_data.cache_ok() {
             debug!("pinb::new: cache file missing, calling update");
-            cached_data.update_cache(api.clone())?;
+            cached_data.update_cache(&api)?;
             debug!("pinb::new:   update done.");
         } else {
             debug!("pinb::new: cache not missing");
@@ -331,7 +331,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     /// Update local cache
     pub fn update_cache(&mut self) -> Result<(), Error> {
         debug!("update_cache: starting.");
-        self.cached_data.update_cache(self.api.clone())
+        self.cached_data.update_cache(&self.api)
     }
 
     /// Returns list of all Tags (tag, frequency)
@@ -365,9 +365,9 @@ mod tests {
     #[cfg(feature = "bench")]
     use test::Bencher;
 
-    use url;
-    use mockito::{mock, Matcher};
     use self::mockito_helper::create_mockito_servers;
+    use mockito::{mock, Matcher};
+    use url;
 
     #[test]
     fn test_cached_data() {
@@ -834,7 +834,7 @@ mod tests {
         debug!("Running second update_cache");
         pinboard
             .cached_data
-            .update_cache(pinboard.api)
+            .update_cache(&pinboard.api)
             .unwrap_or_else(|e| panic!(e));
         pinboard
             .cached_data

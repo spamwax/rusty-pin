@@ -139,7 +139,7 @@ impl<'pin> CachedData<'pin> {
         self.cache_files_valid
     }
 
-    pub fn update_cache(&mut self, api: api::Api) -> Result<(), Error> {
+    pub fn update_cache(&mut self, api: &api::Api) -> Result<(), Error> {
         debug!("update_cache: starting");
         // Fetch & write all pins
         let f = File::create(&self.pins_cache_file)?;

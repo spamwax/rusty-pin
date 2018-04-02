@@ -194,7 +194,7 @@ impl<'api, 'pin> Api<'api> {
             &[("format", "json"), ("auth_token", &self.auth_token)],
         ).expect("invalid parameters");
         debug!("  url: {:?}", u);
-        return u;
+        u
     }
 
     fn get_api_response<T: IntoUrl + AsRef<str>>(
