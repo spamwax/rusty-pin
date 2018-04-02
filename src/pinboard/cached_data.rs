@@ -1,7 +1,7 @@
 use super::*;
+use env_logger;
 use std::io::Write;
 use std::io::{BufReader, BufWriter};
-use env_logger;
 
 use serde::Serialize;
 
@@ -147,11 +147,13 @@ impl<'pin> CachedData<'pin> {
         // Sort pins in descending creation time order
         api.all_pins()
             .and_then(|mut pins| {
+                debug!(" sorting pins");
                 pins.sort_by(|pin1, pin2| pin1.time().cmp(&pin2.time()).reverse());
                 Ok(pins)
             })
             .and_then(|pins: Vec<Pin>| {
                 // Lower case all fields of each pin
+                debug!(" lowercasing fields");
                 Ok(pins.into_iter()
                     .map(|pin| {
                         let url_lowered = Url::parse(pin.url.as_str())
@@ -173,12 +175,14 @@ impl<'pin> CachedData<'pin> {
                     .collect())
             })
             .and_then(|pins: Vec<CachedPin>| {
+                debug!(" serializing pins");
                 let mut buf: Vec<u8> = Vec::with_capacity(CACHE_BUF_SIZE);
                 pins.serialize(&mut Serializer::new(&mut buf))?;
                 self.pins = Some(pins);
                 Ok(buf)
             })
             .and_then(|data| {
+                debug!(" wrting to cache");
                 let mut writer = BufWriter::with_capacity(FILE_BUF_SIZE, f);
                 writer.write_all(&data)?;
                 Ok(())
@@ -230,8 +234,8 @@ impl<'pin> CachedData<'pin> {
         debug!("fix_cache_file_perm: starting");
         // TODO: don't just unwrap, return a proper error.
         use std::fs::Permissions;
-        use std::os::unix::fs::PermissionsExt;
         use std::fs::set_permissions;
+        use std::os::unix::fs::PermissionsExt;
         let permissions = Permissions::from_mode(0o600);
         if let Err(e) = set_permissions(p, permissions) {
             error!(

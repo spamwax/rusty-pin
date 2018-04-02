@@ -60,6 +60,8 @@ pub enum ApiError {
     ServerError(String),
     #[fail(display = "network error: {}", _0)]
     Network(String),
+    #[fail(display = "serde error: {}", _0)]
+    SerdeError(String),
 }
 
 impl<'api, 'pin> Api<'api> {
@@ -73,24 +75,19 @@ impl<'api, 'pin> Api<'api> {
         }
     }
 
-    fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
-        debug!("add_auth_token: starting.");
-        debug!("  token: `{}`", &self.auth_token);
-        let u = Url::parse_with_params(
-            url.into_url().expect("invalid url").as_ref(),
-            &[("format", "json"), ("auth_token", &self.auth_token)],
-        ).expect("invalid parameters");
-        debug!(" url: {:?}", u);
-        return u;
-    }
-
     pub fn all_pins(&self) -> Result<Vec<Pin<'pin>>, Error> {
         debug!("all_pins: starting.");
-        self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), HashMap::new())
-            .and_then(|res| {
-                serde_json::from_str(&res)
-                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
-            })
+        let res = self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), HashMap::new())
+            .unwrap();
+        debug!("  received all bookmarks");
+        let pins =
+            serde_json::from_str(&res).map_err(|e| From::from(ApiError::SerdeError(e.to_string())));
+        if pins.is_err() {
+            debug!("  couldn't deserialize bookmarks.");
+        } else {
+            debug!("  deserialized received bookmarks");
+        }
+        pins
     }
 
     pub fn suggest_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, Error> {
@@ -102,7 +99,7 @@ impl<'api, 'pin> Api<'api> {
         self.get_api_response([BASE_URL, "/posts/suggest"].concat().as_str(), query)
             .and_then(|res| {
                 serde_json::from_str::<Vec<serde_json::Value>>(&res)
-                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
+                    .map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
             })?
             .into_iter()
             .find(|item| !item["popular"].is_null())
@@ -140,7 +137,7 @@ impl<'api, 'pin> Api<'api> {
         self.get_api_response([BASE_URL, "/posts/add"].concat().as_str(), map)
             .and_then(|res| {
                 serde_json::from_str::<ApiResult>(&res)
-                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
+                    .map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
             })
             .and_then(|r| r.ok())
     }
@@ -150,7 +147,7 @@ impl<'api, 'pin> Api<'api> {
         self.get_api_response([BASE_URL, "/tags/get"].concat().as_str(), HashMap::new())
             .and_then(|res| {
                 serde_json::from_str(&res)
-                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
+                    .map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
             })
             .and_then(|res: HashMap<String, String>| {
                 Ok(res.into_iter()
@@ -172,7 +169,7 @@ impl<'api, 'pin> Api<'api> {
         self.get_api_response([BASE_URL, "/posts/delete"].concat().as_str(), map)
             .and_then(|res| {
                 serde_json::from_str(&res)
-                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
+                    .map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
             })
             .and_then(|r: ApiResult| r.ok())
     }
@@ -184,9 +181,20 @@ impl<'api, 'pin> Api<'api> {
             HashMap::new(),
         ).and_then(|res| {
                 serde_json::from_str(&res)
-                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
+                    .map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
             })
             .and_then(|date: UpdateTime| Ok(date.datetime))
+    }
+
+    fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
+        debug!("add_auth_token: starting.");
+        debug!("  token: `{}`", &self.auth_token);
+        let u = Url::parse_with_params(
+            url.into_url().expect("invalid url").as_ref(),
+            &[("format", "json"), ("auth_token", &self.auth_token)],
+        ).expect("invalid parameters");
+        debug!("  url: {:?}", u);
+        return u;
     }
 
     fn get_api_response<T: IntoUrl + AsRef<str>>(
@@ -226,12 +234,15 @@ impl<'api, 'pin> Api<'api> {
                 api_err
             }
         })?;
+        debug!(" resp is ok (no error)");
 
         if resp.status().is_success() {
             let mut content = String::with_capacity(2 * 1024);
             let _bytes_read = resp.read_to_string(&mut content)?;
+            debug!(" string from resp ok");
             Ok(content)
         } else {
+            debug!(" response status indicates error");
             Err(From::from(ApiError::ServerError(
                 resp.status()
                     .canonical_reason()
