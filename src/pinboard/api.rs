@@ -205,15 +205,16 @@ impl<'api, 'pin> Api<'api> {
         debug!("get_api_response: starting.");
 
         let endpoint_string = endpoint.as_ref().to_string();
-        let base_url = endpoint.into_url().map_err(|_| {
+        let mut base_url = endpoint.into_url().map_err(|_| {
             let api_err: Error = From::from(ApiError::UrlError(endpoint_string));
             api_err
         })?;
-        let mut api_url = self.add_auth_token(base_url);
 
         for (k, v) in params {
-            api_url.query_pairs_mut().append_pair(k, v);
+            base_url.query_pairs_mut().append_pair(k, v);
         }
+        debug!("  no-auth url: {:?}", base_url);
+        let api_url = self.add_auth_token(base_url);
 
         let client = reqwest::Client::new();
         let r = client.get(api_url).send();
