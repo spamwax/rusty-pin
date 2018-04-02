@@ -137,7 +137,7 @@ impl<'api, 'pin> Api<'api> {
         self.get_api_response([BASE_URL, "/posts/add"].concat().as_str(), map)
             .and_then(|res| {
                 serde_json::from_str::<ApiResult>(&res)
-                    .map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
+                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
             })
             .and_then(|r| r.ok())
     }
@@ -169,7 +169,7 @@ impl<'api, 'pin> Api<'api> {
         self.get_api_response([BASE_URL, "/posts/delete"].concat().as_str(), map)
             .and_then(|res| {
                 serde_json::from_str(&res)
-                    .map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
+                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
             })
             .and_then(|r: ApiResult| r.ok())
     }
