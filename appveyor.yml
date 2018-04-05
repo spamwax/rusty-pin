@@ -36,7 +36,6 @@ test_script:
   - if [%APPVEYOR_REPO_TAG%]==[false] (
       cargo build --target %TARGET% &&
       cargo test --target %TARGET% -- --nocapture --test-threads=1
-      # cargo run --target %TARGET% --release
     )
 
 cache:
