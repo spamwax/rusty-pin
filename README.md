@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/spamwax/rusty-pin.svg?branch=master)](https://travis-ci.org/spamwax/rusty-pin)
+
 # rusty-pin
 Subset of Pinboard's API in pure Rust
 
