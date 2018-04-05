@@ -41,6 +41,7 @@ impl<'pin> CachedData<'pin> {
             dir.push("rusty-pin");
             dir
         });
+        debug!("  cached_dir: {:?}", cached_dir);
         let mut data = CachedData::create_cache_dir(cached_dir).and_then(|c_path| {
             Ok(CachedData {
                 pins: None,
@@ -69,6 +70,7 @@ impl<'pin> CachedData<'pin> {
             dir.push("rusty-pin");
             dir
         });
+        debug!("  cached_dir: {:?}", cached_dir);
         let data = CachedData::create_cache_dir(cached_dir).and_then(|c_path| {
             Ok(CachedData {
                 pins: None,
@@ -87,6 +89,10 @@ impl<'pin> CachedData<'pin> {
         debug!("create_cache_dir: starting");
         use std::fs;
         fs::create_dir_all(&cache_dir)?;
+        debug!(
+            "  success create_cache_dir: {:?}",
+            cache_dir.as_ref().to_path_buf()
+        );
         Ok(cache_dir.as_ref().to_path_buf())
     }
 }

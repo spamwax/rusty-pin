@@ -546,12 +546,13 @@ mod tests {
             .with_header("content-type", "application/json")
             .with_body(r#"[{"popular":["datetime","library","rust"]},{"recommended":["datetime","library","programming","rust"]}]"#)
             .create();
-        let mut _home = env::home_dir().unwrap();
+        let mut _home = env::home_dir().expect("Can't get home_dir");
         _home.push(".cache");
         _home.push("mockito-rusty-pin");
         let cache_path = Some(_home);
 
-        let pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
+        let pinboard =
+            Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
         let tags = pinboard.popular_tags("https://docs.rs/chrono/0.4.0/chrono");
         assert!(tags.is_ok());
         let tags = tags.unwrap();
@@ -580,7 +581,8 @@ mod tests {
         _home.push("mockito-rusty-pin");
         let cache_path = Some(_home);
 
-        let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
+        let mut pinboard =
+            Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
         // Find pins that have all keywords almost anywhere
         {
             pinboard.enable_fuzzy_search(false);

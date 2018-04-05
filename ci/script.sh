@@ -11,6 +11,7 @@ main() {
     fi
 
     # cross test --target $TARGET
+    mkdir -p $HOME/.cache/mockito-rusty-pin
     cross test --target "$TARGET" -- --test-threads=1 || return
 
 }
