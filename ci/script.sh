@@ -17,9 +17,6 @@ main() {
         x86_64-unknown-linux-gnu)
             cargo test --target "$TARGET" -- --nocapture --test-threads=1
             ;;
-        i686-unknown-linux-gnu)
-            cargo test --target "$TARGET" -- --nocapture --test-threads=1
-            ;;
         *)
             cross test --target "$TARGET" -- --nocapture --test-threads=1
     esac
