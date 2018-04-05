@@ -12,7 +12,7 @@ main() {
 
     # cross test --target $TARGET
     mkdir -p $HOME/.cache/mockito-rusty-pin
-    cross test --target "$TARGET" -- --test-threads=1 || return
+    RUST_LOG=rusty_pin=debug cross test --target "$TARGET" -- --test-threads=1 || return
 
 }
 
