@@ -11,10 +11,12 @@ main() {
     fi
 
     # cross test --target $TARGET
-    mkdir -p $HOME/.cache/mockito-rusty-pin
+    mkdir -p ~/.cache/mockito-rusty-pin
     export RUST_LOG=rusty_pin=debug
-    cross test --target "$TARGET" -- --nocapture --test-threads=1 || return
+    # cross test --target "$TARGET" -- --nocapture --test-threads=1
 
 }
 
 main
+
+RUST_LOG=rusty_pin=debug cargo test --target "$TARGET" -- --nocapture --test-threads=1
