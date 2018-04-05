@@ -1,0 +1,18 @@
+# This script takes care of testing your crate
+
+set -ex
+
+# TODO This is the "test phase", tweak it as you see fit
+main() {
+    cross build --target "$TARGET"
+
+    if [ ! -z "$DISABLE_TESTS" ]; then
+        return
+    fi
+
+    # cross test --target $TARGET
+    cross test --target "$TARGET" -- --test-threads=1 || return
+
+}
+
+main
