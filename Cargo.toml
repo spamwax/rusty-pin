@@ -6,7 +6,7 @@ authors = ["Hamid Ghadyani <hamid@hamid.cc>"]
 [dependencies]
 url = "1.5.1"
 chrono = { version = "0.4", features = ["serde"] }
-reqwest = "0.8.0"
+reqwest = "0.8"
 
 serde = "1.0"
 serde_derive = "1.0"
