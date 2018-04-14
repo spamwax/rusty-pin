@@ -1,6 +1,6 @@
 [package]
 name = "rusty-pin"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Hamid Ghadyani <hamid@hamid.cc>"]
 
 [dependencies]
