@@ -91,7 +91,7 @@ impl<'api, 'pin> Api<'api> {
         let pins: Vec<Pin> = v.drain(..)
             .filter_map(|line| serde_json::from_value(line).ok())
             .collect();
-        if pins.len() != v.len() {
+        if pins.len() != v_len {
             info!("couldn't parse {} bookmarks", v_len - pins.len());
         } else {
             info!("parsed all bookmarks");
