@@ -1,6 +1,6 @@
+use reqwest::IntoUrl;
 use std::borrow::Cow;
 use url_serde;
-use reqwest::IntoUrl;
 
 use chrono::prelude::*;
 use url::Url;
@@ -128,8 +128,8 @@ impl<'pin> PinBuilder<'pin> {
 mod tests {
     use super::*;
 
-    use std::env;
     use env_logger;
+    use std::env;
 
     use pinboard::mockito_helper::create_mockito_servers;
 

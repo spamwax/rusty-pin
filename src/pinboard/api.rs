@@ -80,14 +80,24 @@ impl<'api, 'pin> Api<'api> {
         let res = self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), HashMap::new())
             .unwrap();
         debug!("  received all bookmarks");
-        let pins =
-            serde_json::from_str(&res).map_err(|e| From::from(ApiError::SerdeError(e.to_string())));
-        if pins.is_err() {
-            debug!("  couldn't deserialize bookmarks.");
+
+        let mut v: serde_json::Value = serde_json::from_str(res.as_str())?;
+        let v = v.as_array_mut().ok_or(ApiError::UnrecognizedResponse(
+            "array of bookmakrs expected from server".to_string(),
+        ))?;
+
+        let v_len = v.len();
+
+        let pins: Vec<Pin> = v.drain(..)
+            .filter_map(|line| serde_json::from_value(line).ok())
+            .collect();
+        if pins.len() != v_len {
+            info!("couldn't parse {} bookmarks", v_len - pins.len());
         } else {
-            debug!("  deserialized received bookmarks");
+            info!("parsed all bookmarks");
         }
-        pins
+
+        Ok(pins)
     }
 
     pub fn suggest_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, Error> {

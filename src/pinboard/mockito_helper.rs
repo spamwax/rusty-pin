@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use env_logger;
+use std::path::PathBuf;
 
 #[cfg(test)]
 use mockito::{mock, Matcher, Mock};

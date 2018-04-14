@@ -38,6 +38,7 @@ pub mod pinboard;
 
 pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
 
+// TODO: make get_api_response return reqwest::Response so we can use serde_json::from_read
 // TODO: Properly escape search queries that are used in regex for fuzzy option. <06-02-18, Hamid>
 //       Some special chars to escape: (  ) | ? * + [  ]
 // TODO: Fix tests so we don't have to pass --test-threads=1. It seems issue is related to
@@ -47,16 +48,16 @@ pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
 #[cfg(test)]
 mod tests {
     mod rmp_serde {
-        use url::Url;
         use chrono::prelude::*;
-        use std::fs::File;
-        use std::{env, fs};
-        use std::io::prelude::*;
-        use std::io::{BufReader, BufWriter};
+        use env_logger;
         use rmps::{Deserializer, Serializer};
         use serde::{Deserialize, Serialize};
         use serde_json;
-        use env_logger;
+        use std::fs::File;
+        use std::io::prelude::*;
+        use std::io::{BufReader, BufWriter};
+        use std::{env, fs};
+        use url::Url;
 
         use pinboard::pin::{Pin, PinBuilder};
 
@@ -175,9 +176,9 @@ mod tests {
     } /* rmp_serde */
 
     mod json_serde {
-        use url::Url;
         use chrono::prelude::*;
         use env_logger;
+        use url::Url;
 
         use pinboard::pin::{Pin, PinBuilder};
         use serde_json::{from_str, to_string};
