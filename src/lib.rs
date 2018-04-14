@@ -44,6 +44,7 @@ pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
 // TODO: Fix tests so we don't have to pass --test-threads=1. It seems issue is related to
 //       multithread access to cache files as some tests maybe
 //       deleting/updating while others reading.
+// TODO: Add proper rust formatted documentaiton
 
 #[cfg(test)]
 mod tests {
