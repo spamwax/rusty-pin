@@ -7,9 +7,6 @@ use url::Url;
 
 use regex::Regex;
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
-pub struct Tag(pub String, pub usize);
-
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Pin<'pin> {
     #[serde(with = "url_serde", rename = "href")]

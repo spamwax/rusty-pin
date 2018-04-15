@@ -14,7 +14,8 @@ use std::io::Read;
 
 use failure::{err_msg, Error};
 
-use super::pin::{Pin, Tag};
+use super::pin::Pin;
+use super::tag::Tag;
 
 #[cfg(not(test))]
 const BASE_URL: &str = "https://api.pinboard.in/v1";
@@ -163,7 +164,7 @@ impl<'api, 'pin> Api<'api> {
                 Ok(res.into_iter()
                     .map(|(k, v)| {
                         let freq = v.parse::<usize>().unwrap_or_default();
-                        Tag(k, freq)
+                        Tag::new(k, freq)
                     })
                     .collect())
             })

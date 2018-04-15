@@ -7,7 +7,8 @@ use serde::Serialize;
 
 use failure::Error;
 
-use super::pin::{Pin, Tag};
+use self::tag::Tag;
+use super::pin::Pin;
 
 const TAGS_CACHE_FN: &str = "tags.cache";
 const PINS_CACHE_FN: &str = "pins.cache";
@@ -206,13 +207,7 @@ impl<'pin> CachedData<'pin> {
         // Sort tags by frequency before writing
         api.tags_frequency()
             .and_then(|mut tags| {
-                tags.sort_by(|t1, t2| {
-                    if t1.1 != t2.1 {
-                        t1.1.cmp(&t2.1).reverse()
-                    } else {
-                        t1.0.cmp(&t2.0)
-                    }
-                });
+                tags.sort_by(|t1, t2| t1.cmp(&t2).reverse());
                 Ok(tags)
             })
             .and_then(|tags_tuple| {

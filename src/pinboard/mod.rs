@@ -24,11 +24,13 @@ mod config;
 mod mockito_helper;
 
 pub mod pin;
+pub mod tag;
 
 use self::cached_data::*;
 use self::config::Config;
 
-pub use self::pin::{Pin, PinBuilder, Tag};
+pub use self::pin::{Pin, PinBuilder};
+pub use self::tag::{Tag, TagFreq};
 
 #[derive(Debug)]
 pub struct Pinboard<'api, 'pin> {
@@ -361,6 +363,7 @@ mod tests {
     // TODO: Add tests for case insensitivity searches of tags/pins
     use super::*;
     use std::env;
+    use std::fs;
 
     #[cfg(feature = "bench")]
     use test::Bencher;
@@ -492,7 +495,7 @@ mod tests {
             assert!(tags.is_some());
             let tags = tags.unwrap();
             assert_eq!(tags.len(), 1);
-            assert_eq!(3, tags[0].1);
+            assert_eq!(TagFreq::Used(3), tags[0].1);
         }
 
         {
@@ -504,7 +507,27 @@ mod tests {
             assert!(tags.is_some());
             let tags = tags.unwrap();
             assert_eq!(1, tags.len());
-            assert_eq!(5, tags[0].1);
+            assert_eq!(TagFreq::Used(5), tags[0].1);
+        }
+
+        {
+            // empty query non-fuzzy
+            pinboard.enable_fuzzy_search(false);
+            let tags = pinboard
+                .search_list_of_tags("")
+                .unwrap_or_else(|e| panic!(e));
+            assert!(tags.is_some());
+            assert_eq!(94, tags.unwrap().len());
+        }
+
+        {
+            // empty query fuzzy
+            pinboard.enable_fuzzy_search(true);
+            let tags = pinboard
+                .search_list_of_tags("")
+                .unwrap_or_else(|e| panic!(e));
+            assert!(tags.is_some());
+            assert_eq!(94, tags.unwrap().len());
         }
     }
 
@@ -516,6 +539,7 @@ mod tests {
         let mut _home = env::home_dir().unwrap();
         _home.push(".cache");
         _home.push("mockito-rusty-pin");
+        let _ = fs::remove_file(&_home);
         let cache_path = Some(_home);
 
         let pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path).unwrap();
@@ -800,7 +824,6 @@ mod tests {
     fn test_update_cache() {
         let _ = env_logger::try_init();
         debug!("test_update_cache: starting.");
-        use std::fs;
 
         const IDX: usize = 25;
 
