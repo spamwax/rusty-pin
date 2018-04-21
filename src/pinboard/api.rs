@@ -379,13 +379,11 @@ mod tests {
 
     #[test]
     fn test_tag_freq() {
+        use pinboard::mockito_helper::MockBodyGenerate;
         let _ = env_logger::try_init();
         debug!("test_tag_freq: starting.");
-        let _m1 = start_mockito_server(
-            r"^/tags/get.*$",
-            200,
-            PathBuf::from("tests/all_tags_mockito.json"),
-        );
+        let _m1 = PathBuf::from("tests/all_tags_mockito.json")
+            .create_mockito_server(r"^/tags/get.*$", 200);
         let api = Api::new(include_str!("api_token.txt"));
         let res = api.tags_frequency();
         let _r = res.unwrap_or_else(|e| panic!("{:?}", e));
