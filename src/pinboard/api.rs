@@ -83,13 +83,14 @@ impl<'api, 'pin> Api<'api> {
         debug!("  received all bookmarks");
 
         let mut v: serde_json::Value = serde_json::from_str(res.as_str())?;
-        let v = v.as_array_mut().ok_or(ApiError::UnrecognizedResponse(
-            "array of bookmakrs expected from server".to_string(),
-        ))?;
+        let v = v.as_array_mut().ok_or_else(|| {
+            ApiError::UnrecognizedResponse("array of bookmakrs expected from server".to_string())
+        })?;
 
         let v_len = v.len();
 
-        let pins: Vec<Pin> = v.drain(..)
+        let pins: Vec<Pin> = v
+            .drain(..)
             .filter_map(|line| serde_json::from_value(line).ok())
             .collect();
         if pins.len() != v_len {
@@ -107,26 +108,27 @@ impl<'api, 'pin> Api<'api> {
         let mut query = HashMap::new();
         query.insert("url", u);
 
-        Ok(
-            self.get_api_response([BASE_URL, "/posts/suggest"].concat().as_str(), query)
-                .and_then(|res| {
-                    serde_json::from_str::<Vec<serde_json::Value>>(&res)
-                        .map_err(|e| ApiError::SerdeError(e.to_string()).into())
-                })?
-                .into_iter()
-                .find(|item| !item["popular"].is_null())
-                .map(|item| {
-                    item["popular"]
-                        .as_array()
-                        .unwrap_or(vec![json!([])].as_ref())
-                        .iter()
-                        .map(|v| v.as_str().unwrap_or("").to_string())
-                        .collect::<Vec<String>>()
-                })
-                .ok_or(ApiError::UnrecognizedResponse(
+        Ok(self
+            .get_api_response([BASE_URL, "/posts/suggest"].concat().as_str(), query)
+            .and_then(|res| {
+                serde_json::from_str::<Vec<serde_json::Value>>(&res)
+                    .map_err(|e| ApiError::SerdeError(e.to_string()).into())
+            })?
+            .into_iter()
+            .find(|item| !item["popular"].is_null())
+            .map(|item| {
+                item["popular"]
+                    .as_array()
+                    .unwrap_or(vec![json!([])].as_ref())
+                    .iter()
+                    .map(|v| v.as_str().unwrap_or("").to_string())
+                    .collect::<Vec<String>>()
+            })
+            .ok_or_else(|| {
+                ApiError::UnrecognizedResponse(
                     "Unrecognized response from API: posts/suggest".to_string(),
-                ))?,
-        )
+                )
+            })?)
     }
 
     pub fn add_url(&self, p: Pin) -> Result<(), Error> {
@@ -161,7 +163,8 @@ impl<'api, 'pin> Api<'api> {
                     .map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
             })
             .and_then(|res: HashMap<String, String>| {
-                Ok(res.into_iter()
+                Ok(res
+                    .into_iter()
                     .map(|(k, v)| {
                         let freq = v.parse::<usize>().unwrap_or_default();
                         Tag::new(k, freq)
@@ -200,12 +203,10 @@ impl<'api, 'pin> Api<'api> {
     fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
         debug!("add_auth_token: starting.");
         // debug!("  token: `{}`", &self.auth_token);
-        let u = Url::parse_with_params(
+        Url::parse_with_params(
             url.into_url().expect("invalid url").as_ref(),
             &[("format", "json"), ("auth_token", &self.auth_token)],
-        ).expect("invalid parameters");
-        // debug!("  url: {:?}", u);
-        u
+        ).expect("invalid parameters")
     }
 
     fn get_api_response<T: IntoUrl + AsRef<str>>(
@@ -314,12 +315,14 @@ mod tests {
             200,
             r#"{"result_code":"item not found"}"#,
         );
-        let r = api.delete("http://no.fucking.way")
+        let r = api
+            .delete("http://no.fucking.way")
             .expect_err("Deleted non-existing pin");
         assert_eq!("item not found".to_string(), r.cause().to_string());
 
         // Deleting bookmark with a malformed url
-        let e = api.delete(":// bad url/#")
+        let e = api
+            .delete(":// bad url/#")
             .expect_err("Deleted malformed url");
 
         // Two ways of checking
@@ -366,7 +369,8 @@ mod tests {
         assert_eq!(vec!["datetime", "library", "rust"], res.unwrap());
 
         let url = ":// bad url/#";
-        let error = api.suggest_tags(url)
+        let error = api
+            .suggest_tags(url)
             .expect_err("Suggested tags for malformed url");
 
         assert_eq!(

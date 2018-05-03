@@ -51,10 +51,10 @@ impl PartialEq for Tag {
 
 impl fmt::Display for TagFreq {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &TagFreq::New => write!(f, "NEW TAG"),
-            &TagFreq::Popular => write!(f, "Popular"),
-            &TagFreq::Used(n) => write!(f, "{}", n),
+        match *self {
+            TagFreq::New => write!(f, "NEW TAG"),
+            TagFreq::Popular => write!(f, "Popular"),
+            TagFreq::Used(n) => write!(f, "{}", n),
         }
     }
 }

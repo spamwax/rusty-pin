@@ -145,7 +145,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                             .map(|item| &item.pin)
                             .collect::<Vec<&Pin>>()
                     })
-                    .unwrap_or(Vec::new())
+                    .unwrap_or_default()
             } else {
                 // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
                 let mut fuzzy_string = query
@@ -171,7 +171,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                             .map(|item| &item.pin)
                             .collect::<Vec<&Pin>>()
                     })
-                    .unwrap_or(Vec::new())
+                    .unwrap_or_default()
             };
             match r.len() {
                 0 => Ok(None),
@@ -197,7 +197,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                             .filter(|item| item.0.to_lowercase().contains(q))
                             .collect::<Vec<&Tag>>()
                     })
-                    .unwrap_or(Vec::new())
+                    .unwrap_or_default()
             } else {
                 // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
                 let mut fuzzy_string = query
@@ -208,7 +208,6 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                 // Set case-insensitive regex option.
                 fuzzy_string.insert_str(0, "(?i)");
                 let re = Regex::new(&fuzzy_string)?;
-                // .map_err(|_| "Can't search for given query!".to_owned())?;
                 self.cached_data
                     .tags
                     .as_ref()
@@ -217,7 +216,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                             .filter(|item| re.is_match(&item.0))
                             .collect::<Vec<&Tag>>()
                     })
-                    .unwrap_or(Vec::new())
+                    .unwrap_or_default()
             };
             match r.len() {
                 0 => Ok(None),
@@ -231,10 +230,10 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     /// Searches the selected `fields` within bookmarks to filter them.
     /// This function honors [pinboard::config::Config] settings for fuzzy search only.
     pub fn search<'b, I, S>(
-        &self,
+        &'pin self,
         q: &'b I,
         fields: &[SearchType],
-    ) -> Result<Option<Vec<&Pin>>, Error>
+    ) -> Result<Option<Vec<&'pin Pin<'pin>>>, Error>
     where
         &'b I: IntoIterator<Item = S>,
         S: AsRef<str>,
@@ -260,9 +259,9 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
             self.cached_data
                 .pins
                 .as_ref()
-                .map(|p| {
+                .map(|p: &Vec<CachedPin<'pin>>| {
                     p.into_iter()
-                        .filter(|cached_pin: &&CachedPin| {
+                        .filter(|cached_pin: &&CachedPin<'pin>| {
                             q.into_iter().all(|s| {
                                 let query = &s.as_ref().to_lowercase();
                                 search_fields.iter().any(|search_type| match *search_type {
@@ -288,11 +287,12 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                             })
                         })
                         .map(|p| &p.pin)
-                        .collect::<Vec<&Pin>>()
+                        .collect::<Vec<&'pin Pin>>()
                 })
-                .unwrap_or(Vec::new())
+                .unwrap_or_default()
         } else {
-            let regex_queries = q.into_iter()
+            let regex_queries = q
+                .into_iter()
                 .map(|s| {
                     let query = &s.as_ref().to_lowercase();
                     // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
@@ -343,7 +343,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                         .map(|p| &p.pin)
                         .collect::<Vec<&Pin>>()
                 })
-                .unwrap_or(Vec::new())
+                .unwrap_or_default()
         };
 
         match results.len() {

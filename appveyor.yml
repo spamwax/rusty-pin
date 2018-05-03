@@ -34,6 +34,7 @@ install:
 test_script:
   # we don't run the "test phase" when doing deploys
   - if [%APPVEYOR_REPO_TAG%]==[false] (
+      set RUST_LOG=rusty_pin=debug &&
       cargo build --target %TARGET% &&
       cargo test --target %TARGET% -- --nocapture --test-threads=1
     )
@@ -45,7 +46,7 @@ cache:
 branches:
   only:
     # Release tags
-    - /^v\d+\.\d+\.\d+.*$/
+    - /^v?\d+\.\d+\.\d+.*$/
     - master
 
 notifications:
