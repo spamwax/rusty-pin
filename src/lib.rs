@@ -1,10 +1,14 @@
 #![cfg_attr(feature = "dev", feature(plugin))]
 #![cfg_attr(feature = "bench", feature(test))]
 #![cfg_attr(feature = "dev", plugin(clippy))]
-#![cfg_attr(feature = "dev",
-            warn(cast_possible_truncation, cast_possible_wrap, cast_precision_loss,
-                 cast_sign_loss, mut_mut, non_ascii_literal, result_unwrap_used, shadow_reuse,
-                 shadow_same, unicode_not_nfc, wrong_self_convention, wrong_pub_self_convention))]
+#![cfg_attr(
+    feature = "dev",
+    warn(
+        cast_possible_truncation, cast_possible_wrap, cast_precision_loss, cast_sign_loss, mut_mut,
+        non_ascii_literal, result_unwrap_used, shadow_reuse, shadow_same, unicode_not_nfc,
+        wrong_self_convention, wrong_pub_self_convention
+    )
+)]
 #![cfg_attr(feature = "dev", allow(string_extend_chars))]
 
 #[cfg(feature = "bench")]
@@ -45,6 +49,7 @@ pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
 //       multithread access to cache files as some tests maybe
 //       deleting/updating while others reading.
 // TODO: Add proper rust formatted documentaiton
+// TODO: Use RefCell or Cell to have inner mutability //
 
 #[cfg(test)]
 mod tests {

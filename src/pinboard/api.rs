@@ -107,26 +107,26 @@ impl<'api, 'pin> Api<'api> {
         let mut query = HashMap::new();
         query.insert("url", u);
 
-        self.get_api_response([BASE_URL, "/posts/suggest"].concat().as_str(), query)
-            .and_then(|res| {
-                serde_json::from_str::<Vec<serde_json::Value>>(&res)
-                    .map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
-            })?
-            .into_iter()
-            .find(|item| !item["popular"].is_null())
-            .map(|item| {
-                item["popular"]
-                    .as_array()
-                    .unwrap()
-                    .iter()
-                    .map(|v| v.as_str().unwrap().to_string())
-                    .collect::<Vec<String>>()
-            })
-            .ok_or_else(|| {
-                From::from(ApiError::UnrecognizedResponse(
+        Ok(
+            self.get_api_response([BASE_URL, "/posts/suggest"].concat().as_str(), query)
+                .and_then(|res| {
+                    serde_json::from_str::<Vec<serde_json::Value>>(&res)
+                        .map_err(|e| ApiError::SerdeError(e.to_string()).into())
+                })?
+                .into_iter()
+                .find(|item| !item["popular"].is_null())
+                .map(|item| {
+                    item["popular"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|v| v.as_str().unwrap().to_string())
+                        .collect::<Vec<String>>()
+                })
+                .ok_or(ApiError::UnrecognizedResponse(
                     "Unrecognized response from API: posts/suggest".to_string(),
-                ))
-            })
+                ))?,
+        )
     }
 
     pub fn add_url(&self, p: Pin) -> Result<(), Error> {
@@ -199,12 +199,12 @@ impl<'api, 'pin> Api<'api> {
 
     fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
         debug!("add_auth_token: starting.");
-        debug!("  token: `{}`", &self.auth_token);
+        // debug!("  token: `{}`", &self.auth_token);
         let u = Url::parse_with_params(
             url.into_url().expect("invalid url").as_ref(),
             &[("format", "json"), ("auth_token", &self.auth_token)],
         ).expect("invalid parameters");
-        debug!("  url: {:?}", u);
+        // debug!("  url: {:?}", u);
         u
     }
 
@@ -220,25 +220,25 @@ impl<'api, 'pin> Api<'api> {
             let api_err: Error = From::from(ApiError::UrlError(endpoint_string));
             api_err
         })?;
+        debug!("  url: {:?}", base_url);
 
         for (k, v) in params {
             base_url.query_pairs_mut().append_pair(k, v);
         }
-        debug!("  no-auth url: {:?}", base_url);
         let api_url = self.add_auth_token(base_url);
 
         let client = reqwest::Client::new();
         let r = client.get(api_url).send();
 
+        use std::error::Error as StdError;
         let mut resp = r.map_err(|e| {
             use std::io;
-            if e.get_ref()
-                .and_then(|k| k.downcast_ref::<io::Error>())
-                .is_some()
-            {
-                err_msg("Network IO error")
+            let io_fail = e.get_ref().and_then(|k| k.downcast_ref::<io::Error>());
+            if let Some(f) = io_fail {
+                let m: String = f.description().into();
+                debug!(" ERR: {:#?}", m);
+                err_msg(m)
             } else {
-                use std::error::Error as StdError;
                 let api_err: Error = From::from(ApiError::Network(format!(
                     "Network request error: {:?}",
                     e.description()

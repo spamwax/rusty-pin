@@ -234,8 +234,8 @@ impl<'pin> CachedData<'pin> {
     fn fix_cache_file_perm(&self, p: &PathBuf) {
         debug!("fix_cache_file_perm: starting");
         // TODO: don't just unwrap, return a proper error.
-        use std::fs::Permissions;
         use std::fs::set_permissions;
+        use std::fs::Permissions;
         use std::os::unix::fs::PermissionsExt;
         let permissions = Permissions::from_mode(0o600);
         if let Err(e) = set_permissions(p, permissions) {
