@@ -28,9 +28,11 @@ impl<'pin> Pin<'pin> {
 
     pub fn contains(&self, q: &str) -> bool {
         self.title.to_lowercase().contains(q) || self.tags.to_lowercase().contains(q)
-            || self.url.as_ref().contains(q)
-            || (self.extended.is_some()
-                && self.extended.as_ref().unwrap().to_lowercase().contains(q))
+            || self.url.as_ref().contains(q) || if let Some(ref extended) = self.extended {
+            extended.to_lowercase().contains(q)
+        } else {
+            false
+        }
     }
 
     pub fn title_contains(&self, q: &str, re: Option<&Regex>) -> bool {
@@ -58,16 +60,24 @@ impl<'pin> Pin<'pin> {
     }
 
     pub fn extended_contains(&self, q: &str, re: Option<&Regex>) -> bool {
-        self.extended.is_some() && if let Some(re) = re {
-            re.is_match(self.extended.as_ref().unwrap())
+        if let Some(ref extended) = self.extended {
+            if let Some(re) = re {
+                re.is_match(extended)
+            } else {
+                extended.to_lowercase().contains(q)
+            }
         } else {
-            self.extended.as_ref().unwrap().to_lowercase().contains(q)
+            false
         }
     }
 
     pub fn contains_fuzzy(&self, re: &Regex) -> bool {
         re.is_match(&self.title) || re.is_match(&self.tags) || re.is_match(self.url.as_ref())
-            || (self.extended.is_some() && re.is_match(self.extended.as_ref().unwrap()))
+            || if let Some(ref extended) = self.extended {
+                re.is_match(extended)
+            } else {
+                false
+            }
     }
 }
 

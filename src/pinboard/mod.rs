@@ -131,17 +131,19 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                 self.cached_data
                     .pins
                     .as_ref()
-                    .unwrap()
-                    .iter()
-                    .filter(|item: &&CachedPin| {
-                        if self.cfg.tag_only_search {
-                            item.pin.tag_contains(q, None)
-                        } else {
-                            item.pin.contains(q)
-                        }
+                    .map(|p| {
+                        p.iter()
+                            .filter(|item: &&CachedPin| {
+                                if self.cfg.tag_only_search {
+                                    item.pin.tag_contains(q, None)
+                                } else {
+                                    item.pin.contains(q)
+                                }
+                            })
+                            .map(|item| &item.pin)
+                            .collect::<Vec<&Pin>>()
                     })
-                    .map(|item| &item.pin)
-                    .collect::<Vec<&Pin>>()
+                    .unwrap_or(Vec::new())
             } else {
                 // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
                 let mut fuzzy_string = query
@@ -155,17 +157,19 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                 self.cached_data
                     .pins
                     .as_ref()
-                    .unwrap()
-                    .iter()
-                    .filter(|item| {
-                        if self.cfg.tag_only_search {
-                            item.pin.tag_contains("", Some(&re))
-                        } else {
-                            item.pin.contains_fuzzy(&re)
-                        }
+                    .map(|p| {
+                        p.iter()
+                            .filter(|item| {
+                                if self.cfg.tag_only_search {
+                                    item.pin.tag_contains("", Some(&re))
+                                } else {
+                                    item.pin.contains_fuzzy(&re)
+                                }
+                            })
+                            .map(|item| &item.pin)
+                            .collect::<Vec<&Pin>>()
                     })
-                    .map(|item| &item.pin)
-                    .collect::<Vec<&Pin>>()
+                    .unwrap_or(Vec::new())
             };
             match r.len() {
                 0 => Ok(None),
@@ -186,10 +190,12 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                 self.cached_data
                     .tags
                     .as_ref()
-                    .unwrap()
-                    .into_iter()
-                    .filter(|item| item.0.to_lowercase().contains(q))
-                    .collect::<Vec<&Tag>>()
+                    .map(|t| {
+                        t.into_iter()
+                            .filter(|item| item.0.to_lowercase().contains(q))
+                            .collect::<Vec<&Tag>>()
+                    })
+                    .unwrap_or(Vec::new())
             } else {
                 // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
                 let mut fuzzy_string = query
@@ -204,10 +210,12 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                 self.cached_data
                     .tags
                     .as_ref()
-                    .unwrap()
-                    .into_iter()
-                    .filter(|item| re.is_match(&item.0))
-                    .collect::<Vec<&Tag>>()
+                    .map(|t| {
+                        t.into_iter()
+                            .filter(|item| re.is_match(&item.0))
+                            .collect::<Vec<&Tag>>()
+                    })
+                    .unwrap_or(Vec::new())
             };
             match r.len() {
                 0 => Ok(None),
@@ -250,30 +258,37 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
             self.cached_data
                 .pins
                 .as_ref()
-                .unwrap()
-                .into_iter()
-                .filter(|cached_pin: &&CachedPin| {
-                    q.into_iter().all(|s| {
-                        let query = &s.as_ref().to_lowercase();
-                        search_fields.iter().any(|search_type| match *search_type {
-                            SearchType::TitleOnly => cached_pin.pin.title.contains(query),
-                            SearchType::TagOnly => {
-                                cached_pin.tag_list.iter().any(|tag| tag.contains(query))
-                            }
-                            SearchType::UrlOnly => cached_pin.pin.url.as_ref().contains(query),
-                            SearchType::DescriptionOnly => {
-                                cached_pin.pin.extended.is_some()
-                                    && cached_pin.pin.extended.as_ref().unwrap().contains(query)
-                            }
-                            SearchType::TagTitleOnly => {
-                                cached_pin.pin.title.contains(query)
-                                    || cached_pin.tag_list.contains(query)
-                            }
+                .map(|p| {
+                    p.into_iter()
+                        .filter(|cached_pin: &&CachedPin| {
+                            q.into_iter().all(|s| {
+                                let query = &s.as_ref().to_lowercase();
+                                search_fields.iter().any(|search_type| match *search_type {
+                                    SearchType::TitleOnly => cached_pin.pin.title.contains(query),
+                                    SearchType::TagOnly => {
+                                        cached_pin.tag_list.iter().any(|tag| tag.contains(query))
+                                    }
+                                    SearchType::UrlOnly => {
+                                        cached_pin.pin.url.as_ref().contains(query)
+                                    }
+                                    SearchType::DescriptionOnly => {
+                                        if let Some(ref extended) = cached_pin.pin.extended {
+                                            extended.contains(query)
+                                        } else {
+                                            false
+                                        }
+                                    }
+                                    SearchType::TagTitleOnly => {
+                                        cached_pin.pin.title.contains(query)
+                                            || cached_pin.tag_list.contains(query)
+                                    }
+                                })
+                            })
                         })
-                    })
+                        .map(|p| &p.pin)
+                        .collect::<Vec<&Pin>>()
                 })
-                .map(|p| &p.pin)
-                .collect::<Vec<&Pin>>()
+                .unwrap_or(Vec::new())
         } else {
             let regex_queries = q.into_iter()
                 .map(|s| {
@@ -299,29 +314,34 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
             self.cached_data
                 .pins
                 .as_ref()
-                .unwrap()
-                .into_iter()
-                .filter(|cached_pin: &&CachedPin| {
-                    regex_queries.iter().all(|re| {
-                        search_fields.iter().any(|search_type| match *search_type {
-                            SearchType::TitleOnly => re.is_match(&cached_pin.pin.title),
-                            SearchType::TagOnly => {
-                                cached_pin.tag_list.iter().any(|t| re.is_match(t))
-                            }
-                            SearchType::UrlOnly => re.is_match(cached_pin.pin.url.as_ref()),
-                            SearchType::DescriptionOnly => {
-                                cached_pin.pin.extended.is_some()
-                                    && re.is_match(cached_pin.pin.extended.as_ref().unwrap())
-                            }
-                            SearchType::TagTitleOnly => {
-                                re.is_match(&cached_pin.pin.title)
-                                    || cached_pin.tag_list.iter().any(|t| re.is_match(t))
-                            }
+                .map(|p| {
+                    p.into_iter()
+                        .filter(|cached_pin: &&CachedPin| {
+                            regex_queries.iter().all(|re| {
+                                search_fields.iter().any(|search_type| match *search_type {
+                                    SearchType::TitleOnly => re.is_match(&cached_pin.pin.title),
+                                    SearchType::TagOnly => {
+                                        cached_pin.tag_list.iter().any(|t| re.is_match(t))
+                                    }
+                                    SearchType::UrlOnly => re.is_match(cached_pin.pin.url.as_ref()),
+                                    SearchType::DescriptionOnly => {
+                                        if let Some(ref extended) = cached_pin.pin.extended {
+                                            re.is_match(extended)
+                                        } else {
+                                            false
+                                        }
+                                    }
+                                    SearchType::TagTitleOnly => {
+                                        re.is_match(&cached_pin.pin.title)
+                                            || cached_pin.tag_list.iter().any(|t| re.is_match(t))
+                                    }
+                                })
+                            })
                         })
-                    })
+                        .map(|p| &p.pin)
+                        .collect::<Vec<&Pin>>()
                 })
-                .map(|p| &p.pin)
-                .collect::<Vec<&Pin>>()
+                .unwrap_or(Vec::new())
         };
 
         match results.len() {

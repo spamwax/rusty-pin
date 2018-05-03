@@ -78,8 +78,8 @@ impl<'api, 'pin> Api<'api> {
 
     pub fn all_pins(&self) -> Result<Vec<Pin<'pin>>, Error> {
         debug!("all_pins: starting.");
-        let res = self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), HashMap::new())
-            .unwrap();
+        let res =
+            self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), HashMap::new())?;
         debug!("  received all bookmarks");
 
         let mut v: serde_json::Value = serde_json::from_str(res.as_str())?;
@@ -118,9 +118,9 @@ impl<'api, 'pin> Api<'api> {
                 .map(|item| {
                     item["popular"]
                         .as_array()
-                        .unwrap()
+                        .unwrap_or(vec![json!([])].as_ref())
                         .iter()
-                        .map(|v| v.as_str().unwrap().to_string())
+                        .map(|v| v.as_str().unwrap_or("").to_string())
                         .collect::<Vec<String>>()
                 })
                 .ok_or(ApiError::UnrecognizedResponse(
@@ -217,7 +217,7 @@ impl<'api, 'pin> Api<'api> {
 
         let endpoint_string = endpoint.as_ref().to_string();
         let mut base_url = endpoint.into_url().map_err(|_| {
-            let api_err: Error = From::from(ApiError::UrlError(endpoint_string));
+            let api_err: Error = ApiError::UrlError(endpoint_string).into();
             api_err
         })?;
         debug!("  url: {:?}", base_url);
@@ -239,11 +239,7 @@ impl<'api, 'pin> Api<'api> {
                 debug!(" ERR: {:#?}", m);
                 err_msg(m)
             } else {
-                let api_err: Error = From::from(ApiError::Network(format!(
-                    "Network request error: {:?}",
-                    e.description()
-                )));
-                api_err
+                ApiError::Network(format!("Network request error: {:?}", e.description())).into()
             }
         })?;
         debug!(" resp is ok (no error)");
@@ -254,13 +250,15 @@ impl<'api, 'pin> Api<'api> {
             debug!(" string from resp ok");
             Ok(content)
         } else {
-            debug!(" response status indicates error");
-            Err(From::from(ApiError::ServerError(
+            debug!("  response status indicates error");
+            let e = ApiError::ServerError(
                 resp.status()
                     .canonical_reason()
                     .expect("UNKNOWN RESPONSE")
                     .to_string(),
-            )))
+            ).into();
+            debug!("    ERR: {:?}", e);
+            Err(e)
         }
     }
 }

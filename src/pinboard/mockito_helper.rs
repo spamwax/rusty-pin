@@ -26,7 +26,7 @@ impl MockBodyGenerate for PathBuf {
         mock("GET", Matcher::Regex(endpoint.to_string()))
             .with_status(status)
             .with_header("content-type", "application/json")
-            .with_body_from_file(self.to_str().unwrap())
+            .with_body_from_file(self.to_str().expect("can't get file name's str"))
             .create()
     }
 }

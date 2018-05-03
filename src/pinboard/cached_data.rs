@@ -169,8 +169,8 @@ impl<'pin> CachedData<'pin> {
                             .tags(pin.tags.to_lowercase())
                             .shared(pin.shared)
                             .toread(pin.toread);
-                        if pin.extended.is_some() {
-                            pb = pb.description(pin.extended.map(|s| s.to_lowercase()).unwrap());
+                        if let Some(extended) = pin.extended {
+                            pb = pb.description(extended.to_lowercase());
                         }
                         let mut newpin = pb.into_pin();
                         newpin.time = pin.time;
