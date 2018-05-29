@@ -19,6 +19,9 @@ extern crate url;
 
 #[cfg(test)]
 extern crate mockito;
+#[cfg(test)]
+extern crate tempfile;
+
 extern crate regex;
 extern crate rmp_serde as rmps;
 #[macro_use]
@@ -54,6 +57,9 @@ pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+    use tempfile;
+
     mod rmp_serde {
         use chrono::prelude::*;
         use env_logger;
@@ -122,9 +128,10 @@ mod tests {
             assert_eq!("WoW!!!", &pin.extended.expect("pin.extended can't be None"));
             assert_eq!(
                 pin.url,
-                Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap()
+                Url::parse("https://danielkeep.github.io/tlborm/book/README.html")
+                    .expect("impossible")
             );
-            let _ = fs::remove_file(dir).expect("Can't delete temp test file");
+            fs::remove_file(dir).expect("Can't delete temp test file");
         }
 
         #[test]
@@ -138,7 +145,7 @@ mod tests {
             let mut buf: Vec<u8> = Vec::new();
             pins.serialize(&mut Serializer::new(&mut buf))
                 .expect("Couldn't serialize lots of pins");
-            assert_eq!(115671, buf.len());
+            assert_eq!(115_671, buf.len());
 
             let mut dir = env::temp_dir();
             dir.push("test_rmp_serde-vec.bin");
@@ -164,7 +171,7 @@ mod tests {
             let pins: Vec<Pin> =
                 Deserialize::deserialize(&mut de).expect("Couldn't deserialize into Vec<Pin>.");
             assert_eq!(612, pins.len());
-            let _ = fs::remove_file(dir).expect("Can't delete temp test file");
+            fs::remove_file(dir).expect("Can't delete temp test file");
         }
 
         #[cfg(feature = "bench")]
@@ -199,27 +206,27 @@ mod tests {
             debug!("deserialize_a_pin: starting");
             let pin: Result<Pin, _> = from_str(include_str!("../tests/PIN1.json"));
             assert!(pin.is_ok());
-            let pin: Pin = pin.unwrap();
+            let pin: Pin = pin.expect("impossible!");
 
             assert_eq!(pin.title, "The Little Book of Rust Macros");
             assert_eq!(pin.time(), Utc.ymd(2017, 5, 22).and_hms(17, 46, 54));
             assert_eq!(pin.tags, "Rust macros");
             assert_eq!(
                 pin.url,
-                Url::parse("https://danielkeep.github.io/tlborm/book/README.html").unwrap()
+                Url::parse("https://danielkeep.github.io/tlborm/book/README.html")
+                    .expect("impossible!")
             );
 
             let pin: Result<Pin, _> = from_str(include_str!("../tests/PIN2.json"));
             assert!(pin.is_ok());
-            let pin: Pin = pin.unwrap();
-            // println!("{:?}", pin);
+            let pin: Pin = pin.expect("impossible");
             assert_eq!(pin.title, "tbaggery - Effortless Ctags with Git");
             assert_eq!(pin.time(), Utc.ymd(2017, 10, 9).and_hms(7, 59, 36));
             assert_eq!(pin.tags, "git ctags vim");
             assert_eq!(
                 pin.url,
                 Url::parse("http://tbaggery.com/2011/08/08/effortless-ctags-with-git.html")
-                    .unwrap()
+                    .expect("impossible")
             );
         }
 
@@ -238,7 +245,7 @@ mod tests {
                 return;
             }
             assert!(pins.is_ok());
-            let pins = pins.unwrap();
+            let pins = pins.expect("impossible");
             assert_eq!(pins.len(), 2);
             // println!("{:?}", pins);
         }
@@ -250,7 +257,7 @@ mod tests {
             let input = include_str!("../sample.json");
             let pins: Result<Vec<Pin>, _> = from_str(input);
             assert!(pins.is_ok());
-            let pins = pins.unwrap();
+            let pins = pins.expect("impossible");
             assert_eq!(612, pins.len());
         }
 
@@ -286,4 +293,14 @@ mod tests {
             );
         }
     }
+
+    pub(super) fn rand_temp_path() -> PathBuf {
+        tempfile::Builder::new()
+            .prefix("rusty_pin_test_")
+            .rand_bytes(5)
+            .tempdir()
+            .expect("couldn't create tempdir")
+            .into_path()
+    }
+
 }
