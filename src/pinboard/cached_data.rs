@@ -161,12 +161,13 @@ impl<'pin> CachedData<'pin> {
             .and_then(|pins: Vec<Pin>| {
                 // Lower case all fields of each pin
                 debug!(" lowercasing fields");
-                Ok(pins.into_iter()
+                Ok(pins
+                    .into_iter()
                     .map(|pin| {
-                        let url_lowered = Url::parse(pin.url.as_str())
-                            .expect("Invalid url stored in a pin, impossible?");
-                        let mut pb = PinBuilder::new(url_lowered, pin.title.to_lowercase())
-                            .tags(pin.tags.to_lowercase())
+                        let url_lowered = pin.url.as_str().to_lowercase();
+                        let tags_lowered = pin.tags.to_lowercase();
+                        let mut pb = PinBuilder::new(&url_lowered, pin.title.to_lowercase())
+                            .tags(tags_lowered.clone())
                             .shared(pin.shared)
                             .toread(pin.toread);
                         if let Some(extended) = pin.extended {
@@ -176,7 +177,10 @@ impl<'pin> CachedData<'pin> {
                         newpin.time = pin.time;
                         CachedPin {
                             pin: newpin,
-                            tag_list: pin.tags.split_whitespace().map(|s| s.to_string()).collect(),
+                            tag_list: tags_lowered
+                                .split_whitespace()
+                                .map(|s| s.to_string())
+                                .collect(),
                         }
                     })
                     .collect())

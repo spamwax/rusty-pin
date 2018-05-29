@@ -401,36 +401,36 @@ fn serde_update_cache() {
     let mut pinboard = p.unwrap_or_else(|e| panic!("{:?}", e));
 
     // Get all pins directly from Pinboard.in (no caching)
-    let fresh_pins = pinboard.api.all_pins().unwrap();
+    let fresh_pins = pinboard.api.all_pins().expect("impossilbe?");
 
-    let _ = pinboard.update_cache().expect("Couldn't update the cache");
+    pinboard.update_cache().expect("Couldn't update the cache");
 
     let cached_pins = pinboard.list_bookmarks().unwrap();
     assert_eq!(fresh_pins.len(), cached_pins.len());
 
     // Pick 3 pins and compare them between cached dataset and freshly fetched from Pinboard's
     // API
-    for idx in [0u32, 10u32, 50u32].iter() {
+    for idx in &[0u32, 10u32, 50u32] {
         debug!("serde_update_cache: Checking pin[{}]", idx);
         assert_eq!(
             fresh_pins[*idx as usize].title.to_lowercase(),
-            cached_pins[*idx as usize].title.to_lowercase()
+            cached_pins[*idx as usize].title
         );
         assert_eq!(
-            fresh_pins[*idx as usize].url,
-            cached_pins[*idx as usize].url
+            fresh_pins[*idx as usize].url.as_str().to_lowercase(),
+            cached_pins[*idx as usize].url.as_str()
         );
         assert_eq!(
             fresh_pins[*idx as usize].tags.to_lowercase(),
-            cached_pins[*idx as usize].tags.to_lowercase()
+            cached_pins[*idx as usize].tags
         );
         assert_eq!(
             fresh_pins[*idx as usize].shared.to_lowercase(),
-            cached_pins[*idx as usize].shared.to_lowercase()
+            cached_pins[*idx as usize].shared
         );
         assert_eq!(
             fresh_pins[*idx as usize].toread.to_lowercase(),
-            cached_pins[*idx as usize].toread.to_lowercase()
+            cached_pins[*idx as usize].toread
         );
         assert_eq!(
             fresh_pins[*idx as usize].time,
@@ -449,7 +449,7 @@ fn serde_update_cache() {
                     .extended
                     .as_ref()
                     .unwrap()
-                    .to_lowercase()
+                    .as_ref()
             );
         } else {
             assert!(cached_pins[*idx as usize].extended.is_none());

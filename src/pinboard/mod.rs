@@ -8,7 +8,6 @@ use rmps::{Deserializer, Serializer};
 use serde::Deserialize;
 
 use chrono::prelude::*;
-use url::Url;
 
 use failure::Error;
 
