@@ -173,9 +173,9 @@ impl<'api, 'pin> Api<'api> {
             })
     }
 
-    pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), Error> {
+    pub fn delete<T: IntoUrl>(&self, u: T) -> Result<(), Error> {
         debug!("delete: starting.");
-        let url: &str = &url.into_url()?.to_string();
+        let url: &str = &u.into_url()?.to_string();
         let mut map = HashMap::new();
         debug!(" url: {}", url);
         map.insert("url", url);
@@ -333,7 +333,7 @@ mod tests {
         // Or
         if let Some(t) = e.cause().downcast_ref::<ParseError>() {
             match t {
-                &ParseError::RelativeUrlWithoutBase => (),
+                ParseError::RelativeUrlWithoutBase => (),
                 _ => panic!("Deleted a malformed url"),
             }
         }
@@ -366,7 +366,10 @@ mod tests {
         let api = Api::new(include_str!("api_token.txt"));
         let url = "http://blog.com/";
         let res = api.suggest_tags(url);
-        assert_eq!(vec!["datetime", "library", "rust"], res.unwrap());
+        assert_eq!(
+            vec!["datetime", "library", "rust"],
+            res.expect("impossible")
+        );
 
         let url = ":// bad url/#";
         let error = api

@@ -27,7 +27,8 @@ impl<'pin> Pin<'pin> {
     }
 
     pub fn contains(&self, q: &str) -> bool {
-        self.title.to_lowercase().contains(q) || self.tags.to_lowercase().contains(q)
+        self.title.to_lowercase().contains(q)
+            || self.tags.to_lowercase().contains(q)
             || self.url.as_ref().contains(q) || if let Some(ref extended) = self.extended {
             extended.to_lowercase().contains(q)
         } else {
@@ -152,7 +153,8 @@ mod tests {
         assert_eq!(p.title, "title");
         assert_eq!(
             p.url,
-            Url::parse("https://githuуй.com/Здравствуйт?q=13#fragment").unwrap()
+            Url::parse("https://githuуй.com/Здравствуйт?q=13#fragment")
+                .expect("impossible")
         );
         assert_eq!(p.tags, "tag1 tag2");
     }

@@ -271,7 +271,7 @@ mod tests {
         pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
 
         let cached_pin = CachedPin {
-            pin: pin,
+            pin,
             tag_list: vec!["Rust".into(), "macros".into()],
         };
 
@@ -279,7 +279,7 @@ mod tests {
 
         cached_pin
             .serialize(&mut Serializer::new(&mut buf))
-            .unwrap();
+            .expect("impossible");
         assert_eq!(147, buf.len());
 
         let mut de = Deserializer::from_slice(&buf);

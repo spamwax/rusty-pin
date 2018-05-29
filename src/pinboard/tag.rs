@@ -82,25 +82,25 @@ mod tests {
     fn it_sorts_tagfreq() {
         let t1 = TagFreq::Used(1);
         let t2 = TagFreq::Used(2);
-        verify_partialord(t1, t2);
+        verify_partialord(&t1, &t2);
 
         let t1 = TagFreq::Used(2);
         let t2 = TagFreq::Used(1);
-        verify_partialord(t2, t1);
+        verify_partialord(&t2, &t1);
 
         let t1 = TagFreq::Used(1);
         let t2 = TagFreq::Popular;
-        verify_partialord(t1, t2);
+        verify_partialord(&t1, &t2);
 
         let t1 = TagFreq::Used(1);
         let t2 = TagFreq::New;
-        verify_partialord(t1, t2);
+        verify_partialord(&t1, &t2);
 
         let t1 = TagFreq::Popular;
         let t2 = TagFreq::New;
-        verify_partialord(t2, t1);
+        verify_partialord(&t2, &t1);
 
-        fn verify_partialord(t1: TagFreq, t2: TagFreq) {
+        fn verify_partialord(t1: &TagFreq, t2: &TagFreq) {
             assert!(t1 < t2);
             assert!(!(t1 > t2));
             assert!(t1 != t2);
