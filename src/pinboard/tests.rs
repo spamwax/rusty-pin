@@ -307,6 +307,107 @@ fn test_issue7() {
             .unwrap_or_else(|e| panic!(e));
         assert!(pins.is_some());
         assert_eq!(2, pins.unwrap().len());
+        {
+            let queries = ["iterm"];
+            let fields = vec![SearchType::TitleOnly];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+            let queries = ["iTerm"];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+        }
+        {
+            let queries = ["iterm"];
+            let fields = vec![SearchType::TagOnly];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(2, pins.unwrap().len());
+            let queries = ["iTerm"];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(2, pins.unwrap().len());
+        }
+        {
+            let queries = ["iterm"];
+            let fields = vec![SearchType::DescriptionOnly];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_none());
+            let queries = ["iTerm"];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_none());
+        }
+        {
+            let queries = ["iterm"];
+            let fields = vec![SearchType::UrlOnly];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+            let queries = ["iTerm"];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+        }
+        {
+            let queries = ["iterm2"];
+            let fields = vec![SearchType::UrlOnly];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+            let queries = ["iTerm2"];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+        }
+        {
+            let queries = ["iterm2"];
+            let fields = vec![SearchType::TagOnly];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_none());
+            let queries = ["iTerm2"];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_none());
+        }
+        {
+            let queries = ["iterm2"];
+            let fields = vec![SearchType::TitleOnly];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+            let queries = ["iTerm2"];
+            let pins = pinboard
+                .search(&queries, &fields)
+                .unwrap_or_else(|e| panic!(e));
+            assert!(pins.is_some());
+            assert_eq!(1, pins.unwrap().len());
+        }
     }
     {
         pinboard.enable_fuzzy_search(false);

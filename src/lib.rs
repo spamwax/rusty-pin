@@ -53,6 +53,7 @@ pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
 //       multithread access to cache files as some tests maybe
 //       deleting/updating while others reading.
 // TODO: Add proper rust formatted documentaiton
+// TODO: make all tests use tempfile for the cache folder?
 // TODO: Use RefCell or Cell to have inner mutability //
 
 #[cfg(test)]
