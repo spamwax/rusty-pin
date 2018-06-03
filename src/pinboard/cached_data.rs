@@ -254,6 +254,8 @@ impl<'pin> CachedData<'pin> {
 mod tests {
     use super::*;
     use env_logger;
+    use rmps::Deserializer;
+    use serde::Deserialize;
 
     #[test]
     fn serde_a_cached_pin() {
