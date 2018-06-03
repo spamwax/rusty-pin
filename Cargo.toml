@@ -1,7 +1,10 @@
 [package]
 name = "rusty-pin"
-version = "0.3.2"
+version = "0.3.3"
 authors = ["Hamid Ghadyani <hamid@hamid.cc>"]
+description = """
+Pinboard's API in pure Rust
+"""
 
 [dependencies]
 url = "1.5.1"

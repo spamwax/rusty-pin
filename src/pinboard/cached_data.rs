@@ -3,6 +3,7 @@ use env_logger;
 use std::io::Write;
 use std::io::{BufReader, BufWriter};
 
+use rmps;
 use serde::Serialize;
 
 use failure::Error;
@@ -127,8 +128,7 @@ impl<'pin> CachedData<'pin> {
         debug!("read_cached_pins: starting");
         let fp = File::open(&self.pins_cache_file)?;
         let reader = BufReader::with_capacity(FILE_BUF_SIZE, fp);
-        let mut de = Deserializer::from_read(reader);
-        self.pins = Deserialize::deserialize(&mut de)?;
+        self.pins = rmps::from_read(reader)?;
         Ok(())
     }
 
@@ -136,8 +136,7 @@ impl<'pin> CachedData<'pin> {
         debug!("read_cached_tags: starting");
         let fp = File::open(&self.tags_cache_file)?;
         let reader = BufReader::with_capacity(FILE_BUF_SIZE, fp);
-        let mut de = Deserializer::from_read(reader);
-        self.tags = Deserialize::deserialize(&mut de)?;
+        self.tags = rmps::from_read(reader)?;
         Ok(())
     }
 
