@@ -4,9 +4,18 @@
 #![cfg_attr(
     feature = "dev",
     warn(
-        cast_possible_truncation, cast_possible_wrap, cast_precision_loss, cast_sign_loss, mut_mut,
-        non_ascii_literal, result_unwrap_used, shadow_reuse, shadow_same, unicode_not_nfc,
-        wrong_self_convention, wrong_pub_self_convention
+        cast_possible_truncation,
+        cast_possible_wrap,
+        cast_precision_loss,
+        cast_sign_loss,
+        mut_mut,
+        non_ascii_literal,
+        result_unwrap_used,
+        shadow_reuse,
+        shadow_same,
+        unicode_not_nfc,
+        wrong_self_convention,
+        wrong_pub_self_convention
     )
 )]
 #![cfg_attr(feature = "dev", allow(string_extend_chars))]
@@ -32,6 +41,8 @@ extern crate serde;
 #[macro_use]
 extern crate serde_json;
 extern crate url_serde;
+
+extern crate dirs;
 
 #[macro_use]
 extern crate failure;
@@ -85,11 +96,12 @@ mod tests {
             let mut pin = PinBuilder::new(
                 "https://danielkeep.github.io/tlborm/book/README.html",
                 "The Little Book of Rust Macros",
-            ).tags("Rust macros")
-                .toread("yes")
-                .shared("no")
-                .description("WoW!!!")
-                .into_pin();
+            )
+            .tags("Rust macros")
+            .toread("yes")
+            .shared("no")
+            .description("WoW!!!")
+            .into_pin();
             pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
 
             let mut buf: Vec<u8> = Vec::new();
@@ -182,9 +194,9 @@ mod tests {
             debug!("bench_rmp: starting");
             let bytes = include_bytes!("../tests/test_rmp_serde-vec.bin");
             b.iter(|| {
-                let _pins: Vec<Pin> = Deserialize::deserialize(&mut Deserializer::from_slice(
-                    bytes,
-                )).expect("Couldn't deserialize lots of pins");
+                let _pins: Vec<Pin> =
+                    Deserialize::deserialize(&mut Deserializer::from_slice(bytes))
+                        .expect("Couldn't deserialize lots of pins");
             })
         }
 
@@ -280,16 +292,18 @@ mod tests {
             let mut pin = PinBuilder::new(
                 "https://danielkeep.github.io/tlborm/book/README.html",
                 "The Little Book of Rust Macros",
-            ).tags("Rust macros")
-                .toread("no")
-                .shared("no")
-                .into_pin();
+            )
+            .tags("Rust macros")
+            .toread("no")
+            .shared("no")
+            .into_pin();
             pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
             let s = to_string(&pin).expect("Couldn't serialize");
             assert_eq!(
                 r#"{"href":"https://danielkeep.github.io/tlborm/book/README.html",
 "description":"The Little Book of Rust Macros","tags":"Rust macros","shared":"no"
-,"toread":"no","extended":null,"time":"2017-05-22T17:46:54Z"}"#.replace("\n", ""),
+,"toread":"no","extended":null,"time":"2017-05-22T17:46:54Z"}"#
+                    .replace("\n", ""),
                 s
             );
         }

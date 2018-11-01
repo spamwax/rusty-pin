@@ -1,6 +1,6 @@
 [package]
 name = "rusty-pin"
-version = "0.3.3"
+version = "0.3.4"
 authors = ["Hamid Ghadyani <hamid@hamid.cc>"]
 description = """
 Pinboard's API in pure Rust
@@ -23,6 +23,7 @@ failure = "0.1.1"
 failure_derive = "0.1.1"
 log = "0.4"
 env_logger = "0.5.3"
+dirs = "1.0"
 
 clippy = { version = "*", optional = true }
 
