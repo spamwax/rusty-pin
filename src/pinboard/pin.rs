@@ -29,11 +29,12 @@ impl<'pin> Pin<'pin> {
     pub fn contains(&self, q: &str) -> bool {
         self.title.to_lowercase().contains(q)
             || self.tags.to_lowercase().contains(q)
-            || self.url.as_ref().contains(q) || if let Some(ref extended) = self.extended {
-            extended.to_lowercase().contains(q)
-        } else {
-            false
-        }
+            || self.url.as_ref().contains(q)
+            || if let Some(ref extended) = self.extended {
+                extended.to_lowercase().contains(q)
+            } else {
+                false
+            }
     }
 
     pub fn title_contains(&self, q: &str, re: Option<&Regex>) -> bool {
@@ -73,7 +74,9 @@ impl<'pin> Pin<'pin> {
     }
 
     pub fn contains_fuzzy(&self, re: &Regex) -> bool {
-        re.is_match(&self.title) || re.is_match(&self.tags) || re.is_match(self.url.as_ref())
+        re.is_match(&self.title)
+            || re.is_match(&self.tags)
+            || re.is_match(self.url.as_ref())
             || if let Some(ref extended) = self.extended {
                 re.is_match(extended)
             } else {
@@ -147,8 +150,9 @@ mod tests {
         let p = PinBuilder::new(
             "https://githuуй.com/Здравствуйт?q=13#fragment",
             "title",
-        ).tags("tag1 tag2")
-            .into_pin();
+        )
+        .tags("tag1 tag2")
+        .into_pin();
         assert_eq!(p.title, "title");
         assert_eq!(
             p.url,
@@ -165,8 +169,9 @@ mod tests {
         let p = PinBuilder::new(
             "http://правительство.рф",
             "An open source ecosystem for IoT development · PlatformIO",
-        ).tags("tag1 tag2")
-            .into_pin();
+        )
+        .tags("tag1 tag2")
+        .into_pin();
 
         assert!(p.contains("·"));
         assert!(p.contains("· PlatformIO".to_lowercase().as_str()));
@@ -230,7 +235,8 @@ mod tests {
         {
             // fuzzy search
             pinboard.enable_fuzzy_search(true);
-            let pins = pinboard.search_items("failurecargopackage") // "failure cargo package"
+            let pins = pinboard
+                .search_items("failurecargopackage") // "failure cargo package"
                 .unwrap_or_else(|e| panic!(e));
             assert!(pins.is_some());
             let pins = pins.unwrap();
