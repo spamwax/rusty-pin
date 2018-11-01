@@ -1,6 +1,5 @@
 // TODO: Add tests for case insensitivity searches of tags/pins
 use super::*;
-use std::env;
 use std::fs;
 
 #[cfg(feature = "bench")]
@@ -16,7 +15,7 @@ use tests::rand_temp_path;
 fn test_cached_file_names() {
     let _ = env_logger::try_init();
     debug!("test_cached_data: starting.");
-    let mut h = env::home_dir().unwrap();
+    let mut h = dirs::home_dir().unwrap();
     h.push(".cache");
     h.push("rusty-pin");
     let p: Option<PathBuf> = None;
@@ -38,7 +37,7 @@ fn test_cached_file_names() {
 fn test_set_cache_dir() {
     let _ = env_logger::try_init();
     debug!("test_set_cache_dir: starting.");
-    let mut h = env::home_dir().unwrap();
+    let mut h = dirs::home_dir().unwrap();
     let p: Option<PathBuf> = None;
     let mut c = CachedData::new(p).expect("Can't initiate 'CachedData'.");
 
@@ -58,7 +57,7 @@ fn test_search_items() {
     let _ = env_logger::try_init();
     debug!("test_search_items: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = env::home_dir().unwrap();
+    let mut _home = dirs::home_dir().unwrap();
     _home.push(".cache");
     _home.push("mockito-rusty-pin");
     let cache_path = Some(_home);
@@ -97,7 +96,7 @@ fn search_tag_pairs() {
     let _ = env_logger::try_init();
     debug!("search_tag_pairs: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = env::home_dir().unwrap();
+    let mut _home = dirs::home_dir().unwrap();
     _home.push(".cache");
     _home.push("mockito-rusty-pin");
     let cache_path = Some(_home);
@@ -178,7 +177,7 @@ fn list_tags() {
     let _ = env_logger::try_init();
     debug!("list_tags: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = env::home_dir().unwrap();
+    let mut _home = dirs::home_dir().unwrap();
     _home.push(".cache");
     _home.push("mockito-rusty-pin");
     let _ = fs::remove_file(&_home);
@@ -194,7 +193,7 @@ fn list_bookmarks() {
     let _ = env_logger::try_init();
     debug!("list_bookmarks: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = env::home_dir().expect("Can't find home dir");
+    let mut _home = dirs::home_dir().expect("Can't find home dir");
     _home.push(".cache");
     _home.push("mockito-rusty-pin");
     let cache_path = Some(_home);
@@ -213,7 +212,7 @@ fn popular_tags() {
             .with_header("content-type", "application/json")
             .with_body(r#"[{"popular":["datetime","library","rust"]},{"recommended":["datetime","library","programming","rust"]}]"#)
             .create();
-    let mut _home = env::home_dir().expect("Can't get home_dir");
+    let mut _home = dirs::home_dir().expect("Can't get home_dir");
     _home.push(".cache");
     _home.push("mockito-rusty-pin");
     let cache_path = Some(_home);
@@ -611,7 +610,7 @@ fn serde_update_cache() {
     let _ = env_logger::try_init();
     debug!("serde_update_cache: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = env::home_dir().unwrap();
+    let mut _home = dirs::home_dir().unwrap();
     _home.push(".cache");
     _home.push("mockito-rusty-pin");
     let cache_path = Some(_home.clone());
@@ -684,7 +683,7 @@ fn test_update_cache() {
     const IDX: usize = 25;
 
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = env::home_dir().unwrap();
+    let mut _home = dirs::home_dir().unwrap();
     _home.push(".cache");
     _home.push("mockito-rusty-pin");
 
@@ -754,7 +753,7 @@ fn bench_search_items_openpgp(b: &mut Bencher) {
     let _ = env_logger::try_init();
     debug!("bench_search_items_non_fuzzy: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = env::home_dir().unwrap();
+    let mut _home = dirs::home_dir().unwrap();
     _home.push(".cache");
     _home.push("mockito-rusty-pin");
     let cache_path = Some(_home);
@@ -775,7 +774,7 @@ fn bench_search_openpgp(b: &mut Bencher) {
     let _ = env_logger::try_init();
     debug!("bench_search_openpgp: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = env::home_dir().unwrap();
+    let mut _home = dirs::home_dir().unwrap();
     _home.push(".cache");
     _home.push("mockito-rusty-pin");
     let cache_path = Some(_home);
@@ -804,7 +803,7 @@ fn bench_search_non_fuzzy(b: &mut Bencher) {
     let _ = env_logger::try_init();
     debug!("bench_search_non_fuzzy: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = env::home_dir().unwrap();
+    let mut _home = dirs::home_dir().unwrap();
     _home.push(".cache");
     _home.push("mockito-rusty-pin");
     let cache_path = Some(_home);
@@ -827,7 +826,7 @@ fn bench_search_fuzzy(b: &mut Bencher) {
     let _ = env_logger::try_init();
     debug!("bench_search_fuzzy: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = env::home_dir().unwrap();
+    let mut _home = dirs::home_dir().unwrap();
     _home.push(".cache");
     _home.push("mockito-rusty-pin");
     let cache_path = Some(_home);

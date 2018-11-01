@@ -38,7 +38,7 @@ impl<'pin> CachedData<'pin> {
         let _ = env_logger::try_init();
         debug!("new: starting");
         let cached_dir = c_dir.map(|p| p.as_ref().to_path_buf()).unwrap_or_else(|| {
-            let mut dir = env::home_dir().unwrap_or_else(|| PathBuf::from(""));
+            let mut dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from(""));
             dir.push(".cache");
             dir.push("rusty-pin");
             dir
@@ -67,7 +67,7 @@ impl<'pin> CachedData<'pin> {
         let _ = env_logger::try_init();
         debug!("init: starting");
         let cached_dir = c_dir.map(|p| p.as_ref().to_path_buf()).unwrap_or_else(|| {
-            let mut dir = env::home_dir().unwrap_or_else(|| PathBuf::from(""));
+            let mut dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from(""));
             dir.push(".cache");
             dir.push("rusty-pin");
             dir

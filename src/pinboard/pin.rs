@@ -137,7 +137,6 @@ mod tests {
     use super::*;
 
     use env_logger;
-    use std::env;
 
     use pinboard::mockito_helper::create_mockito_servers;
 
@@ -183,7 +182,7 @@ mod tests {
 
         let (_m1, _m2) = create_mockito_servers();
 
-        let mut _home = env::home_dir().unwrap();
+        let mut _home = dirs::home_dir().unwrap();
         _home.push(".cache");
         _home.push("mockito-rusty-pin");
         let cache_path = Some(_home);

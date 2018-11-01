@@ -33,6 +33,8 @@ extern crate serde;
 extern crate serde_json;
 extern crate url_serde;
 
+extern crate dirs;
+
 #[macro_use]
 extern crate failure;
 #[macro_use]
