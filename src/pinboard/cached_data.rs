@@ -163,7 +163,7 @@ impl<'pin> CachedData<'pin> {
                 Ok(pins
                     .into_iter()
                     .map(|pin| {
-                        let url_lowered = pin.url.as_str().to_lowercase();
+                        let url_lowered = pin.url.into_string();
                         let tags_lowered = pin.tags.to_lowercase();
                         let mut pb = PinBuilder::new(&url_lowered, pin.title.to_lowercase())
                             .tags(tags_lowered.clone())
@@ -262,11 +262,12 @@ mod tests {
         let mut pin = PinBuilder::new(
             "https://danielkeep.github.io/tlborm/book/README.html",
             "The Little Book of Rust Macros",
-        ).tags("Rust macros")
-            .toread("yes")
-            .shared("no")
-            .description("WoW!!!")
-            .into_pin();
+        )
+        .tags("Rust macros")
+        .toread("yes")
+        .shared("no")
+        .description("WoW!!!")
+        .into_pin();
         pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
 
         let cached_pin = CachedPin {

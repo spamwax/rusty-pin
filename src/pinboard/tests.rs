@@ -614,7 +614,10 @@ fn serde_update_cache() {
     let mut _home = env::home_dir().unwrap();
     _home.push(".cache");
     _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home);
+    let cache_path = Some(_home.clone());
+
+    // First remove all folders to force a full update
+    fs::remove_dir_all(_home).expect("Can't remove dir to prepare the test");
 
     let p = Pinboard::new(include_str!("api_token.txt"), cache_path);
     let mut pinboard = p.unwrap_or_else(|e| panic!("{:?}", e));
@@ -627,51 +630,47 @@ fn serde_update_cache() {
     let cached_pins = pinboard.list_bookmarks().unwrap();
     assert_eq!(fresh_pins.len(), cached_pins.len());
 
-    // Pick 3 pins and compare them between cached dataset and freshly fetched from Pinboard's
-    // API
-    for idx in &[0u32, 10u32, 50u32] {
-        debug!("serde_update_cache: Checking pin[{}]", idx);
+    for idx in 0..fresh_pins.len() {
+        info!("serde_update_cache: Checking pin[{}]", idx);
+        let found = cached_pins
+            .iter()
+            .find(|&&p| p.url.clone().into_string() == fresh_pins[idx].url.clone().into_string());
+        assert!(found.is_some(), "{:?}", fresh_pins[idx]);
+        let cached_pin = found.unwrap();
         assert_eq!(
-            fresh_pins[*idx as usize].title.to_lowercase(),
-            cached_pins[*idx as usize].title
+            fresh_pins[idx as usize].title.to_lowercase(),
+            cached_pin.title
         );
         assert_eq!(
-            fresh_pins[*idx as usize].url.as_str().to_lowercase(),
-            cached_pins[*idx as usize].url.as_str()
+            fresh_pins[idx as usize].url.as_str(),
+            cached_pin.url.as_str()
         );
         assert_eq!(
-            fresh_pins[*idx as usize].tags.to_lowercase(),
-            cached_pins[*idx as usize].tags
+            fresh_pins[idx as usize].tags.to_lowercase(),
+            cached_pin.tags
         );
         assert_eq!(
-            fresh_pins[*idx as usize].shared.to_lowercase(),
-            cached_pins[*idx as usize].shared
+            fresh_pins[idx as usize].shared.to_lowercase(),
+            cached_pin.shared
         );
         assert_eq!(
-            fresh_pins[*idx as usize].toread.to_lowercase(),
-            cached_pins[*idx as usize].toread
+            fresh_pins[idx as usize].toread.to_lowercase(),
+            cached_pin.toread
         );
-        assert_eq!(
-            fresh_pins[*idx as usize].time,
-            cached_pins[*idx as usize].time
-        );
+        assert_eq!(fresh_pins[idx as usize].time, cached_pin.time);
 
-        if fresh_pins[*idx as usize].extended.is_some() {
-            assert!(cached_pins[*idx as usize].extended.is_some());
+        if fresh_pins[idx as usize].extended.is_some() {
+            assert!(cached_pin.extended.is_some());
             assert_eq!(
-                fresh_pins[*idx as usize]
+                fresh_pins[idx as usize]
                     .extended
                     .as_ref()
                     .unwrap()
                     .to_lowercase(),
-                cached_pins[*idx as usize]
-                    .extended
-                    .as_ref()
-                    .unwrap()
-                    .as_ref()
+                cached_pin.extended.as_ref().unwrap().as_ref()
             );
         } else {
-            assert!(cached_pins[*idx as usize].extended.is_none());
+            assert!(cached_pin.extended.is_none());
         }
     }
 }
