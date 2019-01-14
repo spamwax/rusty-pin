@@ -297,7 +297,9 @@ mod tests {
         let r = api.delete(TEST_URL);
         assert_eq!(
             "Server couldn't fulfill request: Too Many Requests",
-            r.expect_err("Expected Not Found").root_cause().to_string()
+            r.expect_err("Expected Not Found")
+                .find_root_cause()
+                .to_string()
         );
     }
 
@@ -320,7 +322,7 @@ mod tests {
         let r = api
             .delete("http://no.fucking.way")
             .expect_err("Deleted non-existing pin");
-        assert_eq!("item not found".to_string(), r.cause().to_string());
+        assert_eq!("item not found".to_string(), r.as_fail().to_string());
 
         // Deleting bookmark with a malformed url
         let e = api
@@ -330,10 +332,10 @@ mod tests {
         // Two ways of checking
         assert_eq!(
             &ParseError::RelativeUrlWithoutBase,
-            e.root_cause().downcast_ref::<ParseError>().unwrap()
+            e.find_root_cause().downcast_ref::<ParseError>().unwrap()
         );
         // Or
-        if let Some(t) = e.cause().downcast_ref::<ParseError>() {
+        if let Some(t) = e.as_fail().downcast_ref::<ParseError>() {
             match t {
                 ParseError::RelativeUrlWithoutBase => (),
                 _ => panic!("Deleted a malformed url"),
@@ -380,7 +382,10 @@ mod tests {
 
         assert_eq!(
             &ParseError::RelativeUrlWithoutBase,
-            error.root_cause().downcast_ref::<ParseError>().unwrap()
+            error
+                .find_root_cause()
+                .downcast_ref::<ParseError>()
+                .unwrap()
         );
     }
 

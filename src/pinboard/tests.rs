@@ -231,7 +231,7 @@ fn popular_tags() {
     assert_eq!(
         &url::ParseError::RelativeUrlWithoutBase,
         error
-            .root_cause()
+            .find_root_cause()
             .downcast_ref::<url::ParseError>()
             .unwrap()
     );
