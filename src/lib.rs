@@ -73,9 +73,9 @@ mod tests {
     use tempfile;
 
     mod rmp_serde {
+        use crate::rmps::{Deserializer, Serializer};
         use chrono::prelude::*;
         use env_logger;
-        use crate::rmps::{Deserializer, Serializer};
         use serde::{Deserialize, Serialize};
         use serde_json;
         use std::fs::File;

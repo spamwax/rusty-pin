@@ -253,8 +253,8 @@ impl<'pin> CachedData<'pin> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use env_logger;
     use crate::rmps::Deserializer;
+    use env_logger;
     use serde::Deserialize;
 
     #[test]

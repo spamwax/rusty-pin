@@ -193,11 +193,11 @@ impl<'api, 'pin> Api<'api> {
         self.get_api_response(
             [BASE_URL, "/posts/update"].concat().as_str(),
             HashMap::new(),
-        ).and_then(|res| {
-                serde_json::from_str(&res)
-                    .map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
-            })
-            .and_then(|date: UpdateTime| Ok(date.datetime))
+        )
+        .and_then(|res| {
+            serde_json::from_str(&res).map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
+        })
+        .and_then(|date: UpdateTime| Ok(date.datetime))
     }
 
     fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
@@ -206,7 +206,8 @@ impl<'api, 'pin> Api<'api> {
         Url::parse_with_params(
             url.into_url().expect("invalid url").as_ref(),
             &[("format", "json"), ("auth_token", &self.auth_token)],
-        ).expect("invalid parameters")
+        )
+        .expect("invalid parameters")
     }
 
     fn get_api_response<T: IntoUrl + AsRef<str>>(
@@ -257,7 +258,8 @@ impl<'api, 'pin> Api<'api> {
                     .canonical_reason()
                     .expect("UNKNOWN RESPONSE")
                     .to_string(),
-            ).into();
+            )
+            .into();
             debug!("    ERR: {:?}", e);
             Err(e)
         }

@@ -2,8 +2,8 @@ use std::borrow::Cow;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 
-use reqwest::IntoUrl;
 use crate::rmps::Serializer;
+use reqwest::IntoUrl;
 // use rmps::{Deserializer, Serializer};
 // use serde::Deserialize;
 
