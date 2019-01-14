@@ -3,7 +3,7 @@ use env_logger;
 use std::io::Write;
 use std::io::{BufReader, BufWriter};
 
-use rmps;
+use crate::rmps;
 use serde::Serialize;
 
 use failure::Error;
@@ -254,7 +254,7 @@ impl<'pin> CachedData<'pin> {
 mod tests {
     use super::*;
     use env_logger;
-    use rmps::Deserializer;
+    use crate::rmps::Deserializer;
     use serde::Deserialize;
 
     #[test]

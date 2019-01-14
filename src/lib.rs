@@ -55,7 +55,7 @@ extern crate log;
 
 pub mod pinboard;
 
-pub use pinboard::{Pin, PinBuilder, Pinboard, Tag};
+pub use crate::pinboard::{Pin, PinBuilder, Pinboard, Tag};
 
 // TODO: make get_api_response return reqwest::Response so we can use serde_json::from_read
 // TODO: Properly escape search queries that are used in regex for fuzzy option. <06-02-18, Hamid>
@@ -75,7 +75,7 @@ mod tests {
     mod rmp_serde {
         use chrono::prelude::*;
         use env_logger;
-        use rmps::{Deserializer, Serializer};
+        use crate::rmps::{Deserializer, Serializer};
         use serde::{Deserialize, Serialize};
         use serde_json;
         use std::fs::File;
@@ -84,7 +84,7 @@ mod tests {
         use std::{env, fs};
         use url::Url;
 
-        use pinboard::pin::{Pin, PinBuilder};
+        use crate::pinboard::pin::{Pin, PinBuilder};
 
         #[cfg(feature = "bench")]
         use test::Bencher;
@@ -207,7 +207,7 @@ mod tests {
         use env_logger;
         use url::Url;
 
-        use pinboard::pin::{Pin, PinBuilder};
+        use crate::pinboard::pin::{Pin, PinBuilder};
         use serde_json::{from_str, to_string};
 
         #[cfg(feature = "bench")]

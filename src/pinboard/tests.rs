@@ -9,7 +9,7 @@ use self::mockito_helper::create_mockito_servers;
 use mockito::{mock, Matcher};
 use url;
 
-use tests::rand_temp_path;
+use crate::tests::rand_temp_path;
 
 #[test]
 fn test_cached_file_names() {

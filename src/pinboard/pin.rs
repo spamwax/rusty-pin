@@ -141,7 +141,7 @@ mod tests {
 
     use env_logger;
 
-    use pinboard::mockito_helper::create_mockito_servers;
+    use crate::pinboard::mockito_helper::create_mockito_servers;
 
     #[test]
     fn test_builder() {
@@ -191,7 +191,7 @@ mod tests {
         _home.push(".cache");
         _home.push("mockito-rusty-pin");
         let cache_path = Some(_home);
-        let p = ::pinboard::Pinboard::new(include_str!("api_token.txt"), cache_path)
+        let p = crate::pinboard::Pinboard::new(include_str!("api_token.txt"), cache_path)
             .map_err(|e| format!("{:?}", e));
         let mut pinboard = p.unwrap_or_else(|e| panic!("{:?}", e));
 

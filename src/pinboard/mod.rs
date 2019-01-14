@@ -3,7 +3,7 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 
 use reqwest::IntoUrl;
-use rmps::Serializer;
+use crate::rmps::Serializer;
 // use rmps::{Deserializer, Serializer};
 // use serde::Deserialize;
 

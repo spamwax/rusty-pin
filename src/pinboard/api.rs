@@ -270,8 +270,8 @@ mod tests {
     use std::path::PathBuf;
     use url::ParseError;
 
-    use pinboard::mockito_helper::start_mockito_server;
-    use pinboard::pin::PinBuilder;
+    use crate::pinboard::mockito_helper::start_mockito_server;
+    use crate::pinboard::pin::PinBuilder;
 
     const TEST_URL: &str = "https://githuуй.com/Здравствуйт?q=13#fragment";
     #[test]
@@ -384,7 +384,7 @@ mod tests {
 
     #[test]
     fn test_tag_freq() {
-        use pinboard::mockito_helper::MockBodyGenerate;
+        use crate::pinboard::mockito_helper::MockBodyGenerate;
         let _ = env_logger::try_init();
         debug!("test_tag_freq: starting.");
         let _m1 = PathBuf::from("tests/all_tags_mockito.json")
