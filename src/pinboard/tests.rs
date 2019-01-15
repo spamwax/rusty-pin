@@ -53,6 +53,45 @@ fn test_set_cache_dir() {
 }
 
 #[test]
+fn find_url_test() {
+    let _ = env_logger::try_init();
+    debug!("find_url_test: starting.");
+    let (_m1, _m2) = create_mockito_servers();
+    let mut _home = dirs::home_dir().unwrap();
+    _home.push(".cache");
+    _home.push("mockito-rusty-pin");
+    let cache_path = Some(_home);
+
+    let mut pinboard =
+        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    pinboard.enable_fuzzy_search(false);
+
+    let r =
+        pinboard.find_url("http://blog.khubla.com/freebsd/time-machine-backups-using-freebsd-zfs");
+    assert!(r.is_ok());
+    let op = r.unwrap();
+    assert!(op.is_some());
+    let pins = op.unwrap();
+
+    assert_eq!(1, pins.len());
+
+    let r =
+        pinboard.find_url("http://blog.khubla.com/freebsd/time-machine-backups-using-FreeBSD-zfs");
+    assert!(r.is_ok());
+    let op = r.unwrap();
+    assert!(op.is_some());
+    let pins = op.unwrap();
+
+    assert_eq!(1, pins.len());
+
+    let r =
+        pinboard.find_url("https://blog.khubla.com/freebsd/time-machine-backups-using-FreeBSD-zfs");
+    assert!(r.is_ok());
+    let op = r.unwrap();
+    assert!(op.is_none());
+}
+
+#[test]
 fn test_search_items() {
     let _ = env_logger::try_init();
     debug!("test_search_items: starting.");

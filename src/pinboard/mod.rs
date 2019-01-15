@@ -226,6 +226,45 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
         }
     }
 
+    // TODO: find_url should return pins that match `q` barring their fragment //
+    // https://github.com/sharkdp/hexyl#preview  and
+    // https://github.com/sharkdp/hexyl
+    // should be considered identical (?!)
+
+    /// Finds all pins whose url is an exact match of the `q`
+    ///
+    /// find_url("http://google.com/public") will match following
+    /// http://google.com/public
+    /// but not following
+    /// http://google.com/public#fragment
+    pub fn find_url<S>(&'pin self, q: S) -> Result<Option<Vec<&'pin Pin<'pin>>>, Error>
+    where
+        S: AsRef<str>,
+    {
+        debug!("find_url: starting.");
+        if !self.cached_data.cache_ok() {
+            bail!("Cache data is invalid.");
+        }
+        let query = &q.as_ref().to_lowercase();
+        let results = self
+            .cached_data
+            .pins
+            .as_ref()
+            .map(|p: &Vec<CachedPin<'pin>>| {
+                p.into_iter()
+                    .filter(|cached_pin: &&CachedPin<'pin>| {
+                        cached_pin.pin.url.as_str().to_lowercase().as_str() == query
+                    })
+                    .map(|p| &p.pin)
+                    .collect::<Vec<&'pin Pin>>()
+            })
+            .unwrap_or_default();
+        match results.len() {
+            0 => Ok(None),
+            _ => Ok(Some(results)),
+        }
+    }
+
     /// Searches the selected `fields` within bookmarks to filter them.
     /// This function honors [pinboard::config::Config] settings for fuzzy search only.
     pub fn search<'b, I, S>(
