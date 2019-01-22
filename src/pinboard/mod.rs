@@ -192,7 +192,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                     .tags
                     .as_ref()
                     .map(|t| {
-                        t.into_iter()
+                        t.iter()
                             .filter(|item| item.0.to_lowercase().contains(q))
                             .collect::<Vec<&Tag>>()
                     })
@@ -211,7 +211,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                     .tags
                     .as_ref()
                     .map(|t| {
-                        t.into_iter()
+                        t.iter()
                             .filter(|item| re.is_match(&item.0))
                             .collect::<Vec<&Tag>>()
                     })
@@ -251,7 +251,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
             .pins
             .as_ref()
             .map(|p: &Vec<CachedPin<'pin>>| {
-                p.into_iter()
+                p.iter()
                     .filter(|cached_pin: &&CachedPin<'pin>| {
                         cached_pin.pin.url.as_str().to_lowercase().as_str() == query
                     })
@@ -298,7 +298,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                 .pins
                 .as_ref()
                 .map(|p: &Vec<CachedPin<'pin>>| {
-                    p.into_iter()
+                    p.iter()
                         .filter(|cached_pin: &&CachedPin<'pin>| {
                             q.into_iter().all(|s| {
                                 let query = &s.as_ref().to_lowercase();
@@ -335,13 +335,12 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                     let query = &s.as_ref().to_lowercase();
                     // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
                     let mut fuzzy_string = String::with_capacity(query.len() * query.len() * 2);
-                    fuzzy_string.extend(
-                        query
+                    fuzzy_string.push_str(
+                        &query
                             .chars()
                             .map(|c| c.to_string())
                             .collect::<Vec<String>>()
-                            .join(r".*")
-                            .chars(),
+                            .join(r".*"),
                     );
                     // Set case-insensitive regex option.
                     let mut fuzzy_regex: String = String::with_capacity(fuzzy_string.len() + 2);
@@ -355,7 +354,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                 .pins
                 .as_ref()
                 .map(|p| {
-                    p.into_iter()
+                    p.iter()
                         .filter(|cached_pin: &&CachedPin| {
                             regex_queries.iter().all(|re| {
                                 search_fields.iter().any(|search_type| match *search_type {

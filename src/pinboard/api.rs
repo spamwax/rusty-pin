@@ -119,7 +119,7 @@ impl<'api, 'pin> Api<'api> {
             .map(|item| {
                 item["popular"]
                     .as_array()
-                    .unwrap_or(vec![json!([])].as_ref())
+                    .unwrap_or(&vec![json!([])])
                     .iter()
                     .map(|v| v.as_str().unwrap_or("").to_string())
                     .collect::<Vec<String>>()
@@ -175,10 +175,10 @@ impl<'api, 'pin> Api<'api> {
 
     pub fn delete<T: IntoUrl>(&self, u: T) -> Result<(), Error> {
         debug!("delete: starting.");
-        let url: &str = &u.into_url()?.to_string();
+        let url = u.into_url()?.to_string();
         let mut map = HashMap::new();
         debug!(" url: {}", url);
-        map.insert("url", url);
+        map.insert("url", url.as_ref());
 
         self.get_api_response([BASE_URL, "/posts/delete"].concat().as_str(), map)
             .and_then(|res| {
@@ -329,18 +329,16 @@ mod tests {
             .delete(":// bad url/#")
             .expect_err("Deleted malformed url");
 
-        // Two ways of checking
-        assert_eq!(
-            &ParseError::RelativeUrlWithoutBase,
-            e.find_root_cause().downcast_ref::<ParseError>().unwrap()
-        );
-        // Or
-        if let Some(t) = e.as_fail().downcast_ref::<ParseError>() {
-            match t {
-                ParseError::RelativeUrlWithoutBase => (),
-                _ => panic!("Deleted a malformed url"),
-            }
-        }
+        // Original error is of type reqwest::Error but returned as Fail
+        // so we need to do double downcast.
+        // First from Fail to reqwest::Error then to url::Error
+        let e1 = e.find_root_cause().downcast_ref::<reqwest::Error>();
+        assert!(e1.is_some());
+        let e2 = e1.unwrap().get_ref();
+        assert!(e2.is_some());
+        let e3 = e2.unwrap().downcast_ref::<url::ParseError>();
+        assert!(e3.is_some());
+        assert_eq!(&ParseError::RelativeUrlWithoutBase, e3.unwrap());
     }
 
     #[test]
@@ -384,6 +382,10 @@ mod tests {
             &ParseError::RelativeUrlWithoutBase,
             error
                 .find_root_cause()
+                .downcast_ref::<reqwest::Error>()
+                .unwrap()
+                .get_ref()
+                .unwrap()
                 .downcast_ref::<ParseError>()
                 .unwrap()
         );

@@ -271,6 +271,10 @@ fn popular_tags() {
         &url::ParseError::RelativeUrlWithoutBase,
         error
             .find_root_cause()
+            .downcast_ref::<reqwest::Error>()
+            .unwrap()
+            .get_ref()
+            .unwrap()
             .downcast_ref::<url::ParseError>()
             .unwrap()
     );
