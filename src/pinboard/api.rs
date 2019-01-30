@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
 use reqwest;
-use reqwest::IntoUrl;
 use serde_json;
 
 use chrono::prelude::*;
@@ -102,11 +101,12 @@ impl<'api, 'pin> Api<'api> {
         Ok(pins)
     }
 
-    pub fn suggest_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, Error> {
+    pub fn suggest_tags<T: AsRef<str>>(&self, url: T) -> Result<Vec<String>, Error> {
         debug!("suggest_tags: starting.");
-        let u: &str = &url.into_url()?.to_string();
+        let u = Url::parse(url.as_ref())?;
+        // let u: &str = &url.into_url()?.to_string();
         let mut query = HashMap::new();
-        query.insert("url", u);
+        query.insert("url", u.as_str());
 
         Ok(self
             .get_api_response([BASE_URL, "/posts/suggest"].concat().as_str(), query)
@@ -133,7 +133,7 @@ impl<'api, 'pin> Api<'api> {
 
     pub fn add_url(&self, p: Pin) -> Result<(), Error> {
         debug!("add_url: starting.");
-        let url: &str = &p.url.into_string();
+        let url: &str = &p.url;
         let extended = &p.extended.unwrap_or_default();
         let mut map = HashMap::new();
         debug!(" url: {}", url);
@@ -173,12 +173,12 @@ impl<'api, 'pin> Api<'api> {
             })
     }
 
-    pub fn delete<T: IntoUrl>(&self, u: T) -> Result<(), Error> {
+    pub fn delete<T: AsRef<str>>(&self, u: T) -> Result<(), Error> {
         debug!("delete: starting.");
-        let url = u.into_url()?.to_string();
+        let url = Url::parse(u.as_ref())?;
         let mut map = HashMap::new();
         debug!(" url: {}", url);
-        map.insert("url", url.as_ref());
+        map.insert("url", url.as_str());
 
         self.get_api_response([BASE_URL, "/posts/delete"].concat().as_str(), map)
             .and_then(|res| {
@@ -200,17 +200,17 @@ impl<'api, 'pin> Api<'api> {
         .and_then(|date: UpdateTime| Ok(date.datetime))
     }
 
-    fn add_auth_token<T: IntoUrl>(&self, url: T) -> Url {
+    fn add_auth_token<T: AsRef<str>>(&self, url: T) -> Url {
         debug!("add_auth_token: starting.");
         // debug!("  token: `{}`", &self.auth_token);
         Url::parse_with_params(
-            url.into_url().expect("invalid url").as_ref(),
+            url.as_ref(),
             &[("format", "json"), ("auth_token", &self.auth_token)],
         )
         .expect("invalid parameters")
     }
 
-    fn get_api_response<T: IntoUrl + AsRef<str>>(
+    fn get_api_response<T: AsRef<str>>(
         &self,
         endpoint: T,
         params: HashMap<&str, &str>,
@@ -218,10 +218,14 @@ impl<'api, 'pin> Api<'api> {
         debug!("get_api_response: starting.");
 
         let endpoint_string = endpoint.as_ref().to_string();
-        let mut base_url = endpoint.into_url().map_err(|_| {
+        let mut base_url = Url::parse(endpoint.as_ref()).map_err(|_| {
             let api_err: Error = ApiError::UrlError(endpoint_string).into();
             api_err
         })?;
+        // let mut base_url = endpoint.into_url().map_err(|_| {
+        //     let api_err: Error = ApiError::UrlError(endpoint_string).into();
+        //     api_err
+        // })?;
         debug!("  url: {:?}", base_url);
 
         for (k, v) in params {
@@ -329,16 +333,29 @@ mod tests {
             .delete(":// bad url/#")
             .expect_err("Deleted malformed url");
 
+        // Two ways of checking
+        assert_eq!(
+            &ParseError::RelativeUrlWithoutBase,
+            e.find_root_cause().downcast_ref::<ParseError>().unwrap()
+        );
+        // Or
+        if let Some(t) = e.as_fail().downcast_ref::<ParseError>() {
+            match t {
+                ParseError::RelativeUrlWithoutBase => (),
+                _ => panic!("Deleted a malformed url"),
+            }
+        }
         // Original error is of type reqwest::Error but returned as Fail
         // so we need to do double downcast.
         // First from Fail to reqwest::Error then to url::Error
-        let e1 = e.find_root_cause().downcast_ref::<reqwest::Error>();
-        assert!(e1.is_some());
-        let e2 = e1.unwrap().get_ref();
-        assert!(e2.is_some());
-        let e3 = e2.unwrap().downcast_ref::<url::ParseError>();
-        assert!(e3.is_some());
-        assert_eq!(&ParseError::RelativeUrlWithoutBase, e3.unwrap());
+        // let e1 = e.find_root_cause().downcast_ref::<reqwest::Error>();
+        // println!("e1--> {:?}", e1);
+        // assert!(e1.is_some());
+        // let e2 = e1.unwrap().get_ref();
+        // assert!(e2.is_some());
+        // let e3 = e2.unwrap().downcast_ref::<url::ParseError>();
+        // assert!(e3.is_some());
+        // assert_eq!(&ParseError::RelativeUrlWithoutBase, e3.unwrap());
     }
 
     #[test]
@@ -382,10 +399,6 @@ mod tests {
             &ParseError::RelativeUrlWithoutBase,
             error
                 .find_root_cause()
-                .downcast_ref::<reqwest::Error>()
-                .unwrap()
-                .get_ref()
-                .unwrap()
                 .downcast_ref::<ParseError>()
                 .unwrap()
         );

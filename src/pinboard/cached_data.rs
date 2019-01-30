@@ -27,6 +27,8 @@ pub struct CachedData<'pin> {
     cache_files_valid: bool,
 }
 
+// TODO: Add a url_lowered field to CachedPin so we don't have to call
+//       .to_lowercase() in pinboard.find_url() every time //
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct CachedPin<'pin> {
     pub pin: Pin<'pin>,
@@ -163,9 +165,8 @@ impl<'pin> CachedData<'pin> {
                 Ok(pins
                     .into_iter()
                     .map(|pin| {
-                        let url_lowered = pin.url.into_string();
                         let tags_lowered = pin.tags.to_lowercase();
-                        let mut pb = PinBuilder::new(&url_lowered, pin.title.to_lowercase())
+                        let mut pb = PinBuilder::new(pin.url.into(), pin.title.to_lowercase())
                             .tags(tags_lowered.clone())
                             .shared(pin.shared)
                             .toread(pin.toread);

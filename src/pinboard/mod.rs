@@ -3,7 +3,6 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 
 use crate::rmps::Serializer;
-use reqwest::IntoUrl;
 // use rmps::{Deserializer, Serializer};
 // use serde::Deserialize;
 
@@ -99,7 +98,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
         self.api.add_url(p)
     }
 
-    pub fn delete<T: IntoUrl>(&self, url: T) -> Result<(), Error> {
+    pub fn delete<T: AsRef<str>>(&self, url: T) -> Result<(), Error> {
         debug!("delete: starting.");
         self.api.delete(url)
     }
@@ -253,7 +252,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
             .map(|p: &Vec<CachedPin<'pin>>| {
                 p.iter()
                     .filter(|cached_pin: &&CachedPin<'pin>| {
-                        cached_pin.pin.url.as_str().to_lowercase().as_str() == query
+                        cached_pin.pin.url.to_lowercase().as_str() == query
                     })
                     .map(|p| &p.pin)
                     .collect::<Vec<&'pin Pin>>()
@@ -411,7 +410,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     }
 
     /// Suggest a list of tags based on the provided URL
-    pub fn popular_tags<T: IntoUrl>(&self, url: T) -> Result<Vec<String>, Error> {
+    pub fn popular_tags<T: AsRef<str>>(&self, url: T) -> Result<Vec<String>, Error> {
         debug!("popular_tags: starting.");
         self.api.suggest_tags(url)
     }

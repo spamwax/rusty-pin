@@ -121,9 +121,10 @@ mod tests {
             assert_eq!("yes", &pin.toread);
             assert_eq!("WoW!!!", &pin.extended.expect("pin.extended can't be None"));
             assert_eq!(
-                pin.url,
+                &pin.url,
                 Url::parse("https://danielkeep.github.io/tlborm/book/README.html")
                     .expect("impossible")
+                    .as_str()
             );
             fs::remove_file(dir).expect("Can't delete temp test file");
         }
@@ -206,9 +207,10 @@ mod tests {
             assert_eq!(pin.time(), Utc.ymd(2017, 5, 22).and_hms(17, 46, 54));
             assert_eq!(pin.tags, "Rust macros");
             assert_eq!(
-                pin.url,
+                &pin.url,
                 Url::parse("https://danielkeep.github.io/tlborm/book/README.html")
                     .expect("impossible!")
+                    .as_str()
             );
 
             let pin: Result<Pin, _> = from_str(include_str!("../tests/PIN2.json"));
@@ -218,9 +220,10 @@ mod tests {
             assert_eq!(pin.time(), Utc.ymd(2017, 10, 9).and_hms(7, 59, 36));
             assert_eq!(pin.tags, "git ctags vim");
             assert_eq!(
-                pin.url,
+                &pin.url,
                 Url::parse("http://tbaggery.com/2011/08/08/effortless-ctags-with-git.html")
                     .expect("impossible")
+                    .as_str()
             );
         }
 

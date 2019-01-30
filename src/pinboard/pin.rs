@@ -1,16 +1,14 @@
-use reqwest::IntoUrl;
+// use reqwest::IntoUrl;
 use std::borrow::Cow;
-use url_serde;
 
 use chrono::prelude::*;
-use url::Url;
 
 use regex::Regex;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Pin<'pin> {
-    #[serde(with = "url_serde", rename = "href")]
-    pub url: Url,
+    #[serde(rename = "href")]
+    pub url: Cow<'pin, str>,
     #[serde(rename = "description")]
     pub title: Cow<'pin, str>,
     pub tags: Cow<'pin, str>,
@@ -55,9 +53,9 @@ impl<'pin> Pin<'pin> {
 
     pub fn url_contains(&self, q: &str, re: Option<&Regex>) -> bool {
         if let Some(re) = re {
-            re.is_match(self.url.as_str())
+            re.is_match(&self.url)
         } else {
-            self.url.as_str().to_lowercase().contains(q)
+            self.url.to_lowercase().contains(q)
         }
     }
 
@@ -91,13 +89,12 @@ pub struct PinBuilder<'pin> {
 }
 
 impl<'pin> PinBuilder<'pin> {
-    pub fn new<T, S>(url: T, title: S) -> Self
+    pub fn new<S>(url: S, title: S) -> Self
     where
-        T: IntoUrl,
         S: Into<Cow<'pin, str>>,
     {
         let pin = Pin {
-            url: url.into_url().expect("Invalid url"),
+            url: url.into(),
             title: title.into(),
             time: Utc::now(),
             tags: Cow::from(""),
@@ -138,6 +135,7 @@ impl<'pin> PinBuilder<'pin> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use url::Url;
 
     use env_logger;
 
@@ -155,9 +153,10 @@ mod tests {
         .into_pin();
         assert_eq!(p.title, "title");
         assert_eq!(
-            p.url,
+            &p.url,
             Url::parse("https://githuуй.com/Здравствуйт?q=13#fragment")
                 .expect("impossible")
+                .as_str()
         );
         assert_eq!(p.tags, "tag1 tag2");
     }
@@ -229,7 +228,7 @@ mod tests {
             assert!(pins.is_some());
             let pins = pins.unwrap();
             assert_eq!(pins.len(), 1);
-            assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
+            assert_eq!(&pins[0].url, "https://crates.io/crates/failure");
         }
 
         {
@@ -241,7 +240,7 @@ mod tests {
             assert!(pins.is_some());
             let pins = pins.unwrap();
             assert_eq!(pins.len(), 1);
-            assert_eq!(pins[0].url.as_str(), "https://crates.io/crates/failure");
+            assert_eq!(&pins[0].url, "https://crates.io/crates/failure");
         }
     }
 }

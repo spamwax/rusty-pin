@@ -271,10 +271,10 @@ fn popular_tags() {
         &url::ParseError::RelativeUrlWithoutBase,
         error
             .find_root_cause()
-            .downcast_ref::<reqwest::Error>()
-            .unwrap()
-            .get_ref()
-            .unwrap()
+            // .downcast_ref::<reqwest::Error>()
+            // .unwrap()
+            // .get_ref()
+            // .unwrap()
             .downcast_ref::<url::ParseError>()
             .unwrap()
     );
@@ -676,17 +676,14 @@ fn serde_update_cache() {
         info!("serde_update_cache: Checking pin[{}]", idx);
         let found = cached_pins
             .iter()
-            .find(|&&p| p.url.clone().into_string() == fresh_pins[idx].url.clone().into_string());
+            .find(|&&p| &p.url == &fresh_pins[idx].url);
         assert!(found.is_some(), "{:?}", fresh_pins[idx]);
         let cached_pin = found.unwrap();
         assert_eq!(
             fresh_pins[idx as usize].title.to_lowercase(),
             cached_pin.title
         );
-        assert_eq!(
-            fresh_pins[idx as usize].url.as_str(),
-            cached_pin.url.as_str()
-        );
+        assert_eq!(fresh_pins[idx as usize].url, cached_pin.url);
         assert_eq!(
             fresh_pins[idx as usize].tags.to_lowercase(),
             cached_pin.tags
