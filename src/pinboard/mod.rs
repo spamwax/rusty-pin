@@ -7,6 +7,7 @@ use crate::rmps::Serializer;
 // use serde::Deserialize;
 
 use chrono::prelude::*;
+use url::Url;
 
 use failure::Error;
 
@@ -95,6 +96,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
 
     pub fn add_pin(&self, p: Pin) -> Result<(), Error> {
         debug!("add_pin: starting.");
+        let _ = Url::parse(&p.url)?;
         self.api.add_url(p)
     }
 
@@ -108,6 +110,34 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
         self.api
             .recent_update()
             .and_then(|res| Ok(last_update < res))
+    }
+
+    /// Update local cache
+    pub fn update_cache(&mut self) -> Result<(), Error> {
+        debug!("update_cache: starting.");
+        self.cached_data.update_cache(&self.api)
+    }
+
+    /// Returns list of all Tags (tag, frequency)
+    pub fn list_tag_pairs(&self) -> &Option<Vec<Tag>> {
+        debug!("list_tag_pairs: starting.");
+        &self.cached_data.tags
+    }
+
+    /// Returns list of all bookmarks
+    pub fn list_bookmarks(&self) -> Option<Vec<&Pin>> {
+        debug!("list_bookmarks: starting.");
+        self.cached_data
+            .pins
+            .as_ref()
+            .map(|v| v.iter().map(|p| &p.pin).collect())
+    }
+
+    /// Suggest a list of tags based on the provided URL
+    pub fn popular_tags<T: AsRef<str>>(&self, url: T) -> Result<Vec<String>, Error> {
+        debug!("popular_tags: starting.");
+        let _ = Url::parse(url.as_ref())?;
+        self.api.suggest_tags(url)
     }
 }
 
@@ -386,32 +416,5 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
             0 => Ok(None),
             _ => Ok(Some(results)),
         }
-    }
-
-    /// Update local cache
-    pub fn update_cache(&mut self) -> Result<(), Error> {
-        debug!("update_cache: starting.");
-        self.cached_data.update_cache(&self.api)
-    }
-
-    /// Returns list of all Tags (tag, frequency)
-    pub fn list_tag_pairs(&self) -> &Option<Vec<Tag>> {
-        debug!("list_tag_pairs: starting.");
-        &self.cached_data.tags
-    }
-
-    /// Returns list of all bookmarks
-    pub fn list_bookmarks(&self) -> Option<Vec<&Pin>> {
-        debug!("list_bookmarks: starting.");
-        self.cached_data
-            .pins
-            .as_ref()
-            .map(|v| v.iter().map(|p| &p.pin).collect())
-    }
-
-    /// Suggest a list of tags based on the provided URL
-    pub fn popular_tags<T: AsRef<str>>(&self, url: T) -> Result<Vec<String>, Error> {
-        debug!("popular_tags: starting.");
-        self.api.suggest_tags(url)
     }
 }

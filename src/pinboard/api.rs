@@ -91,6 +91,7 @@ impl<'api, 'pin> Api<'api> {
         let pins: Vec<Pin> = v
             .drain(..)
             .filter_map(|line| serde_json::from_value(line).ok())
+            .filter(|p: &Pin| Url::parse(&p.url).is_ok())
             .collect();
         if pins.len() != v_len {
             info!("couldn't parse {} bookmarks", v_len - pins.len());
@@ -103,10 +104,8 @@ impl<'api, 'pin> Api<'api> {
 
     pub fn suggest_tags<T: AsRef<str>>(&self, url: T) -> Result<Vec<String>, Error> {
         debug!("suggest_tags: starting.");
-        let u = Url::parse(url.as_ref())?;
-        // let u: &str = &url.into_url()?.to_string();
         let mut query = HashMap::new();
-        query.insert("url", u.as_str());
+        query.insert("url", url.as_ref());
 
         Ok(self
             .get_api_response([BASE_URL, "/posts/suggest"].concat().as_str(), query)
@@ -173,12 +172,11 @@ impl<'api, 'pin> Api<'api> {
             })
     }
 
-    pub fn delete<T: AsRef<str>>(&self, u: T) -> Result<(), Error> {
+    pub fn delete<T: AsRef<str>>(&self, url: T) -> Result<(), Error> {
         debug!("delete: starting.");
-        let url = Url::parse(u.as_ref())?;
         let mut map = HashMap::new();
-        debug!(" url: {}", url);
-        map.insert("url", url.as_str());
+        debug!(" url: {}", url.as_ref());
+        map.insert("url", url.as_ref());
 
         self.get_api_response([BASE_URL, "/posts/delete"].concat().as_str(), map)
             .and_then(|res| {
@@ -274,7 +272,6 @@ impl<'api, 'pin> Api<'api> {
 mod tests {
     use super::*;
     use std::path::PathBuf;
-    use url::ParseError;
 
     use crate::pinboard::mockito_helper::start_mockito_server;
     use crate::pinboard::pin::PinBuilder;
@@ -308,7 +305,7 @@ mod tests {
     }
 
     #[test]
-    fn delete_a_pin() {
+    fn delete_api_test() {
         let _ = env_logger::try_init();
         debug!("delete_a_pin: starting.");
         add_a_url();
@@ -317,45 +314,31 @@ mod tests {
         let r = api.delete(TEST_URL);
         r.expect("Error in deleting a pin.");
 
-        // Deleting non-existing bookmark
-        let _m2 = start_mockito_server(
-            r"^/posts/delete.+fucking\.way.*$",
-            200,
-            r#"{"result_code":"item not found"}"#,
-        );
-        let r = api
-            .delete("http://no.fucking.way")
-            .expect_err("Deleted non-existing pin");
-        assert_eq!("item not found".to_string(), r.as_fail().to_string());
-
-        // Deleting bookmark with a malformed url
-        let e = api
-            .delete(":// bad url/#")
-            .expect_err("Deleted malformed url");
-
-        // Two ways of checking
-        assert_eq!(
-            &ParseError::RelativeUrlWithoutBase,
-            e.find_root_cause().downcast_ref::<ParseError>().unwrap()
-        );
-        // Or
-        if let Some(t) = e.as_fail().downcast_ref::<ParseError>() {
-            match t {
-                ParseError::RelativeUrlWithoutBase => (),
-                _ => panic!("Deleted a malformed url"),
-            }
+        {
+            // Deleting non-existing bookmark
+            let _m2 = start_mockito_server(
+                r"^/posts/delete.+fucking\.way.*$",
+                200,
+                r#"{"result_code":"item not found"}"#,
+            );
+            let r = api
+                .delete("http://no.fucking.way")
+                .expect_err("Deleted non-existing pin");
+            assert_eq!("item not found".to_string(), r.as_fail().to_string());
         }
-        // Original error is of type reqwest::Error but returned as Fail
-        // so we need to do double downcast.
-        // First from Fail to reqwest::Error then to url::Error
-        // let e1 = e.find_root_cause().downcast_ref::<reqwest::Error>();
-        // println!("e1--> {:?}", e1);
-        // assert!(e1.is_some());
-        // let e2 = e1.unwrap().get_ref();
-        // assert!(e2.is_some());
-        // let e3 = e2.unwrap().downcast_ref::<url::ParseError>();
-        // assert!(e3.is_some());
-        // assert_eq!(&ParseError::RelativeUrlWithoutBase, e3.unwrap());
+
+        {
+            // Deleting malformed url
+            let _m2 = start_mockito_server(
+                r"^/posts/delete.*$",
+                200,
+                r#"{"result_code":"item not found"}"#,
+            );
+            let r = api
+                .delete(":// bad url/#")
+                .expect_err("should not find a malformed url to delete");
+            assert_eq!("item not found".to_string(), r.as_fail().to_string());
+        }
     }
 
     #[test]
@@ -371,6 +354,24 @@ mod tests {
             .into_pin();
         let res = api.add_url(p);
         res.expect("Error in adding a pin.");
+
+        {
+            // Adding a malformed url
+            let _m1 = start_mockito_server(
+                r"^/posts/add.+bad_url.*$",
+                200,
+                r#"{"result_code":"missing url"}"#,
+            );
+            let p = PinBuilder::new(":// bad_url/#", "test bookmark/pin")
+                .tags("tagestan what")
+                .description("russian website!")
+                .shared("yes")
+                .into_pin();
+            let r = api
+                .add_url(p)
+                .expect_err("server should not have accepted malformed url");
+            assert_eq!("missing url", r.as_fail().to_string());
+        }
     }
 
     #[test]
@@ -388,19 +389,6 @@ mod tests {
         assert_eq!(
             vec!["datetime", "library", "rust"],
             res.expect("impossible")
-        );
-
-        let url = ":// bad url/#";
-        let error = api
-            .suggest_tags(url)
-            .expect_err("Suggested tags for malformed url");
-
-        assert_eq!(
-            &ParseError::RelativeUrlWithoutBase,
-            error
-                .find_root_cause()
-                .downcast_ref::<ParseError>()
-                .unwrap()
         );
     }
 

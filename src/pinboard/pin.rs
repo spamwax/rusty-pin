@@ -135,14 +135,13 @@ impl<'pin> PinBuilder<'pin> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use url::Url;
 
     use env_logger;
 
     use crate::pinboard::mockito_helper::create_mockito_servers;
 
     #[test]
-    fn test_builder() {
+    fn pin_builder_test() {
         let _ = env_logger::try_init();
         debug!("test_builder: starting");
         let p = PinBuilder::new(
@@ -154,9 +153,9 @@ mod tests {
         assert_eq!(p.title, "title");
         assert_eq!(
             &p.url,
-            Url::parse("https://githuуй.com/Здравствуйт?q=13#fragment")
-                .expect("impossible")
-                .as_str()
+            "https://githuуй.com/Здравствуйт?q=13#fragment" // Url::parse("https://githuуй.com/Здравствуйт?q=13#fragment")
+                                                                         //     .expect("impossible")
+                                                                         //     .as_str()
         );
         assert_eq!(p.tags, "tag1 tag2");
     }

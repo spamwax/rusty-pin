@@ -6,10 +6,14 @@ use std::fs;
 use test::Bencher;
 
 use self::mockito_helper::create_mockito_servers;
+use self::mockito_helper::start_mockito_server;
 use mockito::{mock, Matcher};
 use url;
+use url::ParseError;
 
 use crate::tests::rand_temp_path;
+
+const TEST_URL: &str = "https://githuуй.com/Здравствуйт?q=13#fragment";
 
 #[test]
 fn test_cached_file_names() {
@@ -243,6 +247,97 @@ fn list_bookmarks() {
 }
 
 #[test]
+fn add_pin_test() {
+    let _ = env_logger::try_init();
+    debug!("delete_a_pin: starting.");
+    let mut _home = dirs::home_dir().expect("Can't find home dir");
+    _home.push(".cache");
+    _home.push("mockito-rusty-pin");
+    let cache_path = Some(_home);
+    let pinboard =
+        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+
+    {
+        // add a good url
+        let _m1 = start_mockito_server(r"^/posts/add.*$", 200, r#"{"result_code":"done"}"#);
+        let p = PinBuilder::new(TEST_URL, "test bookmark/pin")
+            .tags("tagestan what")
+            .description("russian website!")
+            .shared("yes")
+            .into_pin();
+        assert_eq!(true, pinboard.add_pin(p).is_ok());
+    }
+    {
+        // add a bad url
+        let _m1 = start_mockito_server(r"^/posts/add.+bad_url*$", 200, r#"{"result_code":"done"}"#);
+        let p = PinBuilder::new(":/ bad_url", "test bookmark/pin")
+            .tags("tagestan what")
+            .description("russian website!")
+            .shared("yes")
+            .into_pin();
+        let r = pinboard
+            .add_pin(p)
+            .expect_err("Should return parse error for malformed url");
+        assert_eq!(
+            &ParseError::RelativeUrlWithoutBase,
+            r.find_root_cause().downcast_ref::<ParseError>().unwrap()
+        );
+    }
+}
+
+#[test]
+fn delete_test() {
+    let _ = env_logger::try_init();
+    debug!("delete_a_pin: starting.");
+    // let (_m1, _m2) = create_mockito_servers();
+    let mut _home = dirs::home_dir().expect("Can't find home dir");
+    _home.push(".cache");
+    _home.push("mockito-rusty-pin");
+    let cache_path = Some(_home);
+    let pinboard =
+        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+
+    {
+        let _m1 = start_mockito_server(
+            r"^/posts/delete.+good\.url.*$",
+            200,
+            r#"{"result_code":"done"}"#,
+        );
+        let _ = pinboard
+            .delete("http://www.good.url.com/#")
+            .expect("Should succeed deleting a malformed url");
+    }
+
+    {
+        let _m1 = start_mockito_server(
+            r"^/posts/delete.+bad_url.*$",
+            200,
+            r#"{"result_code":"item not found"}"#,
+        );
+        let e = pinboard
+            .delete(":// bad_url/")
+            .expect_err("Should not succeed deleting a malformed url");
+        assert_eq!("item not found", e.as_fail().to_string());
+    }
+
+    // println!("e--> {:?}", e);
+    // let e1 = e.find_root_cause().downcast_ref::<ParseError>();
+    // println!("e1--> {:?}", e1);
+    // assert!(e1.is_some());
+
+    // Original error is of type reqwest::Error but returned as Fail
+    // so we need to do double downcast.
+    // First from Fail to reqwest::Error then to url::Error
+    // let e1 = e.find_root_cause().downcast_ref::<reqwest::Error>();
+    // println!("e1--> {:?}", e1);
+    // assert!(e1.is_some());
+    // let e2 = e1.unwrap().get_ref();
+    // assert!(e2.is_some());
+    // let e3 = e2.unwrap().downcast_ref::<url::ParseError>();
+    // assert!(e3.is_some());
+    // assert_eq!(&ParseError::RelativeUrlWithoutBase, e3.unwrap());
+}
+#[test]
 fn popular_tags() {
     let _ = env_logger::try_init();
     debug!("popular_tags: starting.");
@@ -264,20 +359,25 @@ fn popular_tags() {
     assert!(tags.len() >= 2);
 
     // Test invalid URL
+    let url = ":// bad url/#";
     let error = pinboard
-        .popular_tags("docs.rs/chrono/0.4.0/chrono")
+        .popular_tags(url)
         .expect_err("Suggested tags for malformed url");
     assert_eq!(
         &url::ParseError::RelativeUrlWithoutBase,
         error
             .find_root_cause()
-            // .downcast_ref::<reqwest::Error>()
-            // .unwrap()
-            // .get_ref()
-            // .unwrap()
             .downcast_ref::<url::ParseError>()
             .unwrap()
     );
+    if let Some(t) = error.as_fail().downcast_ref::<ParseError>() {
+        match t {
+            ParseError::RelativeUrlWithoutBase => (),
+            _ => panic!("Deleted a malformed url"),
+        }
+    } else {
+        panic!("Should have received a ParseError");
+    }
 }
 
 #[test]
