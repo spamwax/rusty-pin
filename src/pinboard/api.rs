@@ -24,17 +24,26 @@ use mockito;
 #[cfg(test)]
 const BASE_URL: &str = mockito::SERVER_URL;
 
+/// Struct to hold stringify results Pinboard API returns.
+/// Sometimes it returns a json key of "result_code" & sometimes just "result"!!!
 #[derive(Serialize, Deserialize, Debug)]
 struct ApiResult {
+    #[serde(default)]
     result_code: String,
+    #[serde(default)]
+    result: String,
 }
 
 impl ApiResult {
     fn ok(self) -> Result<(), Error> {
-        if self.result_code == "done" {
+        if self.result_code == "done" || self.result == "done" {
             Ok(())
         } else {
-            bail!(self.result_code)
+            if self.result_code != "" {
+                bail!(self.result_code)
+            } else {
+                bail!(self.result)
+            }
         }
     }
 }
@@ -147,6 +156,31 @@ impl<'api, 'pin> Api<'api> {
 
         debug!("Sending payload to: {}/posts/add\n\t{:?}", BASE_URL, map);
         self.get_api_response([BASE_URL, "/posts/add"].concat().as_str(), map)
+            .and_then(|res| {
+                serde_json::from_str::<ApiResult>(&res)
+                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
+            })
+            .and_then(|r| r.ok())
+    }
+
+    pub fn tag_rename<T: AsRef<str>>(&self, old: T, new: T) -> Result<(), Error> {
+        debug!("tag_rename: starting.");
+        let mut map = HashMap::new();
+        map.insert("old", old.as_ref());
+        map.insert("new", new.as_ref());
+        self.get_api_response([BASE_URL, "/tags/rename"].concat(), map)
+            .and_then(|res| {
+                serde_json::from_str::<ApiResult>(&res)
+                    .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
+            })
+            .and_then(|r| r.ok())
+    }
+
+    pub fn tag_delete<T: AsRef<str>>(&self, tag: T) -> Result<(), Error> {
+        debug!("tag_rename: starting.");
+        let mut map = HashMap::new();
+        map.insert("tag", tag.as_ref());
+        self.get_api_response([BASE_URL, "/tags/delete"].concat(), map)
             .and_then(|res| {
                 serde_json::from_str::<ApiResult>(&res)
                     .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
@@ -302,6 +336,63 @@ mod tests {
                 .find_root_cause()
                 .to_string()
         );
+    }
+
+    #[test]
+    fn delete_tag_test() {
+        let _ = env_logger::try_init();
+        debug!("delete_tag_test: starting.");
+        let _m1 = start_mockito_server(r#"^/tags/delete.*$"#, 200, r#"{"result":"done"}"#);
+        let api = Api::new(include_str!("api_token.txt"));
+        let r = api.tag_delete("DUMMY");
+        r.expect("Error in deleting a tag.");
+
+        {
+            // Deleting non-existing tag
+            // Pinboard returns OK on this operation!!!
+            let _m2 = start_mockito_server(
+                r"^/tags/delete.+fucking\.way.*$",
+                200,
+                r#"{"result":"done"}"#,
+            );
+            let _ = api
+                .tag_delete("http://no.fucking.way")
+                .expect("pinboard OKs deleting a non-existing tag.");
+        }
+
+        {
+            // Deleting empty string
+            // Pinboard returns OK on this operation!!!
+            let _m2 = start_mockito_server(r"^/tags/delete.*$", 200, r#"{"result":"done"}"#);
+            let _ = api
+                .tag_delete("")
+                .expect("pinboard OKs deleting a non-existing tag.");
+        }
+    }
+
+    #[test]
+    fn rename_tag_test() {
+        let _ = env_logger::try_init();
+        debug!("rename_tag_test: starting");
+        let _m1 = start_mockito_server(r#"^/tags/rename.*$"#, 200, r#"{"result":"done"}"#);
+        let api = Api::new(include_str!("api_token.txt"));
+        let r = api.tag_rename("old_tag", "new_tag");
+        r.expect("Error in renaming a tag.");
+
+        // Pinboard apparently can rename null to a new tag!!!
+        let _ = api
+            .tag_rename("", "iamjesus")
+            .expect("Should be able to breath life into abyss");
+
+        {
+            // renaming to an empty tag
+            let _m2 =
+                start_mockito_server(r#"^/tags/rename.*$"#, 200, r#"{"result":"rename to null"}"#);
+            let r = api
+                .tag_rename("old_tag", "")
+                .expect_err("renaming to empty tag should return error");
+            assert_eq!("rename to null".to_string(), r.as_fail().to_string());
+        }
     }
 
     #[test]

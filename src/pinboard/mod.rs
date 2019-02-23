@@ -112,6 +112,18 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
             .and_then(|res| Ok(last_update < res))
     }
 
+    /// Delete a tag
+    pub fn delete_tag<T: AsRef<str>>(&self, tag: T) -> Result<(), Error> {
+        debug!("delete_tag: starting.");
+        self.api.tag_delete(tag)
+    }
+
+    /// Rename a tag
+    pub fn rename_tag<T: AsRef<str>>(&self, old: T, new: T) -> Result<(), Error> {
+        debug!("rename_tag: starting.");
+        self.api.tag_rename(old, new)
+    }
+
     /// Update local cache
     pub fn update_cache(&mut self) -> Result<(), Error> {
         debug!("update_cache: starting.");

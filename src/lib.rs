@@ -1,5 +1,5 @@
-#![cfg_attr(feature = "dev", feature(plugin))]
-#![cfg_attr(feature = "bench", feature(test))]
+// #![cfg_attr(feature = "dev", feature(plugin))]
+// #![cfg_attr(feature = "bench", feature(test))]
 // #[allow(clippy::string_extend_chars)]
 #[cfg(feature = "bench")]
 extern crate test;
@@ -47,6 +47,7 @@ pub use crate::pinboard::{Pin, PinBuilder, Pinboard, Tag};
 // TODO: Add proper rust formatted documentaiton
 // TODO: make all tests use tempfile for the cache folder?
 // TODO: Use RefCell or Cell to have inner mutability //
+// TODO: What happens if no bookmark or no tags are stored in user's account.
 
 #[cfg(test)]
 mod tests {
