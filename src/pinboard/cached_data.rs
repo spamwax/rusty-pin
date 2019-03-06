@@ -193,7 +193,7 @@ impl<'pin> CachedData<'pin> {
                 Ok(buf)
             })
             .and_then(|data| {
-                debug!(" wrting to cache");
+                debug!(" writing to cache");
                 let mut writer = BufWriter::with_capacity(FILE_BUF_SIZE, f);
                 writer.write_all(&data)?;
                 Ok(())
@@ -222,7 +222,7 @@ impl<'pin> CachedData<'pin> {
             })
             .and_then(|data| {
                 let mut writer = BufWriter::with_capacity(FILE_BUF_SIZE, f);
-                writer.write_all(&data)?; // write_all resturn Result<()>
+                writer.write_all(&data)?;
                 Ok(())
             })?;
 

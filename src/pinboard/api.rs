@@ -38,12 +38,10 @@ impl ApiResult {
     fn ok(self) -> Result<(), Error> {
         if self.result_code == "done" || self.result == "done" {
             Ok(())
+        } else if self.result_code != "" {
+            bail!(self.result_code)
         } else {
-            if self.result_code != "" {
-                bail!(self.result_code)
-            } else {
-                bail!(self.result)
-            }
+            bail!(self.result)
         }
     }
 }
@@ -92,7 +90,7 @@ impl<'api, 'pin> Api<'api> {
 
         let mut v: serde_json::Value = serde_json::from_str(res.as_str())?;
         let v = v.as_array_mut().ok_or_else(|| {
-            ApiError::UnrecognizedResponse("array of bookmakrs expected from server".to_string())
+            ApiError::UnrecognizedResponse("array of bookmarks expected from server".to_string())
         })?;
 
         let v_len = v.len();
