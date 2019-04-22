@@ -158,7 +158,7 @@ impl<'api, 'pin> Api<'api> {
                 serde_json::from_str::<ApiResult>(&res)
                     .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
             })
-            .and_then(|r| r.ok())
+            .and_then(self::ApiResult::ok)
     }
 
     pub fn tag_rename<T: AsRef<str>>(&self, old: T, new: T) -> Result<(), Error> {
@@ -171,7 +171,7 @@ impl<'api, 'pin> Api<'api> {
                 serde_json::from_str::<ApiResult>(&res)
                     .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
             })
-            .and_then(|r| r.ok())
+            .and_then(self::ApiResult::ok)
     }
 
     pub fn tag_delete<T: AsRef<str>>(&self, tag: T) -> Result<(), Error> {
@@ -183,7 +183,7 @@ impl<'api, 'pin> Api<'api> {
                 serde_json::from_str::<ApiResult>(&res)
                     .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
             })
-            .and_then(|r| r.ok())
+            .and_then(self::ApiResult::ok)
     }
 
     pub fn tags_frequency(&self) -> Result<Vec<Tag>, Error> {
@@ -215,7 +215,7 @@ impl<'api, 'pin> Api<'api> {
                 serde_json::from_str(&res)
                     .map_err(|e| From::from(ApiError::UnrecognizedResponse(e.to_string())))
             })
-            .and_then(|r: ApiResult| r.ok())
+            .and_then(self::ApiResult::ok)
     }
 
     pub fn recent_update(&self) -> Result<DateTime<Utc>, Error> {

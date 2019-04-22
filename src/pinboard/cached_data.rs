@@ -179,7 +179,7 @@ impl<'pin> CachedData<'pin> {
                             pin: newpin,
                             tag_list: tags_lowered
                                 .split_whitespace()
-                                .map(|s| s.to_string())
+                                .map(std::string::ToString::to_string)
                                 .collect(),
                         }
                     })
