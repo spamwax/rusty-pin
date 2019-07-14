@@ -20,7 +20,7 @@ const CACHE_BUF_SIZE: usize = 1024;
 #[derive(Debug)]
 pub struct CachedData<'pin> {
     pub pins: Option<Vec<CachedPin<'pin>>>,
-    pub tags: Option<Vec<Tag>>,
+    pub tags: Option<Vec<CachedTag>>,
     pub cache_dir: PathBuf,
     pub tags_cache_file: PathBuf,
     pub pins_cache_file: PathBuf,
@@ -35,6 +35,12 @@ pub struct CachedPin<'pin> {
     pub tag_list: Vec<String>,
     pub title_lowered: String,
     pub extended_lowered: Option<String>
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct CachedTag {
+    pub tag: Tag,
+    pub tag_lowered: String
 }
 
 impl<'pin> CachedData<'pin> {
@@ -209,10 +215,18 @@ impl<'pin> CachedData<'pin> {
                 tags.sort_by(|t1, t2| t1.cmp(&t2).reverse());
                 Ok(tags)
             })
-            .and_then(|tags_tuple| {
+            .and_then(|tags| {
+                Ok(tags.into_iter().map(|tag| {
+                    CachedTag {
+                        tag_lowered: tag.0.to_lowercase(),
+                        tag
+                    }
+                }).collect())
+            })
+            .and_then(|cached_tags: Vec<CachedTag>| {
                 let mut buf: Vec<u8> = Vec::with_capacity(CACHE_BUF_SIZE);
-                tags_tuple.serialize(&mut Serializer::new(&mut buf))?;
-                self.tags = Some(tags_tuple);
+                cached_tags.serialize(&mut Serializer::new(&mut buf))?;
+                self.tags = Some(cached_tags);
                 Ok(buf)
             })
             .and_then(|data| {

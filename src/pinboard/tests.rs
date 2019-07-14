@@ -135,6 +135,32 @@ fn test_search_items() {
 }
 
 #[test]
+fn list_tag_pairs() {
+    use self::tag::TagFreq;
+    let _ = env_logger::try_init();
+    debug!("search_tag_pairs: starting.");
+    let (_m1, _m2) = create_mockito_servers();
+    let mut _home = dirs::home_dir().unwrap();
+    _home.push(".cache");
+    _home.push("mockito-rusty-pin");
+    let cache_path = Some(_home);
+
+    let mut pinboard =
+        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    pinboard.enable_fuzzy_search(false);
+
+    let tp = pinboard.list_tag_pairs();
+    assert!(tp.is_some());
+    assert_eq!(94, tp.as_ref().map(|tp| tp.len()).unwrap());
+    for (idx, freq) in &[(0usize, 10usize), (3, 4), (93, 1)] {
+        match tp.as_ref().unwrap()[*idx].1 {
+            TagFreq::Used(x) => assert_eq!(*freq, x as usize),
+            _ => panic!("Wrong value for tag freq: {:?}", tp.as_ref().unwrap()[*idx].1)
+        }
+    }
+}
+
+#[test]
 fn search_tag_pairs() {
     let _ = env_logger::try_init();
     debug!("search_tag_pairs: starting.");
@@ -899,7 +925,7 @@ fn test_update_cache() {
     debug!(
         "{:?}\n{:?}",
         tags[IDX],
-        pinboard.cached_data.tags.as_ref().unwrap()[IDX]
+        pinboard.cached_data.tags.as_ref().unwrap()[IDX].tag
     );
     assert_eq!(
         tags.len(),

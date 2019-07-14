@@ -131,9 +131,9 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     }
 
     /// Returns list of all Tags (tag, frequency)
-    pub fn list_tag_pairs(&self) -> &Option<Vec<Tag>> {
+    pub fn list_tag_pairs(&self) -> Option<Vec<&Tag>> {
         debug!("list_tag_pairs: starting.");
-        &self.cached_data.tags
+        self.cached_data.tags.as_ref().map(|t| t.iter().map(|d| &d.tag).collect())
     }
 
     /// Returns list of all bookmarks
@@ -234,7 +234,8 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                     .as_ref()
                     .map(|t| {
                         t.iter()
-                            .filter(|item| item.0.to_lowercase().contains(q))
+                            .filter(|item| item.tag_lowered.contains(q))
+                            .map(|ct| &ct.tag)
                             .collect::<Vec<&Tag>>()
                     })
                     .unwrap_or_default()
@@ -253,7 +254,8 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                     .as_ref()
                     .map(|t| {
                         t.iter()
-                            .filter(|item| re.is_match(&item.0))
+                            .filter(|item| re.is_match(&item.tag.0))
+                            .map(|ct| &ct.tag)
                             .collect::<Vec<&Tag>>()
                     })
                     .unwrap_or_default()
