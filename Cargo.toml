@@ -34,3 +34,6 @@ tempfile = "^3.0"
 [features]
 dev = ["clippy"]
 bench = []
+
+[profile.release]
+lto = true

@@ -33,6 +33,8 @@ pub struct CachedData<'pin> {
 pub struct CachedPin<'pin> {
     pub pin: Pin<'pin>,
     pub tag_list: Vec<String>,
+    pub title_lowered: String,
+    pub extended_lowered: Option<String>
 }
 
 impl<'pin> CachedData<'pin> {
@@ -166,21 +168,14 @@ impl<'pin> CachedData<'pin> {
                     .into_iter()
                     .map(|pin| {
                         let tags_lowered = pin.tags.to_lowercase();
-                        let mut pb = PinBuilder::new(pin.url.into(), pin.title.to_lowercase())
-                            .tags(tags_lowered.clone())
-                            .shared(pin.shared)
-                            .toread(pin.toread);
-                        if let Some(extended) = pin.extended {
-                            pb = pb.description(extended.to_lowercase());
-                        }
-                        let mut newpin = pb.into_pin();
-                        newpin.time = pin.time;
                         CachedPin {
-                            pin: newpin,
                             tag_list: tags_lowered
                                 .split_whitespace()
                                 .map(std::string::ToString::to_string)
                                 .collect(),
+                            title_lowered: pin.title.to_lowercase(),
+                            extended_lowered: pin.extended.as_ref().map(|e| e.to_lowercase()),
+                            pin,
                         }
                     })
                     .collect())
@@ -275,7 +270,9 @@ mod tests {
 
         let cached_pin = CachedPin {
             pin,
-            tag_list: vec!["Rust".into(), "macros".into()],
+            tag_list: vec!["rust".into(), "macros".into()],
+            title_lowered: "The Little Book of Rust Macros".to_lowercase(),
+            extended_lowered: Some("WoW!!!".to_lowercase())
         };
 
         let mut buf: Vec<u8> = Vec::new();
@@ -283,7 +280,7 @@ mod tests {
         cached_pin
             .serialize(&mut Serializer::new(&mut buf))
             .expect("impossible");
-        assert_eq!(147, buf.len());
+        assert_eq!(185, buf.len());
 
         let mut de = Deserializer::from_slice(&buf);
         let new_cached: CachedPin =
@@ -302,7 +299,7 @@ mod tests {
             new_cached.pin.time
         );
         assert_eq!(
-            vec![String::from("Rust"), String::from("macros")],
+            vec![String::from("rust"), String::from("macros")],
             new_cached.tag_list
         );
     }

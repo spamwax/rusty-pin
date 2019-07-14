@@ -344,7 +344,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                             q.into_iter().all(|s| {
                                 let query = &s.as_ref().to_lowercase();
                                 search_fields.iter().any(|search_type| match *search_type {
-                                    SearchType::TitleOnly => cached_pin.pin.title.contains(query),
+                                    SearchType::TitleOnly => cached_pin.title_lowered.contains(query),
                                     SearchType::TagOnly => {
                                         cached_pin.tag_list.iter().any(|tag| tag.contains(query))
                                     }
@@ -352,14 +352,14 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                                         cached_pin.pin.url.as_ref().contains(query)
                                     }
                                     SearchType::DescriptionOnly => {
-                                        if let Some(ref extended) = cached_pin.pin.extended {
+                                        if let Some(ref extended) = cached_pin.extended_lowered {
                                             extended.contains(query)
                                         } else {
                                             false
                                         }
                                     }
                                     SearchType::TagTitleOnly => {
-                                        cached_pin.pin.title.contains(query)
+                                        cached_pin.title_lowered.contains(query)
                                             || cached_pin.tag_list.contains(query)
                                     }
                                 })
@@ -399,20 +399,20 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                         .filter(|cached_pin: &&CachedPin| {
                             regex_queries.iter().all(|re| {
                                 search_fields.iter().any(|search_type| match *search_type {
-                                    SearchType::TitleOnly => re.is_match(&cached_pin.pin.title),
+                                    SearchType::TitleOnly => re.is_match(&cached_pin.title_lowered),
                                     SearchType::TagOnly => {
                                         cached_pin.tag_list.iter().any(|t| re.is_match(t))
                                     }
                                     SearchType::UrlOnly => re.is_match(cached_pin.pin.url.as_ref()),
                                     SearchType::DescriptionOnly => {
-                                        if let Some(ref extended) = cached_pin.pin.extended {
+                                        if let Some(ref extended) = cached_pin.extended_lowered {
                                             re.is_match(extended)
                                         } else {
                                             false
                                         }
                                     }
                                     SearchType::TagTitleOnly => {
-                                        re.is_match(&cached_pin.pin.title)
+                                        re.is_match(&cached_pin.title_lowered)
                                             || cached_pin.tag_list.iter().any(|t| re.is_match(t))
                                     }
                                 })

@@ -769,47 +769,68 @@ fn serde_update_cache() {
 
     pinboard.update_cache().expect("Couldn't update the cache");
 
-    let cached_pins = pinboard.list_bookmarks().unwrap();
+    let cached_pins = pinboard.cached_data.pins.unwrap();
     assert_eq!(fresh_pins.len(), cached_pins.len());
 
     for idx in 0..fresh_pins.len() {
         info!("serde_update_cache: Checking pin[{}]", idx);
         let found = cached_pins
             .iter()
-            .find(|&&p| &p.url == &fresh_pins[idx].url);
+            .find(|&p| &p.pin.url == &fresh_pins[idx].url);
         assert!(found.is_some(), "{:?}", fresh_pins[idx]);
         let cached_pin = found.unwrap();
+        // Title
+        assert_eq!(
+            fresh_pins[idx as usize].title,
+            cached_pin.pin.title
+        );
         assert_eq!(
             fresh_pins[idx as usize].title.to_lowercase(),
-            cached_pin.title
+            cached_pin.title_lowered
         );
-        assert_eq!(fresh_pins[idx as usize].url, cached_pin.url);
+        // Url
+        assert_eq!(fresh_pins[idx as usize].url, cached_pin.pin.url);
+        // tags
+        assert_eq!(
+            fresh_pins[idx as usize].tags,
+            cached_pin.pin.tags
+        );
         assert_eq!(
             fresh_pins[idx as usize].tags.to_lowercase(),
-            cached_pin.tags
+            cached_pin.tag_list.join(" ")
         );
+        // shared
         assert_eq!(
             fresh_pins[idx as usize].shared.to_lowercase(),
-            cached_pin.shared
+            cached_pin.pin.shared
         );
+        // toread
         assert_eq!(
             fresh_pins[idx as usize].toread.to_lowercase(),
-            cached_pin.toread
+            cached_pin.pin.toread
         );
-        assert_eq!(fresh_pins[idx as usize].time, cached_pin.time);
+        // time
+        assert_eq!(fresh_pins[idx as usize].time, cached_pin.pin.time);
 
+        // extended
         if fresh_pins[idx as usize].extended.is_some() {
-            assert!(cached_pin.extended.is_some());
+            assert!(cached_pin.pin.extended.is_some());
             assert_eq!(
                 fresh_pins[idx as usize]
                     .extended
                     .as_ref()
-                    .unwrap()
-                    .to_lowercase(),
-                cached_pin.extended.as_ref().unwrap().as_ref()
+                    .unwrap(),
+                cached_pin.pin.extended.as_ref().unwrap().as_ref()
             );
+            assert_eq!(
+                fresh_pins[idx as usize]
+                    .extended
+                    .as_ref()
+                    .unwrap().to_lowercase(),
+                cached_pin.extended_lowered.as_ref().unwrap().as_ref()
+            )
         } else {
-            assert!(cached_pin.extended.is_none());
+            assert!(cached_pin.pin.extended.is_none());
         }
     }
 }

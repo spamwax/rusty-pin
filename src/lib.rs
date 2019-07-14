@@ -1,6 +1,5 @@
 #![cfg_attr(feature = "bench", feature(test))]
 // #![cfg_attr(feature = "dev", feature(plugin))]
-// #![cfg_attr(feature = "bench", feature(test))]
 // #[allow(clippy::string_extend_chars)]
 #[cfg(feature = "bench")]
 extern crate test;
