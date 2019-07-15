@@ -1,16 +1,9 @@
-# This script takes care of testing your crate
+# This script takes care of building & testing your crate
 
 set -ex
 
 # TODO This is the "test phase", tweak it as you see fit
-main() {
-
-    if [ ! -z "$DISABLE_TESTS" ]; then
-        cross build --target "$TARGET"
-        return
-    fi
-
-    # cross test --target $TARGET
+tests() {
     mkdir -p ~/.cache/mockito-rusty-pin
     export RUST_LOG=rusty_pin=debug
     case "$TARGET" in
@@ -18,9 +11,19 @@ main() {
             cargo test --target "$TARGET" -- --nocapture --test-threads=1
             ;;
         *)
-            cross test --target "$TARGET" -- --nocapture --test-threads=1
+            cargo test --target "$TARGET" -- --nocapture --test-threads=1
     esac
 }
+
+main() {
+    if [ -n "$DISABLE_TESTS" ] || [ -z "$CIRCLECI_TEST" ]; then
+        cargo build --target "$TARGET"
+        return
+    else
+        tests
+    fi
+}
+
 
 main
 

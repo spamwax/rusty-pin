@@ -22,6 +22,7 @@ const BASE_URL: &str = "https://api.pinboard.in/v1";
 #[cfg(test)]
 use mockito;
 #[cfg(test)]
+#[allow(deprecated)]
 const BASE_URL: &str = mockito::SERVER_URL;
 
 /// Struct to hold stringify results Pinboard API returns.
@@ -101,9 +102,13 @@ impl<'api, 'pin> Api<'api> {
             .filter(|p: &Pin| Url::parse(&p.url).is_ok())
             .collect();
         if pins.len() != v_len {
-            info!("couldn't parse {} bookmarks", v_len - pins.len());
+            info!(
+                "couldn't parse {} bookmarks (out of {})",
+                v_len - pins.len(),
+                v_len
+            );
         } else {
-            info!("parsed all bookmarks");
+            info!("parsed all bookmarks. total: {}", pins.len());
         }
 
         Ok(pins)
@@ -186,22 +191,29 @@ impl<'api, 'pin> Api<'api> {
             .and_then(self::ApiResult::ok)
     }
 
+    /// Gets all tags with their usage frequency.
     pub fn tags_frequency(&self) -> Result<Vec<Tag>, Error> {
+        // Pinboard API returns jsonn array when user has no tags, otherwise it returns an
+        // object/map of tag:frequency!
         debug!("tags_frequency: starting.");
-        self.get_api_response([BASE_URL, "/tags/get"].concat().as_str(), HashMap::new())
-            .and_then(|res| {
-                serde_json::from_str(&res)
-                    .map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
-            })
-            .and_then(|res: HashMap<String, String>| {
-                Ok(res
-                    .into_iter()
-                    .map(|(k, v)| {
-                        let freq = v.parse::<usize>().unwrap_or_default();
-                        Tag::new(k, freq)
-                    })
-                    .collect())
-            })
+        let res =
+            self.get_api_response([BASE_URL, "/tags/get"].concat().as_str(), HashMap::new())?;
+        let raw_tags = serde_json::from_str::<HashMap<String, String>>(&res);
+        match raw_tags {
+            Ok(res) => Ok(res
+                .into_iter()
+                .map(|(k, v)| {
+                    let freq = v.parse::<usize>().unwrap_or_default();
+                    Tag::new(k, freq)
+                })
+                .collect()),
+            Err(_) => {
+                debug!("  trying to decode non-object empty tag list");
+                let raw_tags = serde_json::from_str::<Vec<HashMap<String, String>>>(&res)?;
+                assert!(raw_tags.is_empty());
+                Ok(vec![])
+            }
+        }
     }
 
     pub fn delete<T: AsRef<str>>(&self, url: T) -> Result<(), Error> {
@@ -266,16 +278,15 @@ impl<'api, 'pin> Api<'api> {
         let client = reqwest::Client::new();
         let r = client.get(api_url).send();
 
-        use std::error::Error as StdError;
         let mut resp = r.map_err(|e| {
             use std::io;
             let io_fail = e.get_ref().and_then(|k| k.downcast_ref::<io::Error>());
             if let Some(f) = io_fail {
-                let m: String = f.description().into();
+                let m: String = f.to_string();
                 debug!(" ERR: {:#?}", m);
                 err_msg(m)
             } else {
-                ApiError::Network(format!("Network request error: {:?}", e.description())).into()
+                ApiError::Network(format!("Network request error: {:?}", e.to_string())).into()
             }
         })?;
         debug!(" resp is ok (no error)");
@@ -284,9 +295,12 @@ impl<'api, 'pin> Api<'api> {
             let mut content = String::with_capacity(2 * 1024);
             let _bytes_read = resp.read_to_string(&mut content)?;
             debug!(" string from resp ok");
+            debug!("   {:?}", content.chars().take(10).collect::<Vec<char>>());
             Ok(content)
         } else {
             debug!("  response status indicates error");
+            debug!("    {:?}", resp.status().as_str());
+            debug!("    {:?}", resp.status().canonical_reason(),);
             let e = ApiError::ServerError(
                 resp.status()
                     .canonical_reason()
@@ -306,6 +320,7 @@ mod tests {
     use std::path::PathBuf;
 
     use crate::pinboard::mockito_helper::start_mockito_server;
+    use crate::pinboard::mockito_helper::MockBodyGenerate;
     use crate::pinboard::pin::PinBuilder;
 
     const TEST_URL: &str = "https://githuуй.com/Здравствуйт?q=13#fragment";
@@ -483,14 +498,34 @@ mod tests {
 
     #[test]
     fn test_tag_freq() {
-        use crate::pinboard::mockito_helper::MockBodyGenerate;
         let _ = env_logger::try_init();
         debug!("test_tag_freq: starting.");
         let _m1 = PathBuf::from("tests/all_tags_mockito.json")
             .create_mockito_server(r"^/tags/get.*$", 200);
         let api = Api::new(include_str!("api_token.txt"));
         let res = api.tags_frequency();
-        let _r = res.unwrap_or_else(|e| panic!("{:?}", e));
+        let r = res.unwrap_or_else(|e| panic!("{:?}", e));
+        assert_eq!(94, r.len());
+    }
+
+    #[test]
+    fn test_tag_freq_empty() {
+        let _ = env_logger::try_init();
+        debug!("test_tag_freq_empty: starting.");
+        {
+            let _m1 = "[]".create_mockito_server(r"^/tags/get.*$", 201);
+            let api = Api::new(include_str!("api_token.txt"));
+            let res = api.tags_frequency();
+            let r = res.unwrap_or_else(|e| panic!("{:?}", e));
+            assert!(r.is_empty());
+        }
+        {
+            let _m1 = "{}".create_mockito_server(r"^/tags/get.*$", 201);
+            let api = Api::new(include_str!("api_token.txt"));
+            let res = api.tags_frequency();
+            let r = res.unwrap_or_else(|e| panic!("{:?}", e));
+            assert!(r.is_empty());
+        }
     }
 
     #[test]
@@ -506,5 +541,18 @@ mod tests {
         let res = api.all_pins();
 
         assert_eq!(57, res.unwrap_or_else(|e| panic!("{:?}", e)).len());
+    }
+
+    #[test]
+    fn test_all_pins_empty() {
+        let _ = env_logger::try_init();
+        debug!("test_all_pins: starting.");
+        {
+            let _m1 = "[]".create_mockito_server(r"^/posts/all.*$", 200);
+            let api = Api::new(include_str!("api_token.txt"));
+            let res = api.all_pins();
+
+            assert_eq!(0, res.unwrap_or_else(|e| panic!("{:?}", e)).len());
+        }
     }
 }

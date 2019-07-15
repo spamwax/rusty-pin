@@ -28,7 +28,7 @@ dirs = "1.0"
 clippy = { version = "*", optional = true }
 
 [dev-dependencies]
-mockito = "0.9"
+mockito = "0.23"
 tempfile = "^3.0"
 
 [features]

@@ -133,7 +133,10 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     /// Returns list of all Tags (tag, frequency)
     pub fn list_tag_pairs(&self) -> Option<Vec<&Tag>> {
         debug!("list_tag_pairs: starting.");
-        self.cached_data.tags.as_ref().map(|t| t.iter().map(|d| &d.tag).collect())
+        self.cached_data
+            .tags
+            .as_ref()
+            .map(|t| t.iter().map(|d| &d.tag).collect())
     }
 
     /// Returns list of all bookmarks
@@ -346,7 +349,9 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                             q.into_iter().all(|s| {
                                 let query = &s.as_ref().to_lowercase();
                                 search_fields.iter().any(|search_type| match *search_type {
-                                    SearchType::TitleOnly => cached_pin.title_lowered.contains(query),
+                                    SearchType::TitleOnly => {
+                                        cached_pin.title_lowered.contains(query)
+                                    }
                                     SearchType::TagOnly => {
                                         cached_pin.tag_list.iter().any(|tag| tag.contains(query))
                                     }

@@ -34,13 +34,13 @@ pub struct CachedPin<'pin> {
     pub pin: Pin<'pin>,
     pub tag_list: Vec<String>,
     pub title_lowered: String,
-    pub extended_lowered: Option<String>
+    pub extended_lowered: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct CachedTag {
     pub tag: Tag,
-    pub tag_lowered: String
+    pub tag_lowered: String,
 }
 
 impl<'pin> CachedData<'pin> {
@@ -212,24 +212,29 @@ impl<'pin> CachedData<'pin> {
         // Sort tags by frequency before writing
         api.tags_frequency()
             .and_then(|mut tags| {
+                debug!("  sorting tags");
                 tags.sort_by(|t1, t2| t1.cmp(&t2).reverse());
                 Ok(tags)
             })
             .and_then(|tags| {
-                Ok(tags.into_iter().map(|tag| {
-                    CachedTag {
+                debug!("  lowercasing tags");
+                Ok(tags
+                    .into_iter()
+                    .map(|tag| CachedTag {
                         tag_lowered: tag.0.to_lowercase(),
-                        tag
-                    }
-                }).collect())
+                        tag,
+                    })
+                    .collect())
             })
             .and_then(|cached_tags: Vec<CachedTag>| {
+                debug!("  serializing tags");
                 let mut buf: Vec<u8> = Vec::with_capacity(CACHE_BUF_SIZE);
                 cached_tags.serialize(&mut Serializer::new(&mut buf))?;
                 self.tags = Some(cached_tags);
                 Ok(buf)
             })
             .and_then(|data| {
+                debug!("  writing to cache");
                 let mut writer = BufWriter::with_capacity(FILE_BUF_SIZE, f);
                 writer.write_all(&data)?;
                 Ok(())
@@ -286,7 +291,7 @@ mod tests {
             pin,
             tag_list: vec!["rust".into(), "macros".into()],
             title_lowered: "The Little Book of Rust Macros".to_lowercase(),
-            extended_lowered: Some("WoW!!!".to_lowercase())
+            extended_lowered: Some("WoW!!!".to_lowercase()),
         };
 
         let mut buf: Vec<u8> = Vec::new();
@@ -317,5 +322,4 @@ mod tests {
             new_cached.tag_list
         );
     }
-
 }

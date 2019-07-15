@@ -155,7 +155,10 @@ fn list_tag_pairs() {
     for (idx, freq) in &[(0usize, 10usize), (3, 4), (93, 1)] {
         match tp.as_ref().unwrap()[*idx].1 {
             TagFreq::Used(x) => assert_eq!(*freq, x as usize),
-            _ => panic!("Wrong value for tag freq: {:?}", tp.as_ref().unwrap()[*idx].1)
+            _ => panic!(
+                "Wrong value for tag freq: {:?}",
+                tp.as_ref().unwrap()[*idx].1
+            ),
         }
     }
 }
@@ -806,10 +809,7 @@ fn serde_update_cache() {
         assert!(found.is_some(), "{:?}", fresh_pins[idx]);
         let cached_pin = found.unwrap();
         // Title
-        assert_eq!(
-            fresh_pins[idx as usize].title,
-            cached_pin.pin.title
-        );
+        assert_eq!(fresh_pins[idx as usize].title, cached_pin.pin.title);
         assert_eq!(
             fresh_pins[idx as usize].title.to_lowercase(),
             cached_pin.title_lowered
@@ -817,10 +817,7 @@ fn serde_update_cache() {
         // Url
         assert_eq!(fresh_pins[idx as usize].url, cached_pin.pin.url);
         // tags
-        assert_eq!(
-            fresh_pins[idx as usize].tags,
-            cached_pin.pin.tags
-        );
+        assert_eq!(fresh_pins[idx as usize].tags, cached_pin.pin.tags);
         assert_eq!(
             fresh_pins[idx as usize].tags.to_lowercase(),
             cached_pin.tag_list.join(" ")
@@ -842,17 +839,15 @@ fn serde_update_cache() {
         if fresh_pins[idx as usize].extended.is_some() {
             assert!(cached_pin.pin.extended.is_some());
             assert_eq!(
-                fresh_pins[idx as usize]
-                    .extended
-                    .as_ref()
-                    .unwrap(),
+                fresh_pins[idx as usize].extended.as_ref().unwrap(),
                 cached_pin.pin.extended.as_ref().unwrap().as_ref()
             );
             assert_eq!(
                 fresh_pins[idx as usize]
                     .extended
                     .as_ref()
-                    .unwrap().to_lowercase(),
+                    .unwrap()
+                    .to_lowercase(),
                 cached_pin.extended_lowered.as_ref().unwrap().as_ref()
             )
         } else {

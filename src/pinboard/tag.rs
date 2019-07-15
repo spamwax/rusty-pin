@@ -79,6 +79,15 @@ mod tests {
     }
 
     #[test]
+    fn tag_unicdo_test() {
+        let t1 = Tag::new("tag👻1".to_string(), 1);
+        let t2 = Tag::new("tag👻2".to_string(), 1);
+        assert!(t1 != t2);
+        let t3 = Tag::new("TaG👻2".to_string(), 1);
+        assert!(t2 == t3);
+    }
+
+    #[test]
     fn it_sorts_tagfreq() {
         let t1 = TagFreq::Used(1);
         let t2 = TagFreq::Used(2);
@@ -106,5 +115,4 @@ mod tests {
             assert!(t1 != t2);
         }
     }
-
 }
