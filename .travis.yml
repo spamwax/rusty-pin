@@ -20,7 +20,7 @@ matrix:
     - env: TARGET=x86_64-linux-android
 
     # iOS
-    - env: TARGET=armv7-apple-ios DISABLE_TESTS=1
+    - env: TARGET=armv7-apple-ios
       os: osx
 
     # Linux
@@ -36,7 +36,7 @@ matrix:
 
     # *BSD
     - env: TARGET=i686-unknown-freebsd DISABLE_TESTS=1
-    - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
+    - env: TARGET=x86_64-unknown-freebsd
 
     # Windows
     # - env: TARGET=x86_64-pc-windows-gnu DISABLE_TESTS=1
