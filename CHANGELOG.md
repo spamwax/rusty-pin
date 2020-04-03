@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Changes before release points will be listed here
 
+## [0.5.2] - 2020-04-05
+### Added
+- Implement Debug for SearchType
+
 ## [0.5.1] - 2020-04-03
 ### Fixed
 - User with empty tags don't get an empty vector (Fix spamwax/alfred-pinboard-rs#46)

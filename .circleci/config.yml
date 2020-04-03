@@ -39,8 +39,19 @@ jobs:
     environment:
       RUST_BACKTRACE: 1
       TARGET: x86_64-apple-darwin
+      CIRCLECI_TEST: true # change to false to disable tests
     steps:
       - checkout
+      - run:
+          name: Install Rust
+          command: |
+            sudo mkdir /opt
+            curl https://sh.rustup.rs -sSf | sh -s -- -y # --default-toolchain << parameters.rust >>
+            sudo ln -s ~/.cargo/bin/* /usr/local/bin
+      - run:
+          name: Rust Version
+          command: rustc --version; cargo --version; rustup --version
+
       - run:
           name: Build
           command: ci/script.sh

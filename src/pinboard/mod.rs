@@ -156,6 +156,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     }
 }
 
+#[derive(Debug)]
 pub enum SearchType {
     TitleOnly,
     TagOnly,
