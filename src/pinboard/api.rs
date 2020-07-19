@@ -198,12 +198,11 @@ impl<'api, 'pin> Api<'api> {
         debug!("tags_frequency: starting.");
         let res =
             self.get_api_response([BASE_URL, "/tags/get"].concat().as_str(), HashMap::new())?;
-        let raw_tags = serde_json::from_str::<HashMap<String, String>>(&res);
+        let raw_tags = serde_json::from_str::<HashMap<String, usize>>(&res);
         match raw_tags {
             Ok(res) => Ok(res
                 .into_iter()
-                .map(|(k, v)| {
-                    let freq = v.parse::<usize>().unwrap_or_default();
+                .map(|(k, freq)| {
                     Tag::new(k, freq)
                 })
                 .collect()),
