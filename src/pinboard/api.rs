@@ -198,21 +198,41 @@ impl<'api, 'pin> Api<'api> {
         debug!("tags_frequency: starting.");
         let res =
             self.get_api_response([BASE_URL, "/tags/get"].concat().as_str(), HashMap::new())?;
-        let raw_tags = serde_json::from_str::<HashMap<String, usize>>(&res);
-        match raw_tags {
-            Ok(res) => Ok(res
-                .into_iter()
-                .map(|(k, freq)| {
-                    Tag::new(k, freq)
-                })
-                .collect()),
-            Err(_) => {
-                debug!("  trying to decode non-object empty tag list");
-                let raw_tags = serde_json::from_str::<Vec<HashMap<String, String>>>(&res)?;
-                assert!(raw_tags.is_empty());
-                Ok(vec![])
-            }
+        // Assuming pinboard is returing String:number style for tag frequency
+        let tag_freq = serde_json::from_str::<HashMap<String, usize>>(&res)
+            .and_then(|tagmap| {
+                Ok(tagmap
+                    .into_iter()
+                    .map(|(tag, freq)| Tag::new(tag, freq))
+                    .collect())
+            })
+            .map_err(|e| e.into());
+        if tag_freq.is_ok() {
+            return tag_freq;
         }
+        // Assuming pinboard has returned String:String style for tag frequency since last try didn't work
+        let tag_freq = serde_json::from_str::<HashMap<String, String>>(&res)
+            .and_then(|tagmap| {
+                Ok(tagmap
+                    .into_iter()
+                    .map(|(k, v)| {
+                        let freq = v.parse::<usize>().unwrap_or_default();
+                        Tag::new(k, freq)
+                    })
+                    .collect())
+            })
+            .map_err(|e| e.into());
+        if tag_freq.is_ok() {
+            return tag_freq;
+        }
+        // If we are here, it most likely means that user's tag list is empty and pinboard is returning
+        // an empty vector instead of an object
+        debug!("   couldn't get a tag2freq map");
+        debug!("   {:?}", tag_freq);
+        debug!("  trying to decode non-object empty tag list");
+        let raw_tags = serde_json::from_str::<Vec<HashMap<String, String>>>(&res)?;
+        assert!(raw_tags.is_empty());
+        Ok(vec![])
     }
 
     pub fn delete<T: AsRef<str>>(&self, url: T) -> Result<(), Error> {
@@ -295,6 +315,7 @@ impl<'api, 'pin> Api<'api> {
             let _bytes_read = resp.read_to_string(&mut content)?;
             debug!(" string from resp ok");
             debug!("   {:?}", content.chars().take(10).collect::<Vec<char>>());
+            debug!(" returning from get_api_response");
             Ok(content)
         } else {
             debug!("  response status indicates error");
@@ -496,7 +517,7 @@ mod tests {
     }
 
     #[test]
-    fn test_tag_freq() {
+    fn test_tag_freq_str2str() {
         let _ = env_logger::try_init();
         debug!("test_tag_freq: starting.");
         let _m1 = PathBuf::from("tests/all_tags_mockito.json")
@@ -504,6 +525,27 @@ mod tests {
         let api = Api::new(include_str!("api_token.txt"));
         let res = api.tags_frequency();
         let r = res.unwrap_or_else(|e| panic!("{:?}", e));
+        assert_eq!(94, r.len());
+    }
+
+    #[test]
+    fn test_tag_freq_str2int() {
+        use pinboard::tag;
+        let _ = env_logger::try_init();
+        debug!("test_tag_freq: starting.");
+        let _m1 = PathBuf::from("tests/all_tags_mockito2.json")
+            .create_mockito_server(r"^/tags/get.*$", 200);
+        let api = Api::new(include_str!("api_token.txt"));
+        let res = api.tags_frequency();
+        let r = res.unwrap_or_else(|e| panic!("{:?}", e));
+        if let Some(tag) = r.iter().find(|&t| t.0 == "آموزشی") {
+            match tag.1 {
+                tag::TagFreq::Used(5) => {}
+                _ => panic!("Expecetd tag freuqency of 5, got {:?}", tag.1),
+            }
+        } else {
+            panic!("Can't find a specific tag in mock list of tag frequencies");
+        }
         assert_eq!(94, r.len());
     }
 
