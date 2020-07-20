@@ -199,6 +199,7 @@ impl<'api, 'pin> Api<'api> {
         let res =
             self.get_api_response([BASE_URL, "/tags/get"].concat().as_str(), HashMap::new())?;
         // Assuming pinboard is returing String:number style for tag frequency
+        debug!("  trying string:usize map");
         let tag_freq = serde_json::from_str::<HashMap<String, usize>>(&res)
             .and_then(|tagmap| {
                 Ok(tagmap
@@ -211,6 +212,7 @@ impl<'api, 'pin> Api<'api> {
             return tag_freq;
         }
         // Assuming pinboard has returned String:String style for tag frequency since last try didn't work
+        debug!("  trying string:string map");
         let tag_freq = serde_json::from_str::<HashMap<String, String>>(&res)
             .and_then(|tagmap| {
                 Ok(tagmap
@@ -314,7 +316,7 @@ impl<'api, 'pin> Api<'api> {
             let mut content = String::with_capacity(2 * 1024);
             let _bytes_read = resp.read_to_string(&mut content)?;
             debug!(" string from resp ok");
-            debug!("   {:?}", content.chars().take(10).collect::<Vec<char>>());
+            debug!("   {:?}", content.chars().take(15).collect::<Vec<char>>());
             debug!(" returning from get_api_response");
             Ok(content)
         } else {
