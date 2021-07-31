@@ -144,12 +144,9 @@ mod tests {
     fn pin_builder_test() {
         let _ = env_logger::try_init();
         debug!("test_builder: starting");
-        let p = PinBuilder::new(
-            "https://githuуй.com/Здравствуйт?q=13#fragment",
-            "title",
-        )
-        .tags("tag1 tag2")
-        .into_pin();
+        let p = PinBuilder::new("https://githuуй.com/Здравствуйт?q=13#fragment", "title")
+            .tags("tag1 tag2")
+            .into_pin();
         assert_eq!(p.title, "title");
         assert_eq!(
             &p.url,
@@ -198,7 +195,9 @@ mod tests {
 
         {
             // non-fuzzy search
-            let pins = pinboard.search_items("rust").unwrap_or_else(|e| panic!(e));
+            let pins = pinboard
+                .search_items("rust")
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
         }
 
@@ -208,14 +207,14 @@ mod tests {
             pinboard.enable_tag_only_search(false);
             let pins = pinboard
                 .search_items(r#"openstm"#)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
         }
 
         {
             let pins = pinboard
                 .search_items("non-existence-pin")
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_none());
         }
 
@@ -223,7 +222,7 @@ mod tests {
             // non-fuzzy search
             let pins = pinboard
                 .search_items("failure - Cargo: packages for Rust")
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
             let pins = pins.unwrap();
             assert_eq!(pins.len(), 1);
@@ -235,7 +234,7 @@ mod tests {
             pinboard.enable_fuzzy_search(true);
             let pins = pinboard
                 .search_items("failurecargopackage") // "failure cargo package"
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
             let pins = pins.unwrap();
             assert_eq!(pins.len(), 1);
