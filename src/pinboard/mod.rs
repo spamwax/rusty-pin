@@ -2,7 +2,8 @@ use std::borrow::Cow;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 
-use crate::rmps::Serializer;
+use rmps::{Deserializer, Serializer};
+use serde::{Deserialize, Serialize};
 // use rmps::{Deserializer, Serializer};
 // use serde::Deserialize;
 
@@ -107,9 +108,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
 
     pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, Error> {
         debug!("is_cache_outdated: starting.");
-        self.api
-            .recent_update()
-            .and_then(|res| Ok(last_update < res))
+        self.api.recent_update().map(|res| last_update < res)
     }
 
     /// Delete a tag

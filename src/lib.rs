@@ -182,7 +182,6 @@ mod tests {
                         .expect("Couldn't deserialize lots of pins");
             })
         }
-
     } /* rmp_serde */
 
     mod json_serde {
@@ -302,5 +301,4 @@ mod tests {
             .expect("couldn't create tempdir")
             .into_path()
     }
-
 }

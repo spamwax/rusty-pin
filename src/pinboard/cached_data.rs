@@ -54,15 +54,13 @@ impl<'pin> CachedData<'pin> {
             dir
         });
         debug!("  cached_dir: {:?}", cached_dir);
-        let mut data = CachedData::create_cache_dir(cached_dir).and_then(|c_path| {
-            Ok(CachedData {
-                pins: None,
-                tags: None,
-                tags_cache_file: c_path.join(TAGS_CACHE_FN),
-                pins_cache_file: c_path.join(PINS_CACHE_FN),
-                cache_dir: c_path,
-                cache_files_valid: false,
-            })
+        let mut data = CachedData::create_cache_dir(cached_dir).map(|c_path| CachedData {
+            pins: None,
+            tags: None,
+            tags_cache_file: c_path.join(TAGS_CACHE_FN),
+            pins_cache_file: c_path.join(PINS_CACHE_FN),
+            cache_dir: c_path,
+            cache_files_valid: false,
         })?;
 
         if data.load_cache_data_from_file().is_err() {
@@ -83,15 +81,13 @@ impl<'pin> CachedData<'pin> {
             dir
         });
         debug!("  cached_dir: {:?}", cached_dir);
-        let data = CachedData::create_cache_dir(cached_dir).and_then(|c_path| {
-            Ok(CachedData {
-                pins: None,
-                tags: None,
-                tags_cache_file: c_path.join(TAGS_CACHE_FN),
-                pins_cache_file: c_path.join(PINS_CACHE_FN),
-                cache_dir: c_path,
-                cache_files_valid: false,
-            })
+        let data = CachedData::create_cache_dir(cached_dir).map(|c_path| CachedData {
+            pins: None,
+            tags: None,
+            tags_cache_file: c_path.join(TAGS_CACHE_FN),
+            pins_cache_file: c_path.join(PINS_CACHE_FN),
+            cache_dir: c_path,
+            cache_files_valid: false,
         })?;
         Ok(data)
     }
@@ -162,16 +158,15 @@ impl<'pin> CachedData<'pin> {
 
         // Sort pins in descending creation time order
         api.all_pins()
-            .and_then(|mut pins| {
+            .map(|mut pins| {
                 debug!(" sorting pins");
                 pins.sort_by(|pin1, pin2| pin1.time().cmp(&pin2.time()).reverse());
-                Ok(pins)
+                pins
             })
-            .and_then(|pins: Vec<Pin>| {
+            .map(|pins: Vec<Pin>| {
                 // Lower case all fields of each pin
                 debug!(" lowercasing fields");
-                Ok(pins
-                    .into_iter()
+                pins.into_iter()
                     .map(|pin| {
                         let tags_lowered = pin.tags.to_lowercase();
                         CachedPin {
@@ -184,7 +179,7 @@ impl<'pin> CachedData<'pin> {
                             pin,
                         }
                     })
-                    .collect())
+                    .collect()
             })
             .and_then(|pins: Vec<CachedPin>| {
                 debug!(" serializing pins");
@@ -211,20 +206,19 @@ impl<'pin> CachedData<'pin> {
 
         // Sort tags by frequency before writing
         api.tags_frequency()
-            .and_then(|mut tags| {
+            .map(|mut tags| {
                 debug!("  sorting tags");
-                tags.sort_by(|t1, t2| t1.cmp(&t2).reverse());
-                Ok(tags)
+                tags.sort_by(|t1, t2| t1.cmp(t2).reverse());
+                tags
             })
-            .and_then(|tags| {
+            .map(|tags| {
                 debug!("  lowercasing tags");
-                Ok(tags
-                    .into_iter()
+                tags.into_iter()
                     .map(|tag| CachedTag {
                         tag_lowered: tag.0.to_lowercase(),
                         tag,
                     })
-                    .collect())
+                    .collect()
             })
             .and_then(|cached_tags: Vec<CachedTag>| {
                 debug!("  serializing tags");
@@ -249,7 +243,7 @@ impl<'pin> CachedData<'pin> {
     }
 
     #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
-    fn fix_cache_file_perm(&self, p: &PathBuf) {
+    fn fix_cache_file_perm(&self, p: &Path) {
         debug!("fix_cache_file_perm: starting");
         // TODO: don't just unwrap, return a proper error.
         use std::fs::set_permissions;

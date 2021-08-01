@@ -16,6 +16,9 @@ use failure::{err_msg, Error};
 use super::pin::Pin;
 use super::tag::Tag;
 
+use rmps::{Deserializer, Serializer};
+use serde::{Deserialize, Serialize};
+
 #[cfg(not(test))]
 const BASE_URL: &str = "https://api.pinboard.in/v1";
 
@@ -39,7 +42,7 @@ impl ApiResult {
     fn ok(self) -> Result<(), Error> {
         if self.result_code == "done" || self.result == "done" {
             Ok(())
-        } else if self.result_code != "" {
+        } else if !self.result_code.is_empty() {
             bail!(self.result_code)
         } else {
             bail!(self.result)
@@ -193,7 +196,7 @@ impl<'api, 'pin> Api<'api> {
 
     /// Gets all tags with their usage frequency.
     pub fn tags_frequency(&self) -> Result<Vec<Tag>, Error> {
-        // Pinboard API returns jsonn array when user has no tags, otherwise it returns an
+        // Pinboard API returns json narray when user has no tags, otherwise it returns an
         // object/map of tag:frequency!
         debug!("tags_frequency: starting.");
         let res =
@@ -201,11 +204,11 @@ impl<'api, 'pin> Api<'api> {
         // Assuming pinboard is returing String:number style for tag frequency
         debug!("  trying string:usize map");
         let tag_freq = serde_json::from_str::<HashMap<String, usize>>(&res)
-            .and_then(|tagmap| {
-                Ok(tagmap
+            .map(|tagmap| {
+                tagmap
                     .into_iter()
                     .map(|(tag, freq)| Tag::new(tag, freq))
-                    .collect())
+                    .collect()
             })
             .map_err(|e| e.into());
         if tag_freq.is_ok() {
@@ -214,14 +217,14 @@ impl<'api, 'pin> Api<'api> {
         // Assuming pinboard has returned String:String style for tag frequency since last try didn't work
         debug!("  trying string:string map");
         let tag_freq = serde_json::from_str::<HashMap<String, String>>(&res)
-            .and_then(|tagmap| {
-                Ok(tagmap
+            .map(|tagmap| {
+                tagmap
                     .into_iter()
                     .map(|(k, v)| {
                         let freq = v.parse::<usize>().unwrap_or_default();
                         Tag::new(k, freq)
                     })
-                    .collect())
+                    .collect()
             })
             .map_err(|e| e.into());
         if tag_freq.is_ok() {
@@ -260,7 +263,7 @@ impl<'api, 'pin> Api<'api> {
         .and_then(|res| {
             serde_json::from_str(&res).map_err(|e| From::from(ApiError::SerdeError(e.to_string())))
         })
-        .and_then(|date: UpdateTime| Ok(date.datetime))
+        .map(|date: UpdateTime| date.datetime)
     }
 
     fn add_auth_token<T: AsRef<str>>(&self, url: T) -> Url {
