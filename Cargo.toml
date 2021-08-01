@@ -5,8 +5,10 @@ authors = ["Hamid Ghadyani <hamid@hamid.cc>"]
 description = """
 Pinboard's API in pure Rust
 """
+edition = "2018"
 
 [dependencies]
+lazy_static = "1.4.0"
 url = "1.7"
 chrono = { version = "0.4", features = ["serde"] }
 reqwest = "0.9"
@@ -17,7 +19,8 @@ serde_json = "1.0"
 url_serde = "0.2.0"
 rmp-serde = "0.15"
 
-regex = "1.5.2"
+# regex = "1.5.2"
+fuzzy-matcher = "0.3.7"
 
 failure = "0.1"
 failure_derive = "0.1"

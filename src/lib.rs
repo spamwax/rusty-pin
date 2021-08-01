@@ -1,6 +1,7 @@
 #![cfg_attr(feature = "bench", feature(test))]
 // #![cfg_attr(feature = "dev", feature(plugin))]
 // #[allow(clippy::string_extend_chars)]
+
 #[cfg(feature = "bench")]
 extern crate test;
 
@@ -12,7 +13,7 @@ extern crate mockito;
 #[cfg(test)]
 extern crate tempfile;
 
-extern crate regex;
+// extern crate regex;
 extern crate rmp_serde as rmps;
 #[macro_use]
 extern crate serde_derive;
@@ -178,7 +179,7 @@ mod tests {
             let bytes = include_bytes!("../tests/test_rmp_serde-vec.bin");
             b.iter(|| {
                 let _pins: Vec<Pin> =
-                    Deserialize::deserialize(&mut Deserializer::from_slice(bytes))
+                    Deserialize::deserialize(&mut Deserializer::from_read_ref(bytes))
                         .expect("Couldn't deserialize lots of pins");
             })
         }

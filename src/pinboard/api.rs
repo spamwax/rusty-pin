@@ -16,7 +16,6 @@ use failure::{err_msg, Error};
 use super::pin::Pin;
 use super::tag::Tag;
 
-use rmps::{Deserializer, Serializer};
 use serde::{Deserialize, Serialize};
 
 #[cfg(not(test))]
@@ -347,6 +346,7 @@ mod tests {
     use crate::pinboard::mockito_helper::start_mockito_server;
     use crate::pinboard::mockito_helper::MockBodyGenerate;
     use crate::pinboard::pin::PinBuilder;
+    use crate::pinboard::tag;
 
     const TEST_URL: &str = "https://githuуй.com/Здравствуйт?q=13#fragment";
     #[test]
@@ -535,7 +535,6 @@ mod tests {
 
     #[test]
     fn test_tag_freq_str2int() {
-        use pinboard::tag;
         let _ = env_logger::try_init();
         debug!("test_tag_freq: starting.");
         let _m1 = PathBuf::from("tests/all_tags_mockito2.json")

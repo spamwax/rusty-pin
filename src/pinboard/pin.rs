@@ -3,7 +3,7 @@ use std::borrow::Cow;
 
 use chrono::prelude::*;
 
-use regex::Regex;
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Pin<'pin> {
@@ -35,34 +35,34 @@ impl<'pin> Pin<'pin> {
             }
     }
 
-    pub fn title_contains(&self, q: &str, re: Option<&Regex>) -> bool {
-        if let Some(re) = re {
-            re.is_match(&self.title)
+    pub fn title_contains(&self, q: &str, matcher: Option<&SkimMatcherV2>) -> bool {
+        if let Some(matcher) = matcher {
+            matcher.fuzzy_match(&self.title, q).is_some()
         } else {
             self.title.to_lowercase().contains(q)
         }
     }
 
-    pub fn tag_contains(&self, q: &str, re: Option<&Regex>) -> bool {
-        if let Some(re) = re {
-            re.is_match(&self.tags)
+    pub fn tag_contains(&self, q: &str, matcher: Option<&SkimMatcherV2>) -> bool {
+        if let Some(matcher) = matcher {
+            matcher.fuzzy_match(&self.tags, q).is_some()
         } else {
             self.tags.to_lowercase().contains(q)
         }
     }
 
-    pub fn url_contains(&self, q: &str, re: Option<&Regex>) -> bool {
-        if let Some(re) = re {
-            re.is_match(&self.url)
+    pub fn url_contains(&self, q: &str, matcher: Option<&SkimMatcherV2>) -> bool {
+        if let Some(matcher) = matcher {
+            matcher.fuzzy_match(&self.url, q).is_some()
         } else {
             self.url.to_lowercase().contains(q)
         }
     }
 
-    pub fn extended_contains(&self, q: &str, re: Option<&Regex>) -> bool {
+    pub fn extended_contains(&self, q: &str, matcher: Option<&SkimMatcherV2>) -> bool {
         if let Some(ref extended) = self.extended {
-            if let Some(re) = re {
-                re.is_match(extended)
+            if let Some(matcher) = matcher {
+                matcher.fuzzy_match(&extended, q).is_some()
             } else {
                 extended.to_lowercase().contains(q)
             }
@@ -71,12 +71,12 @@ impl<'pin> Pin<'pin> {
         }
     }
 
-    pub fn contains_fuzzy(&self, re: &Regex) -> bool {
-        re.is_match(&self.title)
-            || re.is_match(&self.tags)
-            || re.is_match(self.url.as_ref())
+    pub fn contains_fuzzy(&self, q: &str, matcher: &SkimMatcherV2) -> bool {
+        matcher.fuzzy_match(&self.tags, q).is_some()
+            || matcher.fuzzy_match(&self.title, q).is_some()
+            || matcher.fuzzy_match(&self.url.as_ref(), q).is_some()
             || if let Some(ref extended) = self.extended {
-                re.is_match(extended)
+                matcher.fuzzy_match(extended, q).is_some()
             } else {
                 false
             }

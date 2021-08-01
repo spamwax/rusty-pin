@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.2] - 2020-04-05
 ### Added
+- Use fuzzy-matcher crate for better/faster fuzzy searching
+- Update codebase to comply with 2018 edition
+
+## [0.5.2] - 2020-04-05
+### Added
 - Implement Debug for SearchType
 
 ## [0.5.1] - 2020-04-03

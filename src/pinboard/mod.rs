@@ -2,19 +2,19 @@ use std::borrow::Cow;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 
-use rmps::{Deserializer, Serializer};
-use serde::{Deserialize, Serialize};
-// use rmps::{Deserializer, Serializer};
-// use serde::Deserialize;
+use rmps::Serializer;
+use serde::Deserialize;
 
 use chrono::prelude::*;
 use url::Url;
 
 use failure::Error;
 
-use regex::Regex;
+use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::FuzzyMatcher;
 
 use env_logger;
+use lazy_static::lazy_static;
 
 mod api;
 mod cached_data;
@@ -33,6 +33,11 @@ use self::config::Config;
 
 pub use self::pin::{Pin, PinBuilder};
 pub use self::tag::{Tag, TagFreq};
+
+lazy_static! {
+    /// Fuzzy matcher used in all search function.
+    static ref MATCHER: SkimMatcherV2 = SkimMatcherV2::default().ignore_case();
+}
 
 #[derive(Debug)]
 pub struct Pinboard<'api, 'pin> {
@@ -190,15 +195,6 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                     })
                     .unwrap_or_default()
             } else {
-                // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
-                let mut fuzzy_string = query
-                    .chars()
-                    .map(|c| c.to_string())
-                    .collect::<Vec<String>>()
-                    .join(r".*");
-                // Set case-insensitive regex option.
-                fuzzy_string.insert_str(0, "(?i)");
-                let re = Regex::new(&fuzzy_string)?;
                 self.cached_data
                     .pins
                     .as_ref()
@@ -206,9 +202,9 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                         p.iter()
                             .filter(|item| {
                                 if self.cfg.tag_only_search {
-                                    item.pin.tag_contains("", Some(&re))
+                                    item.pin.tag_contains(query, Some(&MATCHER))
                                 } else {
-                                    item.pin.contains_fuzzy(&re)
+                                    item.pin.contains_fuzzy(query, &MATCHER)
                                 }
                             })
                             .map(|item| &item.pin)
@@ -243,21 +239,12 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                     })
                     .unwrap_or_default()
             } else {
-                // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
-                let mut fuzzy_string = query
-                    .chars()
-                    .map(|c| format!("{}", c))
-                    .collect::<Vec<String>>()
-                    .join(r".*");
-                // Set case-insensitive regex option.
-                fuzzy_string.insert_str(0, "(?i)");
-                let re = Regex::new(&fuzzy_string)?;
                 self.cached_data
                     .tags
                     .as_ref()
                     .map(|t| {
                         t.iter()
-                            .filter(|item| re.is_match(&item.tag.0))
+                            .filter(|item| MATCHER.fuzzy_match(&item.tag.0, query).is_some())
                             .map(|ct| &ct.tag)
                             .collect::<Vec<&Tag>>()
                     })
@@ -377,50 +364,40 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                 })
                 .unwrap_or_default()
         } else {
-            let regex_queries = q
-                .into_iter()
-                .map(|s| {
-                    let query = &s.as_ref().to_lowercase();
-                    // Build a string for regex: "HAMID" => "H.*A.*M.*I.*D"
-                    let mut fuzzy_string = String::with_capacity(query.len() * query.len() * 2);
-                    fuzzy_string.push_str(
-                        &query
-                            .chars()
-                            .map(|c| c.to_string())
-                            .collect::<Vec<String>>()
-                            .join(r".*"),
-                    );
-                    // Set case-insensitive regex option.
-                    let mut fuzzy_regex: String = String::with_capacity(fuzzy_string.len() + 2);
-                    fuzzy_regex.extend("(?i)".chars().chain(fuzzy_string.chars()));
-                    Regex::new(&fuzzy_string)
-                        .map_err(|e| format!("{:?}", e))
-                        .expect("Couldn't build regex using given search query")
-                })
-                .collect::<Vec<Regex>>();
             self.cached_data
                 .pins
                 .as_ref()
                 .map(|p| {
                     p.iter()
                         .filter(|cached_pin: &&CachedPin| {
-                            regex_queries.iter().all(|re| {
+                            q.into_iter().all(|qi| {
                                 search_fields.iter().any(|search_type| match *search_type {
-                                    SearchType::TitleOnly => re.is_match(&cached_pin.title_lowered),
-                                    SearchType::TagOnly => {
-                                        cached_pin.tag_list.iter().any(|t| re.is_match(t))
-                                    }
-                                    SearchType::UrlOnly => re.is_match(cached_pin.pin.url.as_ref()),
+                                    SearchType::TitleOnly => MATCHER
+                                        .fuzzy_match(&cached_pin.title_lowered, qi.as_ref())
+                                        .is_some(),
+                                    SearchType::TagOnly => cached_pin
+                                        .tag_list
+                                        .iter()
+                                        .any(|t| MATCHER.fuzzy_match(t, qi.as_ref()).is_some()),
+                                    SearchType::UrlOnly => MATCHER
+                                        .fuzzy_match(cached_pin.pin.url.as_ref(), qi.as_ref())
+                                        .is_some(),
                                     SearchType::DescriptionOnly => {
                                         if let Some(ref extended) = cached_pin.extended_lowered {
-                                            re.is_match(extended)
+                                            MATCHER
+                                                .fuzzy_match(extended.as_str(), qi.as_ref())
+                                                .is_some()
                                         } else {
                                             false
                                         }
                                     }
                                     SearchType::TagTitleOnly => {
-                                        re.is_match(&cached_pin.title_lowered)
-                                            || cached_pin.tag_list.iter().any(|t| re.is_match(t))
+                                        MATCHER
+                                            .fuzzy_match(&cached_pin.title_lowered, qi.as_ref())
+                                            .is_some()
+                                            || cached_pin.tag_list.iter().any(|t| {
+                                                MATCHER.fuzzy_match(t, qi.as_ref()).is_some()
+                                            })
                                     }
                                 })
                             })
