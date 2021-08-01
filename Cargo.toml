@@ -1,6 +1,6 @@
 [package]
 name = "rusty-pin"
-version = "0.5.4"
+version = "0.5.5"
 authors = ["Hamid Ghadyani <hamid@hamid.cc>"]
 description = """
 Pinboard's API in pure Rust

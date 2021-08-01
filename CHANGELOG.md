@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Changes before release points will be listed here
 
-## [0.5.2] - 2020-04-05
+## [0.5.5] - 2020-04-05
 ### Added
 - Use fuzzy-matcher crate for better/faster fuzzy searching
 - Update codebase to comply with 2018 edition
