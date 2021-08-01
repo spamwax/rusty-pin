@@ -112,7 +112,7 @@ mod tests {
             let fp = File::open(&dir).expect("Couldn't open temp file test_rmp_serde.bin");
             let reader = BufReader::with_capacity(256, fp);
 
-            let mut de = Deserializer::from_read(reader);
+            let mut de = Deserializer::new(reader);
             let pin: Pin =
                 Deserialize::deserialize(&mut de).expect("Couldn't deserialize into pin.");
 
@@ -163,7 +163,7 @@ mod tests {
 
             let fp = File::open(&dir).expect("Couldn't open temp file test_rmp_serde.bin");
             let reader = BufReader::with_capacity(128_000, fp);
-            let mut de = Deserializer::from_read(reader);
+            let mut de = Deserializer::new(reader);
             let pins: Vec<Pin> =
                 Deserialize::deserialize(&mut de).expect("Couldn't deserialize into Vec<Pin>.");
             assert_eq!(612, pins.len());

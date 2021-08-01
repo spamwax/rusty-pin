@@ -295,7 +295,7 @@ mod tests {
             .expect("impossible");
         assert_eq!(185, buf.len());
 
-        let mut de = Deserializer::from_slice(&buf);
+        let mut de = Deserializer::from_read_ref(&buf);
         let new_cached: CachedPin =
             Deserialize::deserialize(&mut de).expect("Couldn't deserialize a cached pin");
 
