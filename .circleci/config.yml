@@ -26,7 +26,7 @@ jobs:
       - image: circleci/rust:stretch
     environment:
       TARGET: x86_64-unknown-linux-gnu
-      CIRCLECI_TEST: true # change to false to disable tests
+      CIRCLECI_TEST: "true" # change to false to disable tests
     steps:
       - checkout
       - run:
@@ -39,7 +39,7 @@ jobs:
     environment:
       RUST_BACKTRACE: 1
       TARGET: x86_64-apple-darwin
-      CIRCLECI_TEST: true # change to false to disable tests
+      CIRCLECI_TEST: "true" # change to false to disable tests
     steps:
       - checkout
       - run:
