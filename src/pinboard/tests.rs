@@ -112,7 +112,7 @@ fn test_search_items() {
     {
         let pins = pinboard
             .search_items("openpgp")
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
     }
 
@@ -120,7 +120,7 @@ fn test_search_items() {
         // non-fuzzy search test
         let pins = pinboard
             .search_items("non-existence-tag")
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_none());
     }
     {
@@ -128,7 +128,7 @@ fn test_search_items() {
         pinboard.enable_fuzzy_search(true);
         let pins = pinboard
             .search_items("gemhobi")
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
         assert_eq!(1, pins.unwrap().len());
     }
@@ -180,7 +180,7 @@ fn search_tag_pairs() {
     {
         let tags = pinboard
             .search_list_of_tags("ctags")
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(tags.is_some());
     }
 
@@ -188,7 +188,7 @@ fn search_tag_pairs() {
         // non-fuzzy search test
         let tags = pinboard
             .search_list_of_tags("non-existence-tag")
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(tags.is_none());
     }
     {
@@ -196,7 +196,7 @@ fn search_tag_pairs() {
         pinboard.enable_fuzzy_search(true);
         let tags = pinboard
             .search_list_of_tags("non-existence-tag")
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(tags.is_none());
     }
 
@@ -204,7 +204,7 @@ fn search_tag_pairs() {
         // non-fuzzy search test
         let tags = pinboard
             .search_list_of_tags("yubikey")
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(tags.is_some());
         let tags = tags.unwrap();
         assert_eq!(tags.len(), 1);
@@ -216,7 +216,7 @@ fn search_tag_pairs() {
         pinboard.enable_fuzzy_search(true);
         let tags = pinboard
             .search_list_of_tags("mroooe")
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(tags.is_some());
         let tags = tags.unwrap();
         assert_eq!(1, tags.len());
@@ -228,7 +228,7 @@ fn search_tag_pairs() {
         pinboard.enable_fuzzy_search(false);
         let tags = pinboard
             .search_list_of_tags("")
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(tags.is_some());
         assert_eq!(94, tags.unwrap().len());
     }
@@ -238,7 +238,7 @@ fn search_tag_pairs() {
         pinboard.enable_fuzzy_search(true);
         let tags = pinboard
             .search_list_of_tags("")
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(tags.is_some());
         assert_eq!(94, tags.unwrap().len());
     }
@@ -430,7 +430,7 @@ fn test_cached_pins_tags() {
         ];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
         assert_eq!(3, pins.unwrap().len());
 
@@ -438,7 +438,7 @@ fn test_cached_pins_tags() {
         let fields = vec![SearchType::TagOnly];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
         assert_eq!(3, pins.unwrap().len());
     }
@@ -475,7 +475,7 @@ fn test_issue7() {
         ];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
         assert_eq!(2, pins.unwrap().len());
         {
@@ -483,13 +483,13 @@ fn test_issue7() {
             let fields = vec![SearchType::TitleOnly];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
             assert_eq!(1, pins.unwrap().len());
             let queries = ["iTerm"];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
             assert_eq!(1, pins.unwrap().len());
         }
@@ -498,13 +498,13 @@ fn test_issue7() {
             let fields = vec![SearchType::TagOnly];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
             assert_eq!(2, pins.unwrap().len());
             let queries = ["iTerm"];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
             assert_eq!(2, pins.unwrap().len());
         }
@@ -513,12 +513,12 @@ fn test_issue7() {
             let fields = vec![SearchType::DescriptionOnly];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_none());
             let queries = ["iTerm"];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_none());
         }
         {
@@ -526,13 +526,13 @@ fn test_issue7() {
             let fields = vec![SearchType::UrlOnly];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
             assert_eq!(1, pins.unwrap().len());
             let queries = ["iTerm"];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
             assert_eq!(1, pins.unwrap().len());
         }
@@ -541,13 +541,13 @@ fn test_issue7() {
             let fields = vec![SearchType::UrlOnly];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
             assert_eq!(1, pins.unwrap().len());
             let queries = ["iTerm2"];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
             assert_eq!(1, pins.unwrap().len());
         }
@@ -556,12 +556,12 @@ fn test_issue7() {
             let fields = vec![SearchType::TagOnly];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_none());
             let queries = ["iTerm2"];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_none());
         }
         {
@@ -569,13 +569,13 @@ fn test_issue7() {
             let fields = vec![SearchType::TitleOnly];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
             assert_eq!(1, pins.unwrap().len());
             let queries = ["iTerm2"];
             let pins = pinboard
                 .search(&queries, &fields)
-                .unwrap_or_else(|e| panic!(e));
+                .unwrap_or_else(|e| panic!("{}", e));
             assert!(pins.is_some());
             assert_eq!(1, pins.unwrap().len());
         }
@@ -590,19 +590,19 @@ fn test_issue7() {
         ];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
         assert_eq!(1, pins.unwrap().len());
         let queries = ["Homebrew"];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
         assert_eq!(1, pins.unwrap().len());
         let queries = ["oh-my-zsh"];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
         assert_eq!(1, pins.unwrap().len());
     }
@@ -631,14 +631,14 @@ fn search_multi_query_multi_field() {
         ];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
 
         // Run same query, this time with Vec<String> instead of Vec<&str>
         let queries = vec!["eagle", "design", "fun"];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
     }
 
@@ -648,7 +648,7 @@ fn search_multi_query_multi_field() {
         let queries = ["rust", "python"];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_none());
     }
 
@@ -658,7 +658,7 @@ fn search_multi_query_multi_field() {
         let fields = vec![SearchType::UrlOnly];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert_eq!(1, pins.as_ref().unwrap().len());
     }
 
@@ -674,7 +674,7 @@ fn search_multi_query_multi_field() {
         ];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert_eq!(3, pins.as_ref().unwrap().len());
     }
 
@@ -690,7 +690,7 @@ fn search_multi_query_multi_field() {
         ];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert_eq!(1, pins.as_ref().unwrap().len());
     }
 
@@ -707,7 +707,7 @@ fn search_multi_query_multi_field() {
         ];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert_eq!(3, pins.as_ref().unwrap().len());
     }
 
@@ -718,27 +718,27 @@ fn search_multi_query_multi_field() {
         let fields = vec![SearchType::TagOnly];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert_eq!(10, pins.as_ref().unwrap().len());
 
         let queries = ["yubikey"];
         let fields = vec![SearchType::TagOnly];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert_eq!(3, pins.as_ref().unwrap().len());
 
         let queries = ["YubiKey"];
         let fields = vec![SearchType::TagOnly];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert_eq!(3, pins.as_ref().unwrap().len());
 
         let queries = ["keyboard", "hacks"];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
         assert_eq!(1, pins.as_ref().unwrap().len());
     }
@@ -750,7 +750,7 @@ fn search_multi_query_multi_field() {
         let fields = vec![SearchType::TagOnly];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert_eq!(2, pins.as_ref().unwrap().len());
     }
 
@@ -761,7 +761,7 @@ fn search_multi_query_multi_field() {
         let fields = vec![SearchType::TitleOnly, SearchType::UrlOnly];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert_eq!(1, pins.as_ref().unwrap().len());
     }
 
@@ -772,7 +772,7 @@ fn search_multi_query_multi_field() {
         let fields = vec![SearchType::TitleOnly, SearchType::UrlOnly];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
     }
 }
@@ -897,11 +897,11 @@ fn test_update_cache() {
     pinboard
         .cached_data
         .update_cache(&pinboard.api)
-        .unwrap_or_else(|e| panic!(e));
+        .unwrap_or_else(|e| panic!("{}", e));
     pinboard
         .cached_data
         .load_cache_data_from_file()
-        .unwrap_or_else(|e| panic!(e));
+        .unwrap_or_else(|e| panic!("{}", e));
     assert!(pinboard.cached_data.cache_ok());
 
     assert!(pinboard.cached_data.pins.is_some());
@@ -946,7 +946,9 @@ fn bench_search_items_openpgp(b: &mut Bencher) {
     pinboard.enable_tag_only_search(false);
     let query = "openpgp";
     b.iter(|| {
-        let _ = pinboard.search_items(query).unwrap_or_else(|e| panic!(e));
+        let _ = pinboard
+            .search_items(query)
+            .unwrap_or_else(|e| panic!("{}", e));
     })
 }
 
@@ -975,7 +977,7 @@ fn bench_search_openpgp(b: &mut Bencher) {
     b.iter(|| {
         let _pins = pinboard
             .search(&queries, fields.as_slice())
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
     });
 }
 
@@ -998,7 +1000,7 @@ fn bench_search_non_fuzzy(b: &mut Bencher) {
     b.iter(|| {
         let _pins = pinboard
             .search(&queries, fields.as_slice())
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
     });
 }
 
@@ -1021,6 +1023,6 @@ fn bench_search_fuzzy(b: &mut Bencher) {
     b.iter(|| {
         let _pins = pinboard
             .search(&queries, fields.as_slice())
-            .unwrap_or_else(|e| panic!(e));
+            .unwrap_or_else(|e| panic!("{}", e));
     });
 }
