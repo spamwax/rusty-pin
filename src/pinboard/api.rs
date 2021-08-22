@@ -585,7 +585,7 @@ mod tests {
         let api = Api::new(include_str!("api_token.txt"));
         let res = api.all_pins();
 
-        assert_eq!(57, res.unwrap_or_else(|e| panic!("{:?}", e)).len());
+        assert_eq!(58, res.unwrap_or_else(|e| panic!("{:?}", e)).len());
     }
 
     #[test]

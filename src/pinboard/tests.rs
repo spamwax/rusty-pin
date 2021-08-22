@@ -708,7 +708,7 @@ fn search_multi_query_multi_field() {
         let pins = pinboard
             .search(&queries, &fields)
             .unwrap_or_else(|e| panic!("{}", e));
-        assert_eq!(3, pins.as_ref().unwrap().len());
+        assert_eq!(4, pins.as_ref().unwrap().len());
     }
 
     // Tag-only search
@@ -759,6 +759,28 @@ fn search_multi_query_multi_field() {
         pinboard.enable_fuzzy_search(false);
         let queries = ["世", "macos"];
         let fields = vec![SearchType::TitleOnly, SearchType::UrlOnly];
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert_eq!(1, pins.as_ref().unwrap().len());
+    }
+
+    // url-only search non-fuzzy
+    {
+        pinboard.enable_fuzzy_search(false);
+        let queries = ["ascii-table"];
+        let fields = vec![SearchType::UrlOnly];
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert_eq!(1, pins.as_ref().unwrap().len());
+    }
+
+    // url-only search fuzzy
+    {
+        pinboard.enable_fuzzy_search(true);
+        let queries = ["ascii-table"];
+        let fields = vec![SearchType::UrlOnly];
         let pins = pinboard
             .search(&queries, &fields)
             .unwrap_or_else(|e| panic!("{}", e));
