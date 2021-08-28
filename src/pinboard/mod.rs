@@ -175,43 +175,33 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     /// This function honors [pinboard::config::Config] settings for fuzzy search & tag_only search.
     pub fn search_items(&self, query: &str) -> Result<Option<Vec<&Pin>>, Error> {
         debug!("search_items: starting.");
+        let q = &query.to_lowercase();
         if self.cached_data.cache_ok() {
-            let r = if !self.cfg.fuzzy_search {
-                let q = &query.to_lowercase();
-                self.cached_data
-                    .pins
-                    .as_ref()
-                    .map(|p| {
-                        p.iter()
-                            .filter(|item: &&CachedPin| {
-                                if self.cfg.tag_only_search {
+            let r = self
+                .cached_data
+                .pins
+                .as_ref()
+                .map(|p| {
+                    p.iter()
+                        .filter(|item: &&CachedPin| {
+                            if self.cfg.tag_only_search {
+                                if self.cfg.fuzzy_search {
+                                    item.pin.tag_contains(query, Some(&MATCHER))
+                                } else {
                                     item.pin.tag_contains(q, None)
+                                }
+                            } else {
+                                if self.cfg.fuzzy_search {
+                                    item.pin.contains_fuzzy(query, &MATCHER)
                                 } else {
                                     item.pin.contains(q)
                                 }
-                            })
-                            .map(|item| &item.pin)
-                            .collect::<Vec<&Pin>>()
-                    })
-                    .unwrap_or_default()
-            } else {
-                self.cached_data
-                    .pins
-                    .as_ref()
-                    .map(|p| {
-                        p.iter()
-                            .filter(|item| {
-                                if self.cfg.tag_only_search {
-                                    item.pin.tag_contains(query, Some(&MATCHER))
-                                } else {
-                                    item.pin.contains_fuzzy(query, &MATCHER)
-                                }
-                            })
-                            .map(|item| &item.pin)
-                            .collect::<Vec<&Pin>>()
-                    })
-                    .unwrap_or_default()
-            };
+                            }
+                        })
+                        .map(|item| &item.pin)
+                        .collect::<Vec<&Pin>>()
+                })
+                .unwrap_or_default();
             match r.len() {
                 0 => Ok(None),
                 _ => Ok(Some(r)),
@@ -221,35 +211,29 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
         }
     }
 
-    /// Only looks up q within list of cached tags.
+    /// Search tags for `query` (uses cached tags).
     /// This function honors [pinboard::config::Config] settings for fuzzy search.
     pub fn search_list_of_tags(&self, query: &str) -> Result<Option<Vec<&Tag>>, Error> {
         debug!("search_list_of_tags: starting.");
         if self.cached_data.cache_ok() {
-            let r = if !self.cfg.fuzzy_search {
-                let q = &query.to_lowercase();
-                self.cached_data
-                    .tags
-                    .as_ref()
-                    .map(|t| {
-                        t.iter()
-                            .filter(|item| item.tag_lowered.contains(q))
-                            .map(|ct| &ct.tag)
-                            .collect::<Vec<&Tag>>()
-                    })
-                    .unwrap_or_default()
-            } else {
-                self.cached_data
-                    .tags
-                    .as_ref()
-                    .map(|t| {
-                        t.iter()
-                            .filter(|item| MATCHER.fuzzy_match(&item.tag.0, query).is_some())
-                            .map(|ct| &ct.tag)
-                            .collect::<Vec<&Tag>>()
-                    })
-                    .unwrap_or_default()
-            };
+            let q = &query.to_lowercase();
+            let r = self
+                .cached_data
+                .tags
+                .as_ref()
+                .map(|t| {
+                    t.iter()
+                        .filter(|item| {
+                            if !self.cfg.fuzzy_search {
+                                item.tag_lowered.contains(q)
+                            } else {
+                                MATCHER.fuzzy_match(&item.tag.0, query).is_some()
+                            }
+                        })
+                        .map(|ct| &ct.tag)
+                        .collect::<Vec<&Tag>>()
+                })
+                .unwrap_or_default();
             match r.len() {
                 0 => Ok(None),
                 _ => Ok(Some(r)),

@@ -176,6 +176,51 @@ mod tests {
     }
 
     #[test]
+    fn test_tag_search_with_diff_case() {
+        let _ = env_logger::try_init();
+        debug!("test_search_pins: starting");
+
+        let (_m1, _m2) = create_mockito_servers();
+
+        let mut _home = dirs::home_dir().unwrap();
+        _home.push(".cache");
+        _home.push("mockito-rusty-pin");
+        let cache_path = Some(_home);
+        let p = crate::pinboard::Pinboard::new(include_str!("api_token.txt"), cache_path)
+            .map_err(|e| format!("{:?}", e));
+        let mut pinboard = p.unwrap_or_else(|e| panic!("{:?}", e));
+
+        pinboard.enable_tag_only_search(true);
+        pinboard.enable_fuzzy_search(false);
+        let c1;
+        let c2;
+        {
+            let pins = pinboard
+                .search_items("Rust")
+                .unwrap_or_else(|e| panic!("{}", e));
+            assert!(pins.is_some());
+            c1 = pins.unwrap().len();
+        }
+        {
+            let pins = pinboard
+                .search_items("rust")
+                .unwrap_or_else(|e| panic!("{}", e));
+            assert!(pins.is_some());
+            c2 = pins.unwrap().len();
+        }
+        assert_eq!(10, c1);
+        assert_eq!(c1, c2);
+
+        pinboard.enable_tag_only_search(false);
+        let tags1 = pinboard.search_list_of_tags("gi");
+        let tags2 = pinboard.search_list_of_tags("Gi");
+        assert!(tags1.is_ok());
+        assert!(tags2.is_ok());
+        assert_eq!(1, tags1.unwrap().unwrap().len());
+        assert_eq!(1, tags2.unwrap().unwrap().len());
+    }
+
+    #[test]
     fn test_search_pins() {
         let _ = env_logger::try_init();
         debug!("test_search_pins: starting");
