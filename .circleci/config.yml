@@ -10,7 +10,7 @@ jobs:
       - run:
           name: Install Rust
           command: |
-            sudo mkdir /opt
+            # sudo mkdir /opt
             curl https://sh.rustup.rs -sSf | sh -s -- -y # --default-toolchain << parameters.rust >>
             sudo ln -s ~/.cargo/bin/* /usr/local/bin
       - run:
