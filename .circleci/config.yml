@@ -8,14 +8,15 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Version Information
+          command: rustc --version; cargo --version; rustup --version; which cargo
+      - run:
           name: Install Rust
           command: |
             # sudo mkdir /opt
             curl https://sh.rustup.rs -sSf | sh -s -- -y # --default-toolchain << parameters.rust >>
+            sudo rm -rf /usr/local/bin/{rustc,rustfmt,cargo}
             sudo ln -s ~/.cargo/bin/* /usr/local/bin
-      - run:
-          name: Version Information
-          command: rustc --version; cargo --version; rustup --version; which rust
       - run:
           name: Install Dependencies
           command: |
