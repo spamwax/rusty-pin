@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/rust:stretch
+      - image: circleci/rust:1.54.0-bullseye
     environment:
       TARGET: x86_64-unknown-linux-gnu
     steps:
@@ -30,7 +30,7 @@ jobs:
           command: ci/script.sh
   tests:
     docker:
-      - image: circleci/rust:stretch
+      - image: circleci/rust:1.54.0-bullseye
     environment:
       TARGET: x86_64-unknown-linux-gnu
       CIRCLECI_TEST: "true" # change to false to disable tests
