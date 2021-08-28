@@ -327,7 +327,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                                         cached_pin.tag_list.iter().any(|tag| tag.contains(query))
                                     }
                                     SearchType::UrlOnly => {
-                                        cached_pin.pin.url.as_ref().contains(query)
+                                        cached_pin.pin.url.as_ref().to_lowercase().contains(query)
                                     }
                                     SearchType::DescriptionOnly => {
                                         if let Some(ref extended) = cached_pin.extended_lowered {
