@@ -11,12 +11,16 @@ jobs:
           name: Version Information
           command: rustc --version; cargo --version; rustup --version; which cargo
       - run:
-          name: Install Rust
+          name: Check Rust
           command: |
+            which cargo; which rustc
+            rustc --version
             # sudo mkdir /opt
-            curl https://sh.rustup.rs -sSf | sh -s -- -y # --default-toolchain << parameters.rust >>
-            sudo rm -rf /usr/local/bin/{rustc,rustfmt,cargo}
-            sudo ln -s ~/.cargo/bin/* /usr/local/bin
+            # curl https://sh.rustup.rs -sSf | sh -s -- -y # --default-toolchain << parameters.rust >>
+            # sudo apt-get -y -s cargo || echo
+            # sudo apt-get -y -s rustc || echo
+            # sudo rm -rf /usr/local/bin/{rustc,rustfmt,cargo}
+            # sudo ln -s ~/.cargo/bin/* /usr/local/bin
       - run:
           name: Install Dependencies
           command: |
