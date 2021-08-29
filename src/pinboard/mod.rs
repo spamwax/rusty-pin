@@ -212,6 +212,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     }
 
     /// Search tags for `query` (uses cached tags).
+    /// Returns all tags that _contain_ query
     /// This function honors [pinboard::config::Config] settings for fuzzy search.
     pub fn search_list_of_tags(&self, query: &str) -> Result<Option<Vec<&Tag>>, Error> {
         debug!("search_list_of_tags: starting.");
@@ -272,6 +273,33 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                     .filter(|cached_pin: &&CachedPin<'pin>| {
                         cached_pin.pin.url.to_lowercase().as_str() == query
                     })
+                    .map(|p| &p.pin)
+                    .collect::<Vec<&'pin Pin>>()
+            })
+            .unwrap_or_default();
+        match results.len() {
+            0 => Ok(None),
+            _ => Ok(Some(results)),
+        }
+    }
+
+    /// Finds all pins with an exact tag of 'query'
+    pub fn find_tag<S>(&'pin self, query: S) -> Result<Option<Vec<&'pin Pin<'pin>>>, Error>
+    where
+        S: AsRef<str>,
+    {
+        debug!("find_tag: starting.");
+        if !self.cached_data.cache_ok() {
+            bail!("Cache data is invalid.");
+        }
+        let query = &query.as_ref().to_lowercase();
+        let results = self
+            .cached_data
+            .pins
+            .as_ref()
+            .map(|p: &Vec<CachedPin<'pin>>| {
+                p.iter()
+                    .filter(|cached_pin: &&CachedPin<'pin>| cached_pin.tag_list.contains(query))
                     .map(|p| &p.pin)
                     .collect::<Vec<&'pin Pin>>()
             })

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 - Changes before release points will be listed here
+- Add search_tag to find pins with exact tag.
+
+## [0.5.7] - 2020-04-05
+### Fixed
+- url search is now case insensitive.
+### Chagned
+- Bump rust compiler on CI
+### Added
+- Test searching same tag with different case.
 
 ## [0.5.5] - 2020-04-05
 ### Added
