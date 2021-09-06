@@ -62,7 +62,7 @@ impl<'pin> Pin<'pin> {
     pub fn extended_contains(&self, q: &str, matcher: Option<&SkimMatcherV2>) -> bool {
         if let Some(ref extended) = self.extended {
             if let Some(matcher) = matcher {
-                matcher.fuzzy_match(&extended, q).is_some()
+                matcher.fuzzy_match(extended, q).is_some()
             } else {
                 extended.to_lowercase().contains(q)
             }
@@ -74,7 +74,7 @@ impl<'pin> Pin<'pin> {
     pub fn contains_fuzzy(&self, q: &str, matcher: &SkimMatcherV2) -> bool {
         matcher.fuzzy_match(&self.tags, q).is_some()
             || matcher.fuzzy_match(&self.title, q).is_some()
-            || matcher.fuzzy_match(&self.url.as_ref(), q).is_some()
+            || matcher.fuzzy_match(self.url.as_ref(), q).is_some()
             || if let Some(ref extended) = self.extended {
                 matcher.fuzzy_match(extended, q).is_some()
             } else {

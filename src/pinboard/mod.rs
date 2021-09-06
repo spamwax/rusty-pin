@@ -190,12 +190,10 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                                 } else {
                                     item.pin.tag_contains(q, None)
                                 }
+                            } else if self.cfg.fuzzy_search {
+                                item.pin.contains_fuzzy(query, &MATCHER)
                             } else {
-                                if self.cfg.fuzzy_search {
-                                    item.pin.contains_fuzzy(query, &MATCHER)
-                                } else {
-                                    item.pin.contains(q)
-                                }
+                                item.pin.contains(q)
                             }
                         })
                         .map(|item| &item.pin)
