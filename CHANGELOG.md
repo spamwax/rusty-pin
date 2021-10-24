@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add search_tag to find pins with exact tag.
 
 ## [0.5.7] - 2020-04-05
+### Added
+- Add find_tag to search for pins with exact tags.
+- Lower-case all urls before searching them.
+
+## [0.5.7] - 2020-04-05
 ### Fixed
 - url search is now case insensitive.
 ### Chagned
