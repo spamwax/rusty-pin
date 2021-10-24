@@ -6,8 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
-- Changes before release points will be listed here
+- Use unicode normalization to store cached data (issue spamwax/alfred-pinboard-rs#138)
 - Add search_tag to find pins with exact tag.
+
+## [0.5.7] - 2020-04-05
+### Added
+- Add find_tag to search for pins with exact tags.
+- Lower-case all urls before searching them.
 
 ## [0.5.7] - 2020-04-05
 ### Fixed

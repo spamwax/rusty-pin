@@ -1,6 +1,7 @@
 import json
 
-f = open('tests/all_pins_mockito.json')
+# f = open('tests/all_pins_mockito.json')
+f = open('tests/issue-138-bookmark-3.json')
 pins = json.load(f)
 
 tags = {}

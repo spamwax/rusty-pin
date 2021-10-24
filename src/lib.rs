@@ -35,6 +35,9 @@ extern crate env_logger;
 #[macro_use]
 extern crate log;
 
+extern crate unicode_normalization;
+use unicode_normalization::{is_nfc, is_nfd, is_nfkc, is_nfkd};
+
 pub mod pinboard;
 
 pub use crate::pinboard::{Pin, PinBuilder, Pinboard, Tag};

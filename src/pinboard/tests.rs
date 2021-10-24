@@ -489,6 +489,150 @@ fn test_cached_pins_tags() {
 }
 
 #[test]
+fn issue138_1_test() {
+    let _ = env_logger::try_init();
+    let mut _home = rand_temp_path();
+    _home.push("mockito-rusty-pin");
+
+    let cache_path = Some(_home);
+    debug!("create_mockito_servers: starting.");
+    let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body_from_file("tests/issue-138-bookmark-1.json")
+        .create();
+    let _m2 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body_from_file("tests/issue-138-tags-1.json")
+        .create();
+    let mut pinboard =
+        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let fields = vec![
+        SearchType::TitleOnly,
+        SearchType::TagOnly,
+        SearchType::DescriptionOnly,
+    ];
+    {
+        pinboard.enable_fuzzy_search(false);
+        let queries = ["\u{c9c0}\u{ad6c}"]; // '지구'
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert!(pins.is_some());
+        let queries = ["지구"];
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert!(pins.is_some());
+    }
+    {
+        pinboard.enable_fuzzy_search(false);
+        let queries = ["\u{110c}\u{1175}\u{1100}\u{116e}"]; // '지구'
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert!(pins.is_some());
+        let queries = ["지구"];
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert!(pins.is_some());
+    }
+    {
+        pinboard.enable_fuzzy_search(false);
+        let queries = ["站,", "由", "个", "国", "Gmarket 韩国 No.1"];
+        for query in queries {
+            let pins = pinboard
+                .search(&[query], &fields)
+                .unwrap_or_else(|e| panic!("Finding {} paniced: {}", query, e));
+            assert!(pins.is_some(), "Couldn't find {}", query);
+            assert_eq!(1, pins.as_ref().unwrap().len(), "query: {}", query);
+        }
+        let query = ["진흙"];
+        let pins = pinboard
+            .search(&query, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert_eq!(2, pins.as_ref().unwrap().len());
+    }
+}
+
+#[test]
+fn issue138_2_test() {
+    let _ = env_logger::try_init();
+    let mut _home = rand_temp_path();
+    _home.push("mockito-rusty-pin");
+
+    let cache_path = Some(_home);
+    debug!("create_mockito_servers: starting.");
+    let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body_from_file("tests/issue-138-bookmark-2.json")
+        .create();
+    let _m2 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body_from_file("tests/issue-138-tags-2.json")
+        .create();
+    let mut pinboard =
+        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let fields = vec![
+        SearchType::TitleOnly,
+        SearchType::TagOnly,
+        SearchType::DescriptionOnly,
+    ];
+    {
+        pinboard.enable_fuzzy_search(false);
+        // ["آموزشی"]; // [\u{0627}\u{0653}\u{0645}\u{0648}\u{0632}\u{0634}\u{06cc}]
+        // ["آموزش"]; // [\u{0627}\u{0653}\u{0645}\u{0648}\u{0632}\u{0634}]
+        // ["ب‌ید"]; // [\u{0628}\u{200c}\u{06cc}\u{062f}]  "beh" "yeh" "0-width space" "daal"
+        // ["ب\u{200c}ید"]; // [\u{0628}\u{200c}\u{06cc}\u{062f}]
+        let queries = ["بید"];
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert!(pins.is_none(), "Unexpectedly found: {:?}", queries);
+        let queries = [
+            "آموزشی",
+            "آموزش",
+            "ب‌ید",
+            "ب\u{200c}ید",
+            "بخوانید",
+            "بخوانی",
+            "بخوا",
+            "خوان",
+        ];
+        // Search one at a time
+        for query in queries {
+            let pins = pinboard
+                .search(&[query], &fields)
+                .unwrap_or_else(|e| panic!("Finding {} paniced: {}", query, e));
+            assert!(pins.is_some(), "Couldn't find {}", query);
+            assert_eq!(1, pins.as_ref().unwrap().len());
+        }
+        // Search all
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert!(pins.is_some());
+    }
+    {
+        let fields = vec![
+            SearchType::TitleOnly,
+            SearchType::TagOnly,
+            SearchType::DescriptionOnly,
+            SearchType::UrlOnly,
+        ];
+        let queries = ["引き割り", "例", "納豆", "豆", "引き割り"];
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert!(pins.is_some(), "Unable to find: {:?}", queries);
+    }
+}
+
+#[test]
 fn test_issue7() {
     let _ = env_logger::try_init();
     let mut _home = rand_temp_path();
@@ -649,6 +793,42 @@ fn test_issue7() {
             .unwrap_or_else(|e| panic!("{}", e));
         assert!(pins.is_some());
         assert_eq!(1, pins.unwrap().len());
+    }
+}
+
+#[test]
+fn issue138_3_test() {
+    let _ = env_logger::try_init();
+    let mut _home = rand_temp_path();
+    _home.push("mockito-rusty-pin");
+
+    let cache_path = Some(_home);
+    debug!("create_mockito_servers: starting.");
+    let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body_from_file("tests/issue-138-bookmark-3.json")
+        .create();
+    let _m2 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body_from_file("tests/issue-138-tags-3.json")
+        .create();
+    let mut pinboard =
+        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let fields = vec![SearchType::TagOnly];
+    {
+        pinboard.enable_fuzzy_search(false);
+        let queries = [
+            "آموزشی",
+            "موزشی",
+            "\u{0622}\u{0645}\u{0648}\u{0632}\u{0634}\u{06cc}",
+        ];
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        println!("{}", pins.as_ref().unwrap().len());
+        assert!(pins.is_some());
     }
 }
 
@@ -877,7 +1057,11 @@ fn serde_update_cache() {
         // Title
         assert_eq!(fresh_pins[idx as usize].title, cached_pin.pin.title);
         assert_eq!(
-            fresh_pins[idx as usize].title.to_lowercase(),
+            fresh_pins[idx as usize]
+                .title
+                .nfkd()
+                .collect::<String>()
+                .to_lowercase(),
             cached_pin.title_lowered
         );
         // Url
@@ -885,7 +1069,11 @@ fn serde_update_cache() {
         // tags
         assert_eq!(fresh_pins[idx as usize].tags, cached_pin.pin.tags);
         assert_eq!(
-            fresh_pins[idx as usize].tags.to_lowercase(),
+            fresh_pins[idx as usize]
+                .tags
+                .nfkd()
+                .collect::<String>()
+                .to_lowercase(),
             cached_pin.tag_list.join(" ")
         );
         // shared
@@ -905,7 +1093,12 @@ fn serde_update_cache() {
         if fresh_pins[idx as usize].extended.is_some() {
             assert!(cached_pin.pin.extended.is_some());
             assert_eq!(
-                fresh_pins[idx as usize].extended.as_ref().unwrap(),
+                fresh_pins[idx as usize]
+                    .extended
+                    .as_ref()
+                    .unwrap()
+                    .nfkd()
+                    .collect::<String>(),
                 cached_pin.pin.extended.as_ref().unwrap().as_ref()
             );
             assert_eq!(
@@ -913,6 +1106,8 @@ fn serde_update_cache() {
                     .extended
                     .as_ref()
                     .unwrap()
+                    .nfkd()
+                    .collect::<String>()
                     .to_lowercase(),
                 cached_pin.extended_lowered.as_ref().unwrap().as_ref()
             )

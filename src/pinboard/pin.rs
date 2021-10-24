@@ -19,12 +19,14 @@ pub struct Pin<'pin> {
     pub time: DateTime<Utc>,
 }
 
+use unicode_normalization::{is_nfd_quick, is_nfkd_quick, IsNormalized};
 impl<'pin> Pin<'pin> {
     pub fn time(&self) -> DateTime<Utc> {
         self.time
     }
 
     pub fn contains(&self, q: &str) -> bool {
+        assert!(is_nfkd_quick(q.chars()) == IsNormalized::Yes);
         self.title.to_lowercase().contains(q)
             || self.tags.to_lowercase().contains(q)
             || self.url.as_ref().contains(q)
@@ -44,6 +46,7 @@ impl<'pin> Pin<'pin> {
     }
 
     pub fn tag_contains(&self, q: &str, matcher: Option<&SkimMatcherV2>) -> bool {
+        assert!(is_nfkd_quick(q.chars()) == IsNormalized::Yes);
         if let Some(matcher) = matcher {
             matcher.fuzzy_match(&self.tags, q).is_some()
         } else {
@@ -52,6 +55,7 @@ impl<'pin> Pin<'pin> {
     }
 
     pub fn url_contains(&self, q: &str, matcher: Option<&SkimMatcherV2>) -> bool {
+        assert!(is_nfkd_quick(q.chars()) == IsNormalized::Yes);
         if let Some(matcher) = matcher {
             matcher.fuzzy_match(&self.url, q).is_some()
         } else {
@@ -60,6 +64,7 @@ impl<'pin> Pin<'pin> {
     }
 
     pub fn extended_contains(&self, q: &str, matcher: Option<&SkimMatcherV2>) -> bool {
+        assert!(is_nfkd_quick(q.chars()) == IsNormalized::Yes);
         if let Some(ref extended) = self.extended {
             if let Some(matcher) = matcher {
                 matcher.fuzzy_match(extended, q).is_some()
@@ -72,9 +77,10 @@ impl<'pin> Pin<'pin> {
     }
 
     pub fn contains_fuzzy(&self, q: &str, matcher: &SkimMatcherV2) -> bool {
+        assert!(is_nfkd_quick(q.chars()) == IsNormalized::Yes);
         matcher.fuzzy_match(&self.tags, q).is_some()
             || matcher.fuzzy_match(&self.title, q).is_some()
-            || matcher.fuzzy_match(self.url.as_ref(), q).is_some()
+            || matcher.fuzzy_match(&self.url.as_ref(), q).is_some()
             || if let Some(ref extended) = self.extended {
                 matcher.fuzzy_match(extended, q).is_some()
             } else {
