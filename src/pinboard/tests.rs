@@ -797,6 +797,42 @@ fn test_issue7() {
 }
 
 #[test]
+fn issue138_3_test() {
+    let _ = env_logger::try_init();
+    let mut _home = rand_temp_path();
+    _home.push("mockito-rusty-pin");
+
+    let cache_path = Some(_home);
+    debug!("create_mockito_servers: starting.");
+    let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body_from_file("tests/issue-138-bookmark-3.json")
+        .create();
+    let _m2 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body_from_file("tests/issue-138-tags-3.json")
+        .create();
+    let mut pinboard =
+        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let fields = vec![SearchType::TagOnly];
+    {
+        pinboard.enable_fuzzy_search(false);
+        let queries = [
+            "آموزشی",
+            "موزشی",
+            "\u{0622}\u{0645}\u{0648}\u{0632}\u{0634}\u{06cc}",
+        ];
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        println!("{}", pins.as_ref().unwrap().len());
+        assert!(pins.is_some());
+    }
+}
+
+#[test]
 fn search_multi_query_multi_field() {
     let _ = env_logger::try_init();
     debug!("search_multi_query_multi_field: starting.");
@@ -1021,7 +1057,11 @@ fn serde_update_cache() {
         // Title
         assert_eq!(fresh_pins[idx as usize].title, cached_pin.pin.title);
         assert_eq!(
-            fresh_pins[idx as usize].title.to_lowercase(),
+            fresh_pins[idx as usize]
+                .title
+                .nfkd()
+                .collect::<String>()
+                .to_lowercase(),
             cached_pin.title_lowered
         );
         // Url
@@ -1029,7 +1069,11 @@ fn serde_update_cache() {
         // tags
         assert_eq!(fresh_pins[idx as usize].tags, cached_pin.pin.tags);
         assert_eq!(
-            fresh_pins[idx as usize].tags.to_lowercase(),
+            fresh_pins[idx as usize]
+                .tags
+                .nfkd()
+                .collect::<String>()
+                .to_lowercase(),
             cached_pin.tag_list.join(" ")
         );
         // shared
@@ -1049,7 +1093,12 @@ fn serde_update_cache() {
         if fresh_pins[idx as usize].extended.is_some() {
             assert!(cached_pin.pin.extended.is_some());
             assert_eq!(
-                fresh_pins[idx as usize].extended.as_ref().unwrap(),
+                fresh_pins[idx as usize]
+                    .extended
+                    .as_ref()
+                    .unwrap()
+                    .nfkd()
+                    .collect::<String>(),
                 cached_pin.pin.extended.as_ref().unwrap().as_ref()
             );
             assert_eq!(
@@ -1057,6 +1106,8 @@ fn serde_update_cache() {
                     .extended
                     .as_ref()
                     .unwrap()
+                    .nfkd()
+                    .collect::<String>()
                     .to_lowercase(),
                 cached_pin.extended_lowered.as_ref().unwrap().as_ref()
             )

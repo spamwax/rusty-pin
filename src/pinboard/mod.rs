@@ -311,6 +311,8 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     }
 
     /// Searches the selected `fields` within bookmarks to filter them.
+    /// It will return bookmarks that have ALL of search queries provided in 'q' somewhere in the
+    /// specified 'fields' of the bookmark.
     /// This function honors [pinboard::config::Config] settings for fuzzy search only.
     pub fn search<'b, I, S>(
         &'pin self,
@@ -387,7 +389,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                 .map(|p| {
                     p.iter()
                         .filter(|cached_pin: &&CachedPin| {
-                            q.into_iter().all(|qi| {
+                            normalized_queires.iter().all(|qi| {
                                 search_fields.iter().any(|search_type| match *search_type {
                                     SearchType::TitleOnly => MATCHER
                                         .fuzzy_match(&cached_pin.title_lowered, qi.as_ref())
