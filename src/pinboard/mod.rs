@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use unicode_normalization::UnicodeNormalization;
+// use unicode_normalization::{is_nfc, is_nfd, is_nfkc, is_nfkd};
 
 use rmps::Serializer;
 use serde::Deserialize;
@@ -336,6 +338,12 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
             fields
         };
 
+        // Apply Unicode normalization to user-input search query using 'K'ompatibility and
+        // 'D'ecomposition options (nfkd). Alfred seems to use the same.
+        let normalized_queires = q
+            .into_iter()
+            .map(|s| s.as_ref().chars().nfkd().collect::<String>().to_lowercase())
+            .collect::<Vec<String>>();
         let results = if !self.cfg.fuzzy_search {
             self.cached_data
                 .pins
@@ -343,8 +351,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                 .map(|p: &Vec<CachedPin<'pin>>| {
                     p.iter()
                         .filter(|cached_pin: &&CachedPin<'pin>| {
-                            q.into_iter().all(|s| {
-                                let query = &s.as_ref().to_lowercase();
+                            normalized_queires.iter().all(|query| {
                                 search_fields.iter().any(|search_type| match *search_type {
                                     SearchType::TitleOnly => {
                                         cached_pin.title_lowered.contains(query)

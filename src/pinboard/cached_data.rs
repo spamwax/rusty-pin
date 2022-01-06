@@ -168,14 +168,19 @@ impl<'pin> CachedData<'pin> {
                 debug!(" lowercasing fields");
                 pins.into_iter()
                     .map(|pin| {
-                        let tags_lowered = pin.tags.to_lowercase();
+                        let tags_lowered = pin.tags.nfkd().collect::<String>().to_lowercase();
+                        let title_lowered = pin.title.nfkd().collect::<String>().to_lowercase();
+                        let extended_lowered = pin
+                            .extended
+                            .as_ref()
+                            .map(|e| e.nfkd().collect::<String>().to_lowercase());
                         CachedPin {
                             tag_list: tags_lowered
                                 .split_whitespace()
                                 .map(std::string::ToString::to_string)
                                 .collect(),
-                            title_lowered: pin.title.to_lowercase(),
-                            extended_lowered: pin.extended.as_ref().map(|e| e.to_lowercase()),
+                            title_lowered,
+                            extended_lowered,
                             pin,
                         }
                     })
@@ -215,7 +220,7 @@ impl<'pin> CachedData<'pin> {
                 debug!("  lowercasing tags");
                 tags.into_iter()
                     .map(|tag| CachedTag {
-                        tag_lowered: tag.0.to_lowercase(),
+                        tag_lowered: tag.0.nfkd().collect::<String>().to_lowercase(),
                         tag,
                     })
                     .collect()
