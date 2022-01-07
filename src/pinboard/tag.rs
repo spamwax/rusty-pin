@@ -83,7 +83,7 @@ mod tests {
     }
 
     #[test]
-    fn tag_unicdo_test() {
+    fn tag_unicode_test() {
         let t1 = Tag::new("tag👻1".to_string(), 1);
         let t2 = Tag::new("tag👻2".to_string(), 1);
         assert!(t1 != t2);

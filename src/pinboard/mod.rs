@@ -2,7 +2,6 @@ use std::borrow::Cow;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use unicode_normalization::UnicodeNormalization;
-// use unicode_normalization::{is_nfc, is_nfd, is_nfkc, is_nfkd};
 
 use rmps::Serializer;
 use serde::Deserialize;

@@ -165,7 +165,7 @@ impl<'pin> CachedData<'pin> {
             })
             .map(|pins: Vec<Pin>| {
                 // Lower case all fields of each pin
-                debug!(" lowercasing fields");
+                debug!(" unicode normalization and lowercasing fields");
                 pins.into_iter()
                     .map(|pin| {
                         let tags_lowered = pin.tags.nfkd().collect::<String>().to_lowercase();
@@ -217,7 +217,7 @@ impl<'pin> CachedData<'pin> {
                 tags
             })
             .map(|tags| {
-                debug!("  lowercasing tags");
+                debug!(" unicode normalization and lowercasing");
                 tags.into_iter()
                     .map(|tag| CachedTag {
                         tag_lowered: tag.0.nfkd().collect::<String>().to_lowercase(),
@@ -270,6 +270,69 @@ mod tests {
     use crate::rmps::Deserializer;
     use env_logger;
     use serde::Deserialize;
+
+    #[test]
+    fn unicode_normalization_test() {
+        let _ = env_logger::try_init();
+        debug!("serde_a_cached_pin: starting");
+        let mut pin = PinBuilder::new(
+            "https://danielkeep.github.io/tlborm/book/README.html",
+            "The Little Book of Rust Macros آموزشی",
+        )
+        .tags("지구 Rust macros")
+        .toread("yes")
+        .shared("no")
+        .description("지구")
+        .into_pin();
+        pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
+
+        let tag_list = ["지구", "Rust", "macros"]
+            .iter()
+            .map(|&t| t.chars().nfkd().collect::<String>().to_lowercase())
+            .collect::<Vec<String>>();
+        let cached_pin = CachedPin {
+            pin,
+            tag_list,
+            title_lowered: "The Little Book of Rust Macros آموزشی"
+                .chars()
+                .nfkd()
+                .collect::<String>()
+                .to_lowercase(),
+            extended_lowered: Some("지구".nfkd().collect::<String>().to_lowercase()),
+        };
+        // non-normalized "지구" should not be found in normalized tag list of the pin
+        let r = format!(
+            "\nquery: {:?}\nextended_norm: {:?}\n",
+            "지구".as_bytes(),
+            cached_pin.extended_lowered.as_ref().unwrap().as_bytes()
+        );
+        assert!(
+            !cached_pin
+                .extended_lowered
+                .as_ref()
+                .unwrap()
+                .as_str()
+                .contains("지구"),
+            "Normalized and non-normalized tags should not be the same.{}",
+            r
+        );
+        // normalized "지구" should be found in normalized tag list of the pin
+        assert!(
+            cached_pin.tag_list.contains(&"지구".into()),
+            "Normalized and non-normalized tags should not be the same"
+        );
+        // is_nfk("آموزشی") is true, so we should be able to find it in the normalized cache.
+        assert!(
+            cached_pin.title_lowered.contains("آموزشی"),
+            "Already normalized search queires should be found in our normalized title."
+        );
+        // Normalizing "آموزشی" should give us the same result as previous assert.
+        let normalized_query = "آموزشی".chars().nfkd().collect::<String>();
+        assert!(
+            cached_pin.title_lowered.contains(&normalized_query),
+            "Already normalized search queires should be found in our normalized title."
+        );
+    }
 
     #[test]
     fn serde_a_cached_pin() {
