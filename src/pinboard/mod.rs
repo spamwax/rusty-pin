@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::fs::File;
 use std::path::{Path, PathBuf};
-use unicode_normalization::UnicodeNormalization;
+use unicode_normalization::{is_nfkd_quick, IsNormalized, UnicodeNormalization};
 
 use rmps::Serializer;
 use serde::Deserialize;
@@ -176,6 +176,11 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     /// This function honors [pinboard::config::Config] settings for fuzzy search & tag_only search.
     pub fn search_items(&self, query: &str) -> Result<Option<Vec<&Pin>>, Error> {
         debug!("search_items: starting.");
+        let query = if is_nfkd_quick(query.chars()) != IsNormalized::Yes {
+            query.chars().nfkd().collect::<String>()
+        } else {
+            query.into()
+        };
         let q = &query.to_lowercase();
         if self.cached_data.cache_ok() {
             let r = self
@@ -187,12 +192,12 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                         .filter(|item: &&CachedPin| {
                             if self.cfg.tag_only_search {
                                 if self.cfg.fuzzy_search {
-                                    item.pin.tag_contains(query, Some(&MATCHER))
+                                    item.pin.tag_contains(&query, Some(&MATCHER))
                                 } else {
                                     item.pin.tag_contains(q, None)
                                 }
                             } else if self.cfg.fuzzy_search {
-                                item.pin.contains_fuzzy(query, &MATCHER)
+                                item.pin.contains_fuzzy(&query, &MATCHER)
                             } else {
                                 item.pin.contains(q)
                             }
@@ -216,6 +221,11 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     pub fn search_list_of_tags(&self, query: &str) -> Result<Option<Vec<&Tag>>, Error> {
         debug!("search_list_of_tags: starting.");
         if self.cached_data.cache_ok() {
+            let query = if is_nfkd_quick(query.chars()) != IsNormalized::Yes {
+                query.chars().nfkd().collect::<String>()
+            } else {
+                query.into()
+            };
             let q = &query.to_lowercase();
             let r = self
                 .cached_data
@@ -227,7 +237,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                             if !self.cfg.fuzzy_search {
                                 item.tag_lowered.contains(q)
                             } else {
-                                MATCHER.fuzzy_match(&item.tag.0, query).is_some()
+                                MATCHER.fuzzy_match(&item.tag.0, &query).is_some()
                             }
                         })
                         .map(|ct| &ct.tag)
@@ -291,14 +301,24 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
         if !self.cached_data.cache_ok() {
             bail!("Cache data is invalid.");
         }
-        let query = &query.as_ref().to_lowercase();
+
+        let query = if is_nfkd_quick(query.as_ref().chars()) != IsNormalized::Yes {
+            query
+                .as_ref()
+                .chars()
+                .nfkd()
+                .collect::<String>()
+                .to_lowercase()
+        } else {
+            query.as_ref().to_lowercase()
+        };
         let results = self
             .cached_data
             .pins
             .as_ref()
             .map(|p: &Vec<CachedPin<'pin>>| {
                 p.iter()
-                    .filter(|cached_pin: &&CachedPin<'pin>| cached_pin.tag_list.contains(query))
+                    .filter(|cached_pin: &&CachedPin<'pin>| cached_pin.tag_list.contains(&query))
                     .map(|p| &p.pin)
                     .collect::<Vec<&'pin Pin>>()
             })
