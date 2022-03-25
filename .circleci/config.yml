@@ -46,7 +46,7 @@ jobs:
 
   macos:
     macos:
-      xcode: "11.0"
+      xcode: "12.5.1"
     environment:
       RUST_BACKTRACE: 1
       TARGET: x86_64-apple-darwin
