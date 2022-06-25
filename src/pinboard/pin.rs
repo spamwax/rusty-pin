@@ -19,7 +19,7 @@ pub struct Pin<'pin> {
     pub time: DateTime<Utc>,
 }
 
-use unicode_normalization::{is_nfd_quick, is_nfkd_quick, IsNormalized};
+use unicode_normalization::{is_nfkd_quick, IsNormalized};
 impl<'pin> Pin<'pin> {
     pub fn time(&self) -> DateTime<Utc> {
         self.time

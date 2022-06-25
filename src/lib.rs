@@ -36,7 +36,7 @@ extern crate env_logger;
 extern crate log;
 
 extern crate unicode_normalization;
-use unicode_normalization::{is_nfc, is_nfd, is_nfkc, is_nfkd};
+// use unicode_normalization::{is_nfc, is_nfd, is_nfkc, is_nfkd};
 
 pub mod pinboard;
 
