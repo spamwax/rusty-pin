@@ -353,7 +353,7 @@ fn add_pin_test() {
             .expect_err("Should return parse error for malformed url");
         assert_eq!(
             &ParseError::RelativeUrlWithoutBase,
-            r.find_root_cause().downcast_ref::<ParseError>().unwrap()
+            r.downcast_ref::<ParseError>().unwrap()
         );
     }
 }
@@ -390,7 +390,7 @@ fn delete_test() {
         let e = pinboard
             .delete(":// bad_url/")
             .expect_err("Should not succeed deleting a malformed url");
-        assert_eq!("item not found", e.as_fail().to_string());
+        assert_eq!("item not found", e.to_string());
     }
 
     // println!("e--> {:?}", e);
@@ -438,12 +438,9 @@ fn popular_tags() {
         .expect_err("Suggested tags for malformed url");
     assert_eq!(
         &url::ParseError::RelativeUrlWithoutBase,
-        error
-            .find_root_cause()
-            .downcast_ref::<url::ParseError>()
-            .unwrap()
+        error.downcast_ref::<url::ParseError>().unwrap()
     );
-    if let Some(t) = error.as_fail().downcast_ref::<ParseError>() {
+    if let Some(t) = error.downcast_ref::<ParseError>() {
         match t {
             ParseError::RelativeUrlWithoutBase => (),
             _ => panic!("Deleted a malformed url"),

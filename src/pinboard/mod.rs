@@ -9,8 +9,6 @@ use rmps::Serializer;
 use chrono::prelude::*;
 use url::Url;
 
-use failure::Error;
-
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 
@@ -48,7 +46,10 @@ pub struct Pinboard<'api, 'pin> {
 }
 
 impl<'api, 'pin> Pinboard<'api, 'pin> {
-    pub fn new<S, P>(auth_token: S, cached_dir: Option<P>) -> Result<Self, Error>
+    pub fn new<S, P>(
+        auth_token: S,
+        cached_dir: Option<P>,
+    ) -> Result<Self, Box<dyn std::error::Error>>
     where
         S: Into<Cow<'api, str>>,
         P: AsRef<Path>,
@@ -75,7 +76,10 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
         Ok(pinboard)
     }
 
-    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), Error> {
+    pub fn set_cache_dir<P: AsRef<Path>>(
+        &mut self,
+        p: &P,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         debug!("set_cache_dir: starting.");
         self.cached_data.set_cache_dir(p)?;
         self.cached_data.load_cache_data_from_file()
@@ -101,36 +105,43 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
         self.cfg.toread_new_pin = v;
     }
 
-    pub fn add_pin(&self, p: Pin) -> Result<(), Error> {
+    pub fn add_pin(&self, p: Pin) -> Result<(), Box<dyn std::error::Error>> {
         debug!("add_pin: starting.");
         let _ = Url::parse(&p.url)?;
         self.api.add_url(p)
     }
 
-    pub fn delete<T: AsRef<str>>(&self, url: T) -> Result<(), Error> {
+    pub fn delete<T: AsRef<str>>(&self, url: T) -> Result<(), Box<dyn std::error::Error>> {
         debug!("delete: starting.");
         self.api.delete(url)
     }
 
-    pub fn is_cache_outdated(&self, last_update: DateTime<Utc>) -> Result<bool, Error> {
+    pub fn is_cache_outdated(
+        &self,
+        last_update: DateTime<Utc>,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
         debug!("is_cache_outdated: starting.");
         self.api.recent_update().map(|res| last_update < res)
     }
 
     /// Delete a tag
-    pub fn delete_tag<T: AsRef<str>>(&self, tag: T) -> Result<(), Error> {
+    pub fn delete_tag<T: AsRef<str>>(&self, tag: T) -> Result<(), Box<dyn std::error::Error>> {
         debug!("delete_tag: starting.");
         self.api.tag_delete(tag)
     }
 
     /// Rename a tag
-    pub fn rename_tag<T: AsRef<str>>(&self, old: T, new: T) -> Result<(), Error> {
+    pub fn rename_tag<T: AsRef<str>>(
+        &self,
+        old: T,
+        new: T,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         debug!("rename_tag: starting.");
         self.api.tag_rename(old, new)
     }
 
     /// Update local cache
-    pub fn update_cache(&mut self) -> Result<(), Error> {
+    pub fn update_cache(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         debug!("update_cache: starting.");
         self.cached_data.update_cache(&self.api)
     }
@@ -154,7 +165,10 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     }
 
     /// Suggest a list of tags based on the provided URL
-    pub fn popular_tags<T: AsRef<str>>(&self, url: T) -> Result<Vec<String>, Error> {
+    pub fn popular_tags<T: AsRef<str>>(
+        &self,
+        url: T,
+    ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         debug!("popular_tags: starting.");
         let _ = Url::parse(url.as_ref())?;
         self.api.suggest_tags(url)
@@ -174,7 +188,10 @@ pub enum SearchType {
 impl<'api, 'pin> Pinboard<'api, 'pin> {
     /// Searches all the fields within bookmarks to filter them.
     /// This function honors [pinboard::config::Config] settings for fuzzy search & tag_only search.
-    pub fn search_items(&self, query: &str) -> Result<Option<Vec<&Pin>>, Error> {
+    pub fn search_items(
+        &self,
+        query: &str,
+    ) -> Result<Option<Vec<&Pin>>, Box<dyn std::error::Error>> {
         debug!("search_items: starting.");
         let query = if is_nfkd_quick(query.chars()) != IsNormalized::Yes {
             query.chars().nfkd().collect::<String>()
@@ -211,14 +228,18 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                 _ => Ok(Some(r)),
             }
         } else {
-            bail!("Tags cache data is invalid")
+            Err("Tags cache data is invalid".into())
+            // Err("vailid".into())
         }
     }
 
     /// Search tags for `query` (uses cached tags).
     /// Returns all tags that _contain_ query
     /// This function honors [pinboard::config::Config] settings for fuzzy search.
-    pub fn search_list_of_tags(&self, query: &str) -> Result<Option<Vec<&Tag>>, Error> {
+    pub fn search_list_of_tags(
+        &self,
+        query: &str,
+    ) -> Result<Option<Vec<&Tag>>, Box<dyn std::error::Error>> {
         debug!("search_list_of_tags: starting.");
         if self.cached_data.cache_ok() {
             let query = if is_nfkd_quick(query.chars()) != IsNormalized::Yes {
@@ -249,7 +270,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
                 _ => Ok(Some(r)),
             }
         } else {
-            bail!("Tags cache data is invalid")
+            Err("Tags cache data is invalid".into())
         }
     }
 
@@ -264,13 +285,16 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     /// http://google.com/public
     /// but not following
     /// http://google.com/public#fragment
-    pub fn find_url<S>(&'pin self, q: S) -> Result<Option<Vec<&'pin Pin<'pin>>>, Error>
+    pub fn find_url<S>(
+        &'pin self,
+        q: S,
+    ) -> Result<Option<Vec<&'pin Pin<'pin>>>, Box<dyn std::error::Error>>
     where
         S: AsRef<str>,
     {
         debug!("find_url: starting.");
         if !self.cached_data.cache_ok() {
-            bail!("Cache data is invalid.");
+            return Err("Cache data is invalid.".into());
         }
         let query = &q.as_ref().to_lowercase();
         let results = self
@@ -293,13 +317,16 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     }
 
     /// Finds all pins with an exact tag of 'query'
-    pub fn find_tag<S>(&'pin self, query: S) -> Result<Option<Vec<&'pin Pin<'pin>>>, Error>
+    pub fn find_tag<S>(
+        &'pin self,
+        query: S,
+    ) -> Result<Option<Vec<&'pin Pin<'pin>>>, Box<dyn std::error::Error>>
     where
         S: AsRef<str>,
     {
         debug!("find_tag: starting.");
         if !self.cached_data.cache_ok() {
-            bail!("Cache data is invalid.");
+            return Err("Cache data is invalid.".into());
         }
 
         let query = if is_nfkd_quick(query.as_ref().chars()) != IsNormalized::Yes {
@@ -337,14 +364,14 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
         &'pin self,
         q: &'b I,
         fields: &[SearchType],
-    ) -> Result<Option<Vec<&'pin Pin<'pin>>>, Error>
+    ) -> Result<Option<Vec<&'pin Pin<'pin>>>, Box<dyn std::error::Error>>
     where
         &'b I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
         debug!("search: starting.");
         if !self.cached_data.cache_ok() {
-            bail!("Cache data is invalid.");
+            return Err("Cache data is invalid.".into());
         }
         // When no field is specified, search everywhere
         let all_fields = vec![

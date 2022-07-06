@@ -5,7 +5,7 @@ use chrono::prelude::*;
 
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Pin<'pin> {
     #[serde(rename = "href")]
     pub url: Cow<'pin, str>,
@@ -80,7 +80,7 @@ impl<'pin> Pin<'pin> {
         assert!(is_nfkd_quick(q.chars()) == IsNormalized::Yes);
         matcher.fuzzy_match(&self.tags, q).is_some()
             || matcher.fuzzy_match(&self.title, q).is_some()
-            || matcher.fuzzy_match(&self.url.as_ref(), q).is_some()
+            || matcher.fuzzy_match(self.url.as_ref(), q).is_some()
             || if let Some(ref extended) = self.extended {
                 matcher.fuzzy_match(extended, q).is_some()
             } else {

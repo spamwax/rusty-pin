@@ -6,8 +6,6 @@ use std::io::{BufReader, BufWriter};
 use crate::rmps;
 use serde::Serialize;
 
-use failure::Error;
-
 use self::tag::Tag;
 use super::pin::Pin;
 
@@ -29,7 +27,7 @@ pub struct CachedData<'pin> {
 
 // TODO: Add a url_lowered field to CachedPin so we don't have to call
 //       .to_lowercase() in pinboard.find_url() every time //
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct CachedPin<'pin> {
     pub pin: Pin<'pin>,
     pub tag_list: Vec<String>,
@@ -37,14 +35,14 @@ pub struct CachedPin<'pin> {
     pub extended_lowered: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct CachedTag {
     pub tag: Tag,
     pub tag_lowered: String,
 }
 
 impl<'pin> CachedData<'pin> {
-    pub fn new<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, Error> {
+    pub fn new<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, Box<dyn std::error::Error>> {
         let _ = env_logger::try_init();
         debug!("new: starting");
         let cached_dir = c_dir.map(|p| p.as_ref().to_path_buf()).unwrap_or_else(|| {
@@ -71,7 +69,7 @@ impl<'pin> CachedData<'pin> {
 
     /// Create an instance for CachedData but don't load actual cached files.
     #[allow(dead_code)]
-    pub fn init<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, Error> {
+    pub fn init<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, Box<dyn std::error::Error>> {
         let _ = env_logger::try_init();
         debug!("init: starting");
         let cached_dir = c_dir.map(|p| p.as_ref().to_path_buf()).unwrap_or_else(|| {
@@ -92,7 +90,9 @@ impl<'pin> CachedData<'pin> {
         Ok(data)
     }
 
-    fn create_cache_dir<P: AsRef<Path>>(cache_dir: P) -> Result<PathBuf, Error> {
+    fn create_cache_dir<P: AsRef<Path>>(
+        cache_dir: P,
+    ) -> Result<PathBuf, Box<dyn std::error::Error>> {
         let _ = env_logger::try_init();
         debug!("create_cache_dir: starting");
         use std::fs;
@@ -106,7 +106,10 @@ impl<'pin> CachedData<'pin> {
 }
 
 impl<'pin> CachedData<'pin> {
-    pub fn set_cache_dir<P: AsRef<Path>>(&mut self, p: &P) -> Result<(), Error> {
+    pub fn set_cache_dir<P: AsRef<Path>>(
+        &mut self,
+        p: &P,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         debug!("set_cache_dir: starting");
         self.cache_dir = CachedData::create_cache_dir(p)?;
         self.tags_cache_file = self.cache_dir.join(TAGS_CACHE_FN);
@@ -117,7 +120,7 @@ impl<'pin> CachedData<'pin> {
         Ok(())
     }
 
-    pub fn load_cache_data_from_file(&mut self) -> Result<(), Error> {
+    pub fn load_cache_data_from_file(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         debug!("load_cache_data_from_file: starting");
         match (self.tags_cache_file.exists(), self.pins_cache_file.exists()) {
             (true, true) => {
@@ -126,11 +129,11 @@ impl<'pin> CachedData<'pin> {
                 self.cache_files_valid = true;
                 Ok(())
             }
-            _ => bail!("Missing cache files"),
+            _ => Err("Missing cache files".into()),
         }
     }
 
-    fn read_cached_pins(&mut self) -> Result<(), Error> {
+    fn read_cached_pins(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         debug!("read_cached_pins: starting");
         let fp = File::open(&self.pins_cache_file)?;
         let reader = BufReader::with_capacity(FILE_BUF_SIZE, fp);
@@ -138,7 +141,7 @@ impl<'pin> CachedData<'pin> {
         Ok(())
     }
 
-    fn read_cached_tags(&mut self) -> Result<(), Error> {
+    fn read_cached_tags(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         debug!("read_cached_tags: starting");
         let fp = File::open(&self.tags_cache_file)?;
         let reader = BufReader::with_capacity(FILE_BUF_SIZE, fp);
@@ -151,7 +154,7 @@ impl<'pin> CachedData<'pin> {
         self.cache_files_valid
     }
 
-    pub fn update_cache(&mut self, api: &api::Api) -> Result<(), Error> {
+    pub fn update_cache(&mut self, api: &api::Api) -> Result<(), Box<dyn std::error::Error>> {
         debug!("update_cache: starting");
         // Fetch & write all pins
         let f = File::create(&self.pins_cache_file)?;

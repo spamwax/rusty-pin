@@ -11,11 +11,10 @@ use env_logger;
 use std::collections::HashMap;
 use std::io::Read;
 
-use failure::{err_msg, Error};
-
 use super::pin::Pin;
 use super::tag::Tag;
 
+use thiserror::Error;
 // use serde::{Deserialize, Serialize};
 
 #[cfg(not(test))]
@@ -38,13 +37,13 @@ struct ApiResult {
 }
 
 impl ApiResult {
-    fn ok(self) -> Result<(), Error> {
+    fn ok(self) -> Result<(), Box<dyn std::error::Error>> {
         if self.result_code == "done" || self.result == "done" {
             Ok(())
         } else if !self.result_code.is_empty() {
-            bail!(self.result_code)
+            Err(self.result_code.into())
         } else {
-            bail!(self.result)
+            Err(self.result.into())
         }
     }
 }
@@ -60,17 +59,23 @@ pub struct Api<'api> {
     auth_token: Cow<'api, str>,
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Error)]
 pub enum ApiError {
-    #[fail(display = "invalid url: {}", _0)]
+    // #[fail(display = "invalid url: {}", _0)]
+    #[error("invalid url: {0}")]
     UrlError(String),
-    #[fail(display = "invalid server response: {}", _0)]
+    // #[fail(display = "invalid server response: {}", _0)]
+    #[error("invalid server response: {0}")]
     UnrecognizedResponse(String),
-    #[fail(display = "Server couldn't fulfill request: {}", _0)]
+    // #[fail(display = "Server couldn't fulfill request: {}", _0)]
+    #[error("server couldn't fulfill request: {0}")]
     ServerError(String),
-    #[fail(display = "network error: {}", _0)]
+    // #[fail(display = "network error: {}", _0)]
+    #[error("network error: {0}")]
     Network(String),
-    #[fail(display = "serde error: {}", _0)]
+    // Network(#[from] std::io::Error),
+    // #[fail(display = "serde error: {}", _0)]
+    #[error("serde error: {0}")]
     SerdeError(String),
 }
 
@@ -85,13 +90,14 @@ impl<'api, 'pin> Api<'api> {
         }
     }
 
-    pub fn all_pins(&self) -> Result<Vec<Pin<'pin>>, Error> {
+    pub fn all_pins(&self) -> Result<Vec<Pin<'pin>>, Box<dyn std::error::Error>> {
         debug!("all_pins: starting.");
         let res =
             self.get_api_response([BASE_URL, "/posts/all"].concat().as_str(), HashMap::new())?;
         debug!("  received all bookmarks");
 
-        let mut v: serde_json::Value = serde_json::from_str(res.as_str())?;
+        let mut v: serde_json::Value =
+            serde_json::from_str(res.as_str()).map_err(|e| ApiError::SerdeError(e.to_string()))?;
         let v = v.as_array_mut().ok_or_else(|| {
             ApiError::UnrecognizedResponse("array of bookmarks expected from server".to_string())
         })?;
@@ -116,7 +122,10 @@ impl<'api, 'pin> Api<'api> {
         Ok(pins)
     }
 
-    pub fn suggest_tags<T: AsRef<str>>(&self, url: T) -> Result<Vec<String>, Error> {
+    pub fn suggest_tags<T: AsRef<str>>(
+        &self,
+        url: T,
+    ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         debug!("suggest_tags: starting.");
         let mut query = HashMap::new();
         query.insert("url", url.as_ref());
@@ -144,7 +153,7 @@ impl<'api, 'pin> Api<'api> {
             })?)
     }
 
-    pub fn add_url(&self, p: Pin) -> Result<(), Error> {
+    pub fn add_url(&self, p: Pin) -> Result<(), Box<dyn std::error::Error>> {
         debug!("add_url: starting.");
         let url: &str = &p.url;
         let extended = &p.extended.unwrap_or_default();
@@ -168,7 +177,11 @@ impl<'api, 'pin> Api<'api> {
             .and_then(self::ApiResult::ok)
     }
 
-    pub fn tag_rename<T: AsRef<str>>(&self, old: T, new: T) -> Result<(), Error> {
+    pub fn tag_rename<T: AsRef<str>>(
+        &self,
+        old: T,
+        new: T,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         debug!("tag_rename: starting.");
         let mut map = HashMap::new();
         map.insert("old", old.as_ref());
@@ -181,7 +194,7 @@ impl<'api, 'pin> Api<'api> {
             .and_then(self::ApiResult::ok)
     }
 
-    pub fn tag_delete<T: AsRef<str>>(&self, tag: T) -> Result<(), Error> {
+    pub fn tag_delete<T: AsRef<str>>(&self, tag: T) -> Result<(), Box<dyn std::error::Error>> {
         debug!("tag_rename: starting.");
         let mut map = HashMap::new();
         map.insert("tag", tag.as_ref());
@@ -194,7 +207,7 @@ impl<'api, 'pin> Api<'api> {
     }
 
     /// Gets all tags with their usage frequency.
-    pub fn tags_frequency(&self) -> Result<Vec<Tag>, Error> {
+    pub fn tags_frequency(&self) -> Result<Vec<Tag>, Box<dyn std::error::Error>> {
         // Pinboard API returns json narray when user has no tags, otherwise it returns an
         // object/map of tag:frequency!
         debug!("tags_frequency: starting.");
@@ -239,7 +252,7 @@ impl<'api, 'pin> Api<'api> {
         Ok(vec![])
     }
 
-    pub fn delete<T: AsRef<str>>(&self, url: T) -> Result<(), Error> {
+    pub fn delete<T: AsRef<str>>(&self, url: T) -> Result<(), Box<dyn std::error::Error>> {
         debug!("delete: starting.");
         let mut map = HashMap::new();
         debug!(" url: {}", url.as_ref());
@@ -253,7 +266,7 @@ impl<'api, 'pin> Api<'api> {
             .and_then(self::ApiResult::ok)
     }
 
-    pub fn recent_update(&self) -> Result<DateTime<Utc>, Error> {
+    pub fn recent_update(&self) -> Result<DateTime<Utc>, Box<dyn std::error::Error>> {
         debug!("recent_update: starting.");
         self.get_api_response(
             [BASE_URL, "/posts/update"].concat().as_str(),
@@ -279,18 +292,12 @@ impl<'api, 'pin> Api<'api> {
         &self,
         endpoint: T,
         params: HashMap<&str, &str>,
-    ) -> Result<String, Error> {
+    ) -> Result<String, Box<dyn std::error::Error>> {
         debug!("get_api_response: starting.");
 
         let endpoint_string = endpoint.as_ref().to_string();
-        let mut base_url = Url::parse(endpoint.as_ref()).map_err(|_| {
-            let api_err: Error = ApiError::UrlError(endpoint_string).into();
-            api_err
-        })?;
-        // let mut base_url = endpoint.into_url().map_err(|_| {
-        //     let api_err: Error = ApiError::UrlError(endpoint_string).into();
-        //     api_err
-        // })?;
+        let mut base_url =
+            Url::parse(endpoint.as_ref()).map_err(|_| ApiError::UrlError(endpoint_string))?;
         debug!("  url: {:?}", base_url);
 
         for (k, v) in params {
@@ -301,18 +308,22 @@ impl<'api, 'pin> Api<'api> {
         let client = reqwest::Client::new();
         let r = client.get(api_url).send();
 
-        let mut resp = r.map_err(|e| {
-            use std::io;
-            let io_fail = e.get_ref().and_then(|k| k.downcast_ref::<io::Error>());
-            if let Some(f) = io_fail {
-                let m: String = f.to_string();
-                debug!(" ERR: {:#?}", m);
-                err_msg(m)
-            } else {
-                ApiError::Network(format!("Network request error: {:?}", e.to_string())).into()
+        match r {
+            Err(e) => {
+                use std::io;
+                let io_fail = e.get_ref().and_then(|k| k.downcast_ref::<io::Error>());
+                if let Some(f) = io_fail {
+                    let m = f.to_string();
+                    return Err(m.into());
+                } else {
+                    return Err(Box::new(ApiError::Network(e.to_string())));
+                }
             }
-        })?;
-        debug!(" resp is ok (no error)");
+            Ok(_) => {
+                debug!("  server resp is ok (no error)")
+            }
+        }
+        let mut resp = r.unwrap();
 
         if resp.status().is_success() {
             let mut content = String::with_capacity(2 * 1024);
@@ -369,10 +380,8 @@ mod tests {
         let api = Api::new(include_str!("api_token.txt"));
         let r = api.delete(TEST_URL);
         assert_eq!(
-            "Server couldn't fulfill request: Too Many Requests",
-            r.expect_err("Expected Not Found")
-                .find_root_cause()
-                .to_string()
+            "server couldn't fulfill request: Too Many Requests",
+            r.expect_err("Expected Not Found").to_string()
         );
     }
 
@@ -429,7 +438,7 @@ mod tests {
             let r = api
                 .tag_rename("old_tag", "")
                 .expect_err("renaming to empty tag should return error");
-            assert_eq!("rename to null".to_string(), r.as_fail().to_string());
+            assert_eq!("rename to null".to_string(), r.to_string());
         }
     }
 
@@ -453,7 +462,7 @@ mod tests {
             let r = api
                 .delete("http://no.fucking.way")
                 .expect_err("Deleted non-existing pin");
-            assert_eq!("item not found".to_string(), r.as_fail().to_string());
+            assert_eq!("item not found".to_string(), r.to_string());
         }
 
         {
@@ -466,7 +475,7 @@ mod tests {
             let r = api
                 .delete(":// bad url/#")
                 .expect_err("should not find a malformed url to delete");
-            assert_eq!("item not found".to_string(), r.as_fail().to_string());
+            assert_eq!("item not found".to_string(), r.to_string());
         }
     }
 
@@ -499,7 +508,7 @@ mod tests {
             let r = api
                 .add_url(p)
                 .expect_err("server should not have accepted malformed url");
-            assert_eq!("missing url", r.as_fail().to_string());
+            assert_eq!("missing url", r.to_string());
         }
     }
 

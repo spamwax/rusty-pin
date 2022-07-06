@@ -5,7 +5,7 @@ authors = ["Hamid Ghadyani <hamid@hamid.cc>"]
 description = """
 Pinboard's API in pure Rust
 """
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 lazy_static = "1.4.0"
@@ -23,7 +23,8 @@ rmp-serde = "1.1"
 # regex = "1.5.2"
 fuzzy-matcher = "0.3.7"
 
-failure = "0.1"
+# failure = "0.1"
+thiserror = "1.0"
 failure_derive = "0.1"
 log = "0.4"
 env_logger = "0.9"

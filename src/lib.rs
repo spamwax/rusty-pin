@@ -26,11 +26,6 @@ extern crate url_serde;
 
 extern crate dirs;
 
-#[macro_use]
-extern crate failure;
-#[macro_use]
-extern crate failure_derive;
-
 extern crate env_logger;
 #[macro_use]
 extern crate log;
