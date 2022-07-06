@@ -16,7 +16,7 @@ use failure::{err_msg, Error};
 use super::pin::Pin;
 use super::tag::Tag;
 
-use serde::{Deserialize, Serialize};
+// use serde::{Deserialize, Serialize};
 
 #[cfg(not(test))]
 const BASE_URL: &str = "https://api.pinboard.in/v1";

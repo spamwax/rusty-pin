@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use unicode_normalization::{is_nfkd_quick, IsNormalized, UnicodeNormalization};
 
 use rmps::Serializer;
-use serde::Deserialize;
+// use serde::Deserialize;
 
 use chrono::prelude::*;
 use url::Url;

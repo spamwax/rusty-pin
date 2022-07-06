@@ -4,7 +4,7 @@ use std::fmt;
 extern crate serde;
 
 // use rmps::{Deserializer, Serializer};
-use serde::{Deserialize, Serialize};
+// use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Eq, Clone)]
 pub struct Tag(pub String, pub TagFreq);
 
