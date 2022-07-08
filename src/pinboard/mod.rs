@@ -187,7 +187,7 @@ pub enum SearchType {
 // Search functions
 impl<'api, 'pin> Pinboard<'api, 'pin> {
     /// Searches all the fields within bookmarks to filter them.
-    /// This function honors [pinboard::config::Config] settings for fuzzy search & tag_only search.
+    /// This function honors `[pinboard::config::Config]` settings for fuzzy search & tag_only search.
     pub fn search_items(
         &self,
         query: &str,
@@ -234,8 +234,8 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     }
 
     /// Search tags for `query` (uses cached tags).
-    /// Returns all tags that _contain_ query
-    /// This function honors [pinboard::config::Config] settings for fuzzy search.
+    /// Returns all tags that _contain_ query.
+    /// This function honors [`pinboard::config::Config`] settings for fuzzy search.
     pub fn search_list_of_tags(
         &self,
         query: &str,
@@ -281,10 +281,10 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
 
     /// Finds all pins whose url is an exact match of the `q`
     ///
-    /// find_url("http://google.com/public") will match following
-    /// http://google.com/public
-    /// but not following
-    /// http://google.com/public#fragment
+    /// `find_url("http://google.com/public")` will match
+    /// <http://google.com/public>
+    /// but not
+    /// <http://google.com/public#fragment>
     pub fn find_url<S>(
         &'pin self,
         q: S,
@@ -359,7 +359,7 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     /// Searches the selected `fields` within bookmarks to filter them.
     /// It will return bookmarks that have ALL of search queries provided in 'q' somewhere in the
     /// specified 'fields' of the bookmark.
-    /// This function honors [pinboard::config::Config] settings for fuzzy search only.
+    /// This function honors [`pinboard::config::Config`] settings for fuzzy search only.
     pub fn search<'b, I, S>(
         &'pin self,
         q: &'b I,

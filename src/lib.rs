@@ -286,7 +286,7 @@ mod tests {
                 r#"{"href":"https://danielkeep.github.io/tlborm/book/README.html",
 "description":"The Little Book of Rust Macros","tags":"Rust macros","shared":"no"
 ,"toread":"no","extended":null,"time":"2017-05-22T17:46:54Z"}"#
-                    .replace("\n", ""),
+                    .replace('\n', ""),
                 s
             );
         }
