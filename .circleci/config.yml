@@ -15,20 +15,21 @@ jobs:
           command: |
             which cargo; which rustc
             rustc --version
+            cargo clippy || true
             # sudo mkdir /opt
             # curl https://sh.rustup.rs -sSf | sh -s -- -y # --default-toolchain << parameters.rust >>
             # sudo apt-get -y -s cargo || echo
             # sudo apt-get -y -s rustc || echo
             # sudo rm -rf /usr/local/bin/{rustc,rustfmt,cargo}
             # sudo ln -s ~/.cargo/bin/* /usr/local/bin
-      - run:
-          name: Install Dependencies
-          command: |
-              sudo sh -c 'echo "deb http://deb.debian.org/debian stretch-backports main" > /etc/apt/sources.list.d/backports.list'
-              sudo apt-get update
-              sudo apt-get clean
-              sudo rm -r /var/lib/apt/lists/*
-              rustup component add clippy rustfmt
+      # - run:
+      #     name: Install Dependencies
+      #     command: |
+      #         sudo sh -c 'echo "deb http://deb.debian.org/debian stretch-backports main" > /etc/apt/sources.list.d/backports.list'
+      #         sudo apt-get update
+      #         sudo apt-get clean
+      #         sudo rm -r /var/lib/apt/lists/*
+      #         rustup component add clippy rustfmt
       - run:
           name: Build
           command: ci/script.sh
