@@ -36,6 +36,7 @@ pub mod pinboard;
 
 pub use crate::pinboard::{Pin, PinBuilder, Pinboard, Tag};
 
+// TODO: Use github actions for CI integration tests.
 // TODO: make get_api_response return reqwest::Response so we can use serde_json::from_read
 // TODO: Properly escape search queries that are used in regex for fuzzy option. <06-02-18, Hamid>
 //       Some special chars to escape: (  ) | ? * + [  ]

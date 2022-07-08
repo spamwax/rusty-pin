@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # This script takes care of building & testing your crate
 
 set -ex
