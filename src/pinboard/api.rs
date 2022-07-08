@@ -305,22 +305,19 @@ impl<'api, 'pin> Api<'api> {
         }
         let api_url = self.add_auth_token(base_url);
 
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
         let r = client.get(api_url).send();
 
         match r {
             Err(e) => {
-                use std::io;
-                let io_fail = e.get_ref().and_then(|k| k.downcast_ref::<io::Error>());
-                if let Some(f) = io_fail {
-                    let m = f.to_string();
-                    return Err(m.into());
-                } else {
+                if e.is_connect() {
                     return Err(Box::new(ApiError::Network(e.to_string())));
+                } else {
+                    return Err(Box::new(ApiError::UnrecognizedResponse(e.to_string())));
                 }
             }
             Ok(_) => {
-                debug!("  server resp is ok (no error)")
+                debug!("  server resp is ok (no error)");
             }
         }
         let mut resp = r.unwrap();
@@ -372,6 +369,26 @@ mod tests {
         let api = Api::new(include_str!("api_token.txt"));
         let r = api.recent_update();
         assert!(r.is_ok());
+    }
+
+    // This test will always panic if the BASE_URL is not set to some unreachable address causes
+    // a network error.
+    // To actually test network errors, change the BASE_URL to something like
+    // "http://oaeisn13k.com" and remove the should_panic attribute. In that case the test should
+    // pass sicne we will encounter a network error.
+    #[test]
+    #[should_panic(expected = "Expected ApiError::Network")]
+    fn network_io_error_test() {
+        let _m1 = start_mockito_server(r"^/posts/delete.*$", 429, r#"io error"#);
+        let api = Api::new(include_str!("api_token.txt"));
+        let r = api.delete("http://google.com/public");
+        assert!(r.is_err());
+        let err = r.unwrap_err();
+        let err = err.downcast_ref::<ApiError>();
+        match err.unwrap() {
+            ApiError::Network(_) => println!("GOT Network"),
+            _ => panic!("Expected ApiError::Network"),
+        }
     }
 
     #[test]

@@ -22,7 +22,6 @@ extern crate reqwest;
 extern crate serde;
 #[macro_use]
 extern crate serde_json;
-extern crate url_serde;
 
 extern crate dirs;
 
@@ -47,6 +46,9 @@ pub use crate::pinboard::{Pin, PinBuilder, Pinboard, Tag};
 // TODO: make all tests use tempfile for the cache folder?
 // TODO: Use RefCell or Cell to have inner mutability //
 // TODO: What happens if no bookmark or no tags are stored in user's account.
+// TODO: Find a way to reliably cause network errors when using Mockito. For example, make BASE_URL
+//       a none const value so it can be set by test functions. That way we can set a bad BASE_URL to
+//       cause network issues. Or, find a crate that does this type of error mocking! <08-07-22>
 
 #[cfg(test)]
 mod tests {
