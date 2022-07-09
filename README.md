@@ -8,3 +8,7 @@ This is mainly written to enable an [Alfred Workflow](https://github.com/spamwax
 
 ## Note
 Expect a lot of breaking changes as the API is getting stabilized.
+
+## Changelog
+
+Change logs are now kept in a [separate document](./CHANGELOG.md).
