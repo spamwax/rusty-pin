@@ -5,8 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- 
+
+## [0.6.0]
 ### Changed
+- Replace 'failure' crate with 'thiserror'
+- Update major crate dependencies (reqwest and url)
+
+## [0.5.8]
+### Fixed
 - Use unicode normalization to store cached data (issue spamwax/alfred-pinboard-rs#138)
+### Added
 - Add search_tag to find pins with exact tag.
 
 ## [0.5.7] - 2020-04-05
