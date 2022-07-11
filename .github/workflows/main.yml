@@ -61,6 +61,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         rust: [1.56.0, stable]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
