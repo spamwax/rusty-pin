@@ -1,0 +1,57 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+    tags:
+      - '*'
+
+env:
+  RELEASE_COMMIT: ${{ github.ref_type == 'tag' }}
+  RUST_LOG: 'debug'
+  RUST_TEST_NOCAPTURE: 1
+  RUST_TEST_THREADS: 1
+  # PINBOARD_TOKEN: ${{ secrets.PINBOARD_TOKEN }}
+
+
+jobs:
+  Build:
+    name: Tests
+    if: ${{ github.ref_type != 'tag'}}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        rust: [1.56.0, stable]
+        exclude:
+          - os: ubuntu-latest
+            rust: 1.56.0
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - name: Prepare folders
+        run: mkdir ~/.cache/mockito-rusty-pin
+      - name: Build (${{ matrix.os }}-${{ matrix.rust }})
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - name: Run module tests (${{ matrix.os }}-${{ matrix.rust }})
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --lib
+      - name: Run doc tests (${{ matrix.os }}-${{ matrix.rust }})
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --doc
