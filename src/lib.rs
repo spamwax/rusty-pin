@@ -54,14 +54,11 @@ pub use crate::pinboard::{Pin, PinBuilder, Pinboard, Tag};
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
-    use tempfile;
 
     mod rmp_serde {
         use crate::rmps::{Deserializer, Serializer};
         use chrono::prelude::*;
-        use env_logger;
         use serde::{Deserialize, Serialize};
-        use serde_json;
         use std::fs::File;
         use std::io::prelude::*;
         use std::io::{BufReader, BufWriter};
@@ -188,7 +185,6 @@ mod tests {
 
     mod json_serde {
         use chrono::prelude::*;
-        use env_logger;
         use url::Url;
 
         use crate::pinboard::pin::{Pin, PinBuilder};

@@ -1,3 +1,4 @@
+// #![allow(clippy::must_use_candidate)]
 use std::cmp::Ordering;
 use std::fmt;
 
@@ -8,6 +9,7 @@ extern crate serde;
 #[derive(Serialize, Deserialize, Debug, Eq, Clone)]
 pub struct Tag(pub String, pub TagFreq);
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum TagFreq {
     Used(usize),
@@ -16,15 +18,18 @@ pub enum TagFreq {
 }
 
 impl Tag {
+    #[must_use]
     pub fn new(tag: String, freq: usize) -> Self {
         Tag(tag, TagFreq::Used(freq))
     }
 
+    #[must_use]
     pub fn set_popular(mut self) -> Self {
         self.1 = TagFreq::Popular;
         self
     }
 
+    #[must_use]
     pub fn set_new(mut self) -> Self {
         self.1 = TagFreq::New;
         self
@@ -93,6 +98,13 @@ mod tests {
 
     #[test]
     fn it_sorts_tagfreq() {
+        #[allow(clippy::nonminimal_bool)]
+        fn verify_partialord(t1: &TagFreq, t2: &TagFreq) {
+            assert!(t1 < t2);
+            assert!(!(t1 > t2));
+            assert!(t1 != t2);
+        }
+
         let t1 = TagFreq::Used(1);
         let t2 = TagFreq::Used(2);
         verify_partialord(&t1, &t2);
@@ -112,11 +124,5 @@ mod tests {
         let t1 = TagFreq::Popular;
         let t2 = TagFreq::New;
         verify_partialord(&t2, &t1);
-
-        fn verify_partialord(t1: &TagFreq, t2: &TagFreq) {
-            assert!(t1 < t2);
-            assert!(!(t1 > t2));
-            assert!(t1 != t2);
-        }
     }
 }

@@ -1,3 +1,4 @@
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct Config {

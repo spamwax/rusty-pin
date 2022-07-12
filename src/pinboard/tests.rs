@@ -1,3 +1,4 @@
+#![allow(clippy::unicode_not_nfc)]
 // TODO: Add tests for case insensitivity searches of tags/pins
 use super::*;
 use std::fs;
@@ -61,10 +62,10 @@ fn find_tag_test() {
     let _ = env_logger::try_init();
     debug!("find_url_test: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = dirs::home_dir().unwrap();
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home);
+    let mut myhome = dirs::home_dir().unwrap();
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
+    let cache_path = Some(myhome);
 
     let mut pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
@@ -104,10 +105,10 @@ fn find_url_test() {
     let _ = env_logger::try_init();
     debug!("find_url_test: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = dirs::home_dir().unwrap();
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home);
+    let mut myhome = dirs::home_dir().unwrap();
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
+    let cache_path = Some(myhome);
 
     let mut pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
@@ -144,10 +145,10 @@ fn test_search_items() {
     let _ = env_logger::try_init();
     debug!("test_search_items: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = dirs::home_dir().unwrap();
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home);
+    let mut myhome = dirs::home_dir().unwrap();
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
+    let cache_path = Some(myhome);
 
     let mut pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
@@ -184,10 +185,10 @@ fn list_tag_pairs() {
     let _ = env_logger::try_init();
     debug!("search_tag_pairs: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = dirs::home_dir().unwrap();
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home);
+    let mut myhome = dirs::home_dir().unwrap();
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
+    let cache_path = Some(myhome);
 
     let mut pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
@@ -195,7 +196,7 @@ fn list_tag_pairs() {
 
     let tp = pinboard.list_tag_pairs();
     assert!(tp.is_some());
-    assert_eq!(94, tp.as_ref().map(|tp| tp.len()).unwrap());
+    assert_eq!(94, tp.as_ref().map(Vec::len).unwrap());
     for (idx, freq) in &[(0usize, 10usize), (3, 4), (93, 1)] {
         match tp.as_ref().unwrap()[*idx].1 {
             TagFreq::Used(x) => assert_eq!(*freq, x as usize),
@@ -212,10 +213,10 @@ fn search_tag_pairs() {
     let _ = env_logger::try_init();
     debug!("search_tag_pairs: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = dirs::home_dir().unwrap();
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home);
+    let mut myhome = dirs::home_dir().unwrap();
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
+    let cache_path = Some(myhome);
 
     let mut pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
@@ -293,11 +294,11 @@ fn list_tags() {
     let _ = env_logger::try_init();
     debug!("list_tags: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = dirs::home_dir().unwrap();
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
-    let _ = fs::remove_file(&_home);
-    let cache_path = Some(_home);
+    let mut myhome = dirs::home_dir().unwrap();
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
+    let _r = fs::remove_file(&myhome);
+    let cache_path = Some(myhome);
 
     let pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
@@ -309,10 +310,10 @@ fn list_bookmarks() {
     let _ = env_logger::try_init();
     debug!("list_bookmarks: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = dirs::home_dir().expect("Can't find home dir");
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home);
+    let mut myhome = dirs::home_dir().expect("Can't find home dir");
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
+    let cache_path = Some(myhome);
 
     let pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
@@ -323,10 +324,10 @@ fn list_bookmarks() {
 fn add_pin_test() {
     let _ = env_logger::try_init();
     debug!("delete_a_pin: starting.");
-    let mut _home = dirs::home_dir().expect("Can't find home dir");
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home);
+    let mut myhome = dirs::home_dir().expect("Can't find home dir");
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
+    let cache_path = Some(myhome);
     let pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
 
@@ -338,7 +339,7 @@ fn add_pin_test() {
             .description("russian website!")
             .shared("yes")
             .into_pin();
-        assert_eq!(true, pinboard.add_pin(p).is_ok());
+        assert!(pinboard.add_pin(p).is_ok());
     }
     {
         // add a bad url
@@ -363,10 +364,10 @@ fn delete_test() {
     let _ = env_logger::try_init();
     debug!("delete_a_pin: starting.");
     // let (_m1, _m2) = create_mockito_servers();
-    let mut _home = dirs::home_dir().expect("Can't find home dir");
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home);
+    let mut myhome = dirs::home_dir().expect("Can't find home dir");
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
+    let cache_path = Some(myhome);
     let pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
 
@@ -376,7 +377,7 @@ fn delete_test() {
             200,
             r#"{"result_code":"done"}"#,
         );
-        let _ = pinboard
+        pinboard
             .delete("http://www.good.url.com/#")
             .expect("Should succeed deleting a malformed url");
     }
@@ -419,10 +420,10 @@ fn popular_tags() {
             .with_header("content-type", "application/json")
             .with_body(r#"[{"popular":["datetime","library","rust"]},{"recommended":["datetime","library","programming","rust"]}]"#)
             .create();
-    let mut _home = dirs::home_dir().expect("Can't get home_dir");
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home);
+    let mut myhome = dirs::home_dir().expect("Can't get home_dir");
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
+    let cache_path = Some(myhome);
 
     let pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
@@ -455,9 +456,9 @@ fn test_cached_pins_tags() {
     let _ = env_logger::try_init();
     create_mockito_servers();
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = rand_temp_path();
-    _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home);
+    let mut myhome = rand_temp_path();
+    myhome.push("mockito-rusty-pin");
+    let cache_path = Some(myhome);
 
     let mut pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
@@ -488,10 +489,10 @@ fn test_cached_pins_tags() {
 #[test]
 fn issue138_1_test() {
     let _ = env_logger::try_init();
-    let mut _home = rand_temp_path();
-    _home.push("mockito-rusty-pin");
+    let mut myhome = rand_temp_path();
+    myhome.push("mockito-rusty-pin");
 
-    let cache_path = Some(_home);
+    let cache_path = Some(myhome);
     debug!("create_mockito_servers: starting.");
     let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
         .with_status(200)
@@ -557,10 +558,10 @@ fn issue138_1_test() {
 #[test]
 fn issue138_2_test() {
     let _ = env_logger::try_init();
-    let mut _home = rand_temp_path();
-    _home.push("mockito-rusty-pin");
+    let mut myhome = rand_temp_path();
+    myhome.push("mockito-rusty-pin");
 
-    let cache_path = Some(_home);
+    let cache_path = Some(myhome);
     debug!("create_mockito_servers: starting.");
     let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
         .with_status(200)
@@ -581,10 +582,6 @@ fn issue138_2_test() {
     ];
     {
         pinboard.enable_fuzzy_search(false);
-        // ["آموزشی"]; // [\u{0627}\u{0653}\u{0645}\u{0648}\u{0632}\u{0634}\u{06cc}]
-        // ["آموزش"]; // [\u{0627}\u{0653}\u{0645}\u{0648}\u{0632}\u{0634}]
-        // ["ب‌ید"]; // [\u{0628}\u{200c}\u{06cc}\u{062f}]  "beh" "yeh" "0-width space" "daal"
-        // ["ب\u{200c}ید"]; // [\u{0628}\u{200c}\u{06cc}\u{062f}]
         let queries = ["بید"];
         let pins = pinboard
             .search(&queries, &fields)
@@ -629,13 +626,14 @@ fn issue138_2_test() {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 #[test]
 fn test_issue7() {
     let _ = env_logger::try_init();
-    let mut _home = rand_temp_path();
-    _home.push("mockito-rusty-pin");
+    let mut myhome = rand_temp_path();
+    myhome.push("mockito-rusty-pin");
 
-    let cache_path = Some(_home);
+    let cache_path = Some(myhome);
     debug!("create_mockito_servers: starting.");
     let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
         .with_status(200)
@@ -796,10 +794,10 @@ fn test_issue7() {
 #[test]
 fn issue138_3_test() {
     let _ = env_logger::try_init();
-    let mut _home = rand_temp_path();
-    _home.push("mockito-rusty-pin");
+    let mut myhome = rand_temp_path();
+    myhome.push("mockito-rusty-pin");
 
-    let cache_path = Some(_home);
+    let cache_path = Some(myhome);
     debug!("create_mockito_servers: starting.");
     let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
         .with_status(200)
@@ -829,15 +827,16 @@ fn issue138_3_test() {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 #[test]
 fn search_multi_query_multi_field() {
     let _ = env_logger::try_init();
     debug!("search_multi_query_multi_field: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = rand_temp_path();
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home);
+    let mut myhome = rand_temp_path();
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
+    let cache_path = Some(myhome);
 
     let mut pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
@@ -1025,13 +1024,13 @@ fn serde_update_cache() {
     let _ = env_logger::try_init();
     debug!("serde_update_cache: starting.");
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = dirs::home_dir().unwrap();
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
-    let cache_path = Some(_home.clone());
+    let mut myhome = dirs::home_dir().unwrap();
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
+    let cache_path = Some(myhome.clone());
 
     // First remove all folders to force a full update
-    fs::remove_dir_all(_home).expect("Can't remove dir to prepare the test");
+    fs::remove_dir_all(myhome).expect("Can't remove dir to prepare the test");
 
     let p = Pinboard::new(include_str!("api_token.txt"), cache_path);
     let mut pinboard = p.unwrap_or_else(|e| panic!("{:?}", e));
@@ -1048,7 +1047,7 @@ fn serde_update_cache() {
         info!("serde_update_cache: Checking pin[{}]", idx);
         let found = cached_pins
             .iter()
-            .find(|&p| &p.pin.url == &fresh_pins[idx].url);
+            .find(|&p| p.pin.url == fresh_pins[idx].url);
         assert!(found.is_some(), "{:?}", fresh_pins[idx]);
         let cached_pin = found.unwrap();
         // Title
@@ -1107,7 +1106,7 @@ fn serde_update_cache() {
                     .collect::<String>()
                     .to_lowercase(),
                 cached_pin.extended_lowered.as_ref().unwrap().as_ref()
-            )
+            );
         } else {
             assert!(cached_pin.pin.extended.is_none());
         }
@@ -1117,22 +1116,22 @@ fn serde_update_cache() {
 // I am not sure why I wrote this test as it is kind of similar to serde_update_cache
 #[test]
 fn test_update_cache() {
+    const IDX: usize = 25;
+
     let _ = env_logger::try_init();
     debug!("test_update_cache: starting.");
 
-    const IDX: usize = 25;
-
     let (_m1, _m2) = create_mockito_servers();
-    let mut _home = dirs::home_dir().unwrap();
-    _home.push(".cache");
-    _home.push("mockito-rusty-pin");
+    let mut myhome = dirs::home_dir().unwrap();
+    myhome.push(".cache");
+    myhome.push("mockito-rusty-pin");
 
-    let cache_path = Some(_home.clone());
+    let cache_path = Some(myhome.clone());
 
     debug!("Running first update_cache");
 
     // First remove all folders to force a full update
-    fs::remove_dir_all(_home).expect("Can't remove dir to prepare the test");
+    fs::remove_dir_all(myhome).expect("Can't remove dir to prepare the test");
 
     // Pinboard::new() will call update_cache since we remove the cache folder.
     let pb = Pinboard::new(include_str!("api_token.txt"), cache_path);

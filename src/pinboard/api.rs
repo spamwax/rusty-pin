@@ -28,6 +28,7 @@ const BASE_URL: &str = mockito::SERVER_URL;
 
 /// Struct to hold stringify results Pinboard API returns.
 /// Sometimes it returns a json key of "result_code" & sometimes just "result"!!!
+#[allow(clippy::doc_markdown)]
 #[derive(Serialize, Deserialize, Debug)]
 struct ApiResult {
     #[serde(default)]
@@ -59,6 +60,7 @@ pub struct Api<'api> {
     auth_token: Cow<'api, str>,
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Error)]
 pub enum ApiError {
     // #[fail(display = "invalid url: {}", _0)]
@@ -109,14 +111,14 @@ impl<'api, 'pin> Api<'api> {
             .filter_map(|line| serde_json::from_value(line).ok())
             .filter(|p: &Pin| Url::parse(&p.url).is_ok())
             .collect();
-        if pins.len() != v_len {
+        if pins.len() == v_len {
+            info!("parsed all bookmarks. total: {}", pins.len());
+        } else {
             info!(
                 "couldn't parse {} bookmarks (out of {})",
                 v_len - pins.len(),
                 v_len
             );
-        } else {
-            info!("parsed all bookmarks. total: {}", pins.len());
         }
 
         Ok(pins)
@@ -222,7 +224,7 @@ impl<'api, 'pin> Api<'api> {
                     .map(|(tag, freq)| Tag::new(tag, freq))
                     .collect()
             })
-            .map_err(|e| e.into());
+            .map_err(Into::into);
         if tag_freq.is_ok() {
             return tag_freq;
         }
@@ -238,7 +240,7 @@ impl<'api, 'pin> Api<'api> {
                     })
                     .collect()
             })
-            .map_err(|e| e.into());
+            .map_err(Into::into);
         if tag_freq.is_ok() {
             return tag_freq;
         }
@@ -312,9 +314,8 @@ impl<'api, 'pin> Api<'api> {
             Err(e) => {
                 if e.is_connect() {
                     return Err(Box::new(ApiError::Network(e.to_string())));
-                } else {
-                    return Err(Box::new(ApiError::UnrecognizedResponse(e.to_string())));
                 }
+                return Err(Box::new(ApiError::UnrecognizedResponse(e.to_string())));
             }
             Ok(_) => {
                 debug!("  server resp is ok (no error)");
@@ -419,8 +420,7 @@ mod tests {
                 200,
                 r#"{"result":"done"}"#,
             );
-            let _ = api
-                .tag_delete("http://no.fucking.way")
+            api.tag_delete("http://no.fucking.way")
                 .expect("pinboard OKs deleting a non-existing tag.");
         }
 
@@ -428,8 +428,7 @@ mod tests {
             // Deleting empty string
             // Pinboard returns OK on this operation!!!
             let _m2 = start_mockito_server(r"^/tags/delete.*$", 200, r#"{"result":"done"}"#);
-            let _ = api
-                .tag_delete("")
+            api.tag_delete("")
                 .expect("pinboard OKs deleting a non-existing tag.");
         }
     }
@@ -444,8 +443,7 @@ mod tests {
         r.expect("Error in renaming a tag.");
 
         // Pinboard apparently can rename null to a new tag!!!
-        let _ = api
-            .tag_rename("", "iamjesus")
+        api.tag_rename("", "iamjesus")
             .expect("Should be able to breath life into abyss");
 
         {

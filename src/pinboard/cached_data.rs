@@ -1,5 +1,8 @@
+#![allow(clippy::unicode_not_nfc)]
+#[allow(clippy::wildcard_imports)]
 use super::*;
 use env_logger;
+use std::fs;
 use std::io::Write;
 use std::io::{BufReader, BufWriter};
 
@@ -42,6 +45,7 @@ pub struct CachedTag {
 }
 
 impl<'pin> CachedData<'pin> {
+    #[allow(clippy::map_unwrap_or)]
     pub fn new<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, Box<dyn std::error::Error>> {
         let _ = env_logger::try_init();
         debug!("new: starting");
@@ -67,7 +71,8 @@ impl<'pin> CachedData<'pin> {
         Ok(data)
     }
 
-    /// Create an instance for CachedData but don't load actual cached files.
+    /// Create an instance for `CachedData` but don't load actual cached files.
+    #[allow(clippy::map_unwrap_or)]
     #[allow(dead_code)]
     pub fn init<P: AsRef<Path>>(c_dir: Option<P>) -> Result<Self, Box<dyn std::error::Error>> {
         let _ = env_logger::try_init();
@@ -95,7 +100,6 @@ impl<'pin> CachedData<'pin> {
     ) -> Result<PathBuf, Box<dyn std::error::Error>> {
         let _ = env_logger::try_init();
         debug!("create_cache_dir: starting");
-        use std::fs;
         fs::create_dir_all(&cache_dir)?;
         debug!(
             "  success create_cache_dir: {:?}",
@@ -250,13 +254,14 @@ impl<'pin> CachedData<'pin> {
         Ok(())
     }
 
+    #[allow(clippy::unused_self)]
     #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
     fn fix_cache_file_perm(&self, p: &Path) {
-        debug!("fix_cache_file_perm: starting");
         // TODO: don't just unwrap, return a proper error.
         use std::fs::set_permissions;
         use std::fs::Permissions;
         use std::os::unix::fs::PermissionsExt;
+        debug!("fix_cache_file_perm: starting");
         let permissions = Permissions::from_mode(0o600);
         if let Err(e) = set_permissions(p, permissions) {
             error!(

@@ -1,4 +1,5 @@
 // use reqwest::IntoUrl;
+// #![allow(clippy::must_use_candidate)]
 use std::borrow::Cow;
 
 use chrono::prelude::*;
@@ -21,10 +22,15 @@ pub struct Pin<'pin> {
 
 use unicode_normalization::{is_nfkd_quick, IsNormalized};
 impl<'pin> Pin<'pin> {
+    #[allow(clippy::must_use_candidate)]
     pub fn time(&self) -> DateTime<Utc> {
         self.time
     }
 
+    /// # Panics
+    ///
+    /// It pancis if the `q` is not a normalized unicode (nfk)
+    #[allow(clippy::must_use_candidate)]
     pub fn contains(&self, q: &str) -> bool {
         assert!(is_nfkd_quick(q.chars()) == IsNormalized::Yes);
         self.title.to_lowercase().contains(q)
@@ -37,6 +43,7 @@ impl<'pin> Pin<'pin> {
             }
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn title_contains(&self, q: &str, matcher: Option<&SkimMatcherV2>) -> bool {
         if let Some(matcher) = matcher {
             matcher.fuzzy_match(&self.title, q).is_some()
@@ -45,6 +52,10 @@ impl<'pin> Pin<'pin> {
         }
     }
 
+    /// # Panics
+    ///
+    /// It pancis if the `q` is not a normalized unicode (nfk)
+    #[must_use]
     pub fn tag_contains(&self, q: &str, matcher: Option<&SkimMatcherV2>) -> bool {
         assert!(is_nfkd_quick(q.chars()) == IsNormalized::Yes);
         if let Some(matcher) = matcher {
@@ -54,6 +65,10 @@ impl<'pin> Pin<'pin> {
         }
     }
 
+    /// # Panics
+    ///
+    /// It pancis if the `q` is not a normalized unicode (nfk)
+    #[must_use]
     pub fn url_contains(&self, q: &str, matcher: Option<&SkimMatcherV2>) -> bool {
         assert!(is_nfkd_quick(q.chars()) == IsNormalized::Yes);
         if let Some(matcher) = matcher {
@@ -63,6 +78,10 @@ impl<'pin> Pin<'pin> {
         }
     }
 
+    /// # Panics
+    ///
+    /// It pancis if the `q` is not a normalized unicode (nfk)
+    #[must_use]
     pub fn extended_contains(&self, q: &str, matcher: Option<&SkimMatcherV2>) -> bool {
         assert!(is_nfkd_quick(q.chars()) == IsNormalized::Yes);
         if let Some(ref extended) = self.extended {
@@ -76,6 +95,9 @@ impl<'pin> Pin<'pin> {
         }
     }
 
+    /// # Panics
+    ///
+    /// It pancis if the `q` is not a normalized unicode (nfk)
     pub fn contains_fuzzy(&self, q: &str, matcher: &SkimMatcherV2) -> bool {
         assert!(is_nfkd_quick(q.chars()) == IsNormalized::Yes);
         matcher.fuzzy_match(&self.tags, q).is_some()
@@ -89,6 +111,7 @@ impl<'pin> Pin<'pin> {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct PinBuilder<'pin> {
     pin: Pin<'pin>,
@@ -113,26 +136,31 @@ impl<'pin> PinBuilder<'pin> {
 }
 
 impl<'pin> PinBuilder<'pin> {
+    #[must_use]
     pub fn tags<S: Into<Cow<'pin, str>>>(mut self, t: S) -> Self {
         self.pin.tags = t.into();
         self
     }
 
+    #[must_use]
     pub fn shared<S: Into<Cow<'pin, str>>>(mut self, f: S) -> Self {
         self.pin.shared = f.into();
         self
     }
 
+    #[must_use]
     pub fn toread<S: Into<Cow<'pin, str>>>(mut self, f: S) -> Self {
         self.pin.toread = f.into();
         self
     }
 
+    #[must_use]
     pub fn description<S: Into<Cow<'pin, str>>>(mut self, x: S) -> Self {
         self.pin.extended = Some(x.into());
         self
     }
 
+    #[must_use]
     pub fn into_pin(self) -> Pin<'pin> {
         self.pin
     }
@@ -188,10 +216,10 @@ mod tests {
 
         let (_m1, _m2) = create_mockito_servers();
 
-        let mut _home = dirs::home_dir().unwrap();
-        _home.push(".cache");
-        _home.push("mockito-rusty-pin");
-        let cache_path = Some(_home);
+        let mut myhome = dirs::home_dir().unwrap();
+        myhome.push(".cache");
+        myhome.push("mockito-rusty-pin");
+        let cache_path = Some(myhome);
         let p = crate::pinboard::Pinboard::new(include_str!("api_token.txt"), cache_path)
             .map_err(|e| format!("{:?}", e));
         let mut pinboard = p.unwrap_or_else(|e| panic!("{:?}", e));
@@ -233,10 +261,10 @@ mod tests {
 
         let (_m1, _m2) = create_mockito_servers();
 
-        let mut _home = dirs::home_dir().unwrap();
-        _home.push(".cache");
-        _home.push("mockito-rusty-pin");
-        let cache_path = Some(_home);
+        let mut myhome = dirs::home_dir().unwrap();
+        myhome.push(".cache");
+        myhome.push("mockito-rusty-pin");
+        let cache_path = Some(myhome);
         let p = crate::pinboard::Pinboard::new(include_str!("api_token.txt"), cache_path)
             .map_err(|e| format!("{:?}", e));
         let mut pinboard = p.unwrap_or_else(|e| panic!("{:?}", e));

@@ -32,4 +32,4 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          # args: --tests --workspace -- -Dclippy::all -Dclippy::pedantic -D warnings
+          args: --tests --workspace -- -Dclippy::all -Dclippy::pedantic -D warnings
