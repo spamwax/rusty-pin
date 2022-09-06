@@ -487,6 +487,48 @@ fn test_cached_pins_tags() {
 }
 
 #[test]
+fn test_special_char_glob() {
+    let _ = env_logger::try_init();
+    let mut myhome = rand_temp_path();
+    myhome.push("mockito-rusty-pin");
+
+    let cache_path = Some(myhome);
+    debug!("create_mockito_servers: starting.");
+    let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body_from_file("tests/foomark.json")
+        .create();
+    let _m2 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body_from_file("tests/footag.json")
+        .create();
+    let mut pinboard =
+        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    {
+        let fields = vec![SearchType::TitleOnly];
+        pinboard.enable_fuzzy_search(false);
+        let queries = ["Network"];
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert!(pins.is_some());
+    }
+
+    {
+        let fields = vec![SearchType::TitleOnly];
+        pinboard.enable_fuzzy_search(false);
+        let queries = ["what", "*is*"];
+        let pins = pinboard
+            .search(&queries, &fields)
+            .unwrap_or_else(|e| panic!("{}", e));
+        assert!(pins.is_some());
+        dbg!(pins);
+    }
+}
+
+#[test]
 fn issue138_1_test() {
     let _ = env_logger::try_init();
     let mut myhome = rand_temp_path();
