@@ -1,7 +1,5 @@
 [![rusty-pin](https://github.com/spamwax/rusty-pin/actions/workflows/main.yml/badge.svg)](https://github.com/spamwax/rusty-pin/actions/workflows/main.yml)
 [![rusty-pin-lint](https://github.com/spamwax/rusty-pin/actions/workflows/lint.yml/badge.svg)](https://github.com/spamwax/rusty-pin/actions/workflows/lint.yml)
-
-[![CircleCI](https://img.shields.io/circleci/build/gh/spamwax/rusty-pin?logo=circleci&style=for-the-badge)](https://circleci.com/gh/spamwax/rusty-pin)
 [![Build status](https://ci.appveyor.com/api/projects/status/b09qw5r38gn08aq3/branch/master?svg=true)](https://ci.appveyor.com/project/spamwax/rusty-pin/branch/master)
 
 # rusty-pin
