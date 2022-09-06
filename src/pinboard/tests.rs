@@ -497,12 +497,12 @@ fn test_special_char_glob() {
     let _m1 = mock("GET", Matcher::Regex(r"^/posts/all.*$".to_string()))
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body_from_file("tests/foomark.json")
+        .with_body_from_file("tests/globmark.json")
         .create();
     let _m2 = mock("GET", Matcher::Regex(r"^/tags/get.*$".to_string()))
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body_from_file("tests/footag.json")
+        .with_body_from_file("tests/globtag.json")
         .create();
     let mut pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
