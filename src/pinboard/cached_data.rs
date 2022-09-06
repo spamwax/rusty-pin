@@ -248,6 +248,8 @@ impl<'pin> CachedData<'pin> {
 
         #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
         self.fix_cache_file_perm(&self.pins_cache_file);
+        #[cfg(any(target_os = "macos", target_os = "linux", target_os = "freebsd"))]
+        self.fix_cache_file_perm(&self.tags_cache_file);
 
         assert!(self.tags.is_some());
         self.cache_files_valid = true;
