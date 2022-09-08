@@ -55,6 +55,75 @@ pub use crate::pinboard::{Pin, PinBuilder, Pinboard, Tag};
 mod tests {
     use std::path::PathBuf;
 
+    mod postcard_serde {
+        use crate::pinboard::pin::Pin;
+        use postcard::{from_bytes, to_allocvec};
+        use std::fs::File;
+        use std::io::prelude::*;
+        use std::io::{BufReader, BufWriter};
+        use std::{env, fs};
+        #[cfg(feature = "bench")]
+        use test::Bencher;
+
+        #[test]
+        fn serialize_lots_of_pins() {
+            let _ = env_logger::try_init();
+            debug!("serialize_lots_of_pins: starting");
+            let input = include_str!("../sample.json");
+            let pins: Vec<Pin> = serde_json::from_str(input).expect("Couldn't read sample.json");
+            assert_eq!(612, pins.len());
+
+            let buf: Vec<u8> = to_allocvec(&pins).expect("Couldn't serialize lots open");
+            assert_eq!(114_293, buf.len());
+
+            let mut dir = env::temp_dir();
+            dir.push("test_postcard_serde-vec.bin");
+            let fp =
+                File::create(dir).expect("Couldn't create temp file test_postcard_serde-vec.bin");
+            let mut writer = BufWriter::with_capacity(128_000, fp);
+            writer
+                .write_all(buf.as_slice())
+                .expect("Can't write to test_rmp_postcard-vec.bin");
+        }
+
+        #[test]
+        fn deserialize_lots_of_pins() {
+            let _ = env_logger::try_init();
+            debug!("deserialize_lots_of_pins: starting");
+            serialize_lots_of_pins();
+
+            let mut dir = env::temp_dir();
+            dir.push("test_postcard_serde-vec.bin");
+
+            let fp = File::open(&dir).expect("Couldn't open temp file test_postcard_serde.bin");
+            let mut reader = BufReader::with_capacity(128_000, fp);
+
+            let mut buf: Vec<u8> = Vec::with_capacity(128_000);
+            let n = reader
+                .read_to_end(&mut buf)
+                .expect("Couldn't read deserialized data!");
+            assert_eq!(114_293, n);
+
+            let pins: Vec<Pin> = from_bytes(buf.as_slice()).unwrap();
+            assert_eq!(612, pins.len());
+
+            fs::remove_file(dir).expect("Can't delete temp test file");
+        }
+
+        #[cfg(feature = "bench")]
+        #[allow(soft_unstable)]
+        #[bench]
+        fn bench_postcard(b: &mut Bencher) {
+            let _ = env_logger::try_init();
+            debug!("bench_postcard: starting");
+            let bytes = include_bytes!("../tests/test_postcard_serde-vec.bin");
+            let mut _pins: Vec<Pin> = Vec::with_capacity(1024);
+            b.iter(|| {
+                _pins = from_bytes(bytes).expect("Couldn't deserialize lots of pins");
+            })
+        }
+    }
+
     mod rmp_serde {
         use crate::rmps::{Deserializer, Serializer};
         use chrono::prelude::*;
