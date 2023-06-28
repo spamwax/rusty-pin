@@ -294,7 +294,7 @@ mod tests {
         .shared("no")
         .description("지구")
         .into_pin();
-        pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
+        pin.time = Utc.with_ymd_and_hms(2017, 5, 22, 17, 46, 54).unwrap();
 
         let tag_list = ["지구", "Rust", "macros"]
             .iter()
@@ -356,7 +356,7 @@ mod tests {
         .shared("no")
         .description("WoW!!!")
         .into_pin();
-        pin.time = Utc.ymd(2017, 5, 22).and_hms(17, 46, 54);
+        pin.time = Utc.with_ymd_and_hms(2017, 5, 22, 17, 46, 54).unwrap();
 
         let cached_pin = CachedPin {
             pin,
@@ -385,7 +385,7 @@ mod tests {
         assert_eq!("no", new_cached.pin.shared);
         assert_eq!("WoW!!!", new_cached.pin.extended.unwrap());
         assert_eq!(
-            Utc.ymd(2017, 5, 22).and_hms(17, 46, 54),
+            Utc.with_ymd_and_hms(2017, 5, 22, 17, 46, 54).unwrap(),
             new_cached.pin.time
         );
         assert_eq!(
