@@ -1,6 +1,5 @@
 [![rusty-pin](https://github.com/spamwax/rusty-pin/actions/workflows/main.yml/badge.svg)](https://github.com/spamwax/rusty-pin/actions/workflows/main.yml)
 [![rusty-pin-lint](https://github.com/spamwax/rusty-pin/actions/workflows/lint.yml/badge.svg)](https://github.com/spamwax/rusty-pin/actions/workflows/lint.yml)
-[![Build status](https://ci.appveyor.com/api/projects/status/b09qw5r38gn08aq3/branch/master?svg=true)](https://ci.appveyor.com/project/spamwax/rusty-pin/branch/master)
 
 # rusty-pin
 Subset of Pinboard's API in pure Rust
