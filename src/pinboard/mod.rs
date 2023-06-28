@@ -45,6 +45,16 @@ pub struct Pinboard<'api, 'pin> {
     cached_data: CachedData<'pin>,
 }
 
+pub enum CacheState {
+    Hot,
+    Cold,
+}
+#[allow(clippy::module_name_repetitions)]
+pub struct PinboardResult<'api, 'pin> {
+    pub pinboard: Pinboard<'api, 'pin>,
+    pub cache_state: CacheState,
+}
+
 /// # Errors
 ///
 /// Returns error on network failure or file failure
@@ -52,10 +62,11 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
     /// # Errors
     ///
     /// Returns an error if network/server or file I/O error occurs.
+    #[allow(clippy::new_ret_no_self)]
     pub fn new<S, P>(
         auth_token: S,
         cached_dir: Option<P>,
-    ) -> Result<Self, Box<dyn std::error::Error>>
+    ) -> Result<PinboardResult<'api, 'pin>, Box<dyn std::error::Error>>
     where
         S: Into<Cow<'api, str>>,
         P: AsRef<Path>,
@@ -66,20 +77,25 @@ impl<'api, 'pin> Pinboard<'api, 'pin> {
 
         debug!("pinb::new: calling CachedData::new");
         let mut cached_data = CachedData::new(cached_dir)?;
-        if cached_data.cache_ok() {
+        let cache_state = if cached_data.cache_ok() {
             debug!("pinb::new: cache not missing");
+            CacheState::Cold
         } else {
             debug!("pinb::new: cache file missing, calling update");
             cached_data.update_cache(&api)?;
             debug!("pinb::new:   update done.");
-        }
+            CacheState::Hot
+        };
 
         let pinboard = Pinboard {
             api,
             cfg,
             cached_data,
         };
-        Ok(pinboard)
+        Ok(PinboardResult {
+            pinboard,
+            cache_state,
+        })
     }
 
     /// # Errors

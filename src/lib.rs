@@ -34,7 +34,7 @@ extern crate unicode_normalization;
 
 pub mod pinboard;
 
-pub use crate::pinboard::{Pin, PinBuilder, Pinboard, Tag};
+pub use crate::pinboard::{CacheState, Pin, PinBuilder, Pinboard, PinboardResult, Tag};
 
 // TODO: Use github actions for CI integration tests.
 // TODO: make get_api_response return reqwest::Response so we can use serde_json::from_read

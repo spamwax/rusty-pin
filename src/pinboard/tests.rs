@@ -67,8 +67,9 @@ fn find_tag_test() {
     myhome.push("mockito-rusty-pin");
     let cache_path = Some(myhome);
 
-    let mut pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     pinboard.enable_fuzzy_search(false);
 
     let r = pinboard.find_tag("timemachine");
@@ -110,8 +111,9 @@ fn find_url_test() {
     myhome.push("mockito-rusty-pin");
     let cache_path = Some(myhome);
 
-    let mut pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     pinboard.enable_fuzzy_search(false);
 
     let r =
@@ -150,8 +152,9 @@ fn test_search_items() {
     myhome.push("mockito-rusty-pin");
     let cache_path = Some(myhome);
 
-    let mut pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     pinboard.enable_fuzzy_search(false);
 
     {
@@ -190,8 +193,9 @@ fn list_tag_pairs() {
     myhome.push("mockito-rusty-pin");
     let cache_path = Some(myhome);
 
-    let mut pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     pinboard.enable_fuzzy_search(false);
 
     let tp = pinboard.list_tag_pairs();
@@ -218,8 +222,9 @@ fn search_tag_pairs() {
     myhome.push("mockito-rusty-pin");
     let cache_path = Some(myhome);
 
-    let mut pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     pinboard.enable_fuzzy_search(false);
 
     {
@@ -300,8 +305,9 @@ fn list_tags() {
     let _r = fs::remove_file(&myhome);
     let cache_path = Some(myhome);
 
-    let pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     assert!(pinboard.list_tag_pairs().is_some());
 }
 
@@ -315,8 +321,9 @@ fn list_bookmarks() {
     myhome.push("mockito-rusty-pin");
     let cache_path = Some(myhome);
 
-    let pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     assert!(pinboard.list_bookmarks().is_some());
 }
 
@@ -328,8 +335,9 @@ fn add_pin_test() {
     myhome.push(".cache");
     myhome.push("mockito-rusty-pin");
     let cache_path = Some(myhome);
-    let pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
 
     {
         // add a good url
@@ -368,8 +376,9 @@ fn delete_test() {
     myhome.push(".cache");
     myhome.push("mockito-rusty-pin");
     let cache_path = Some(myhome);
-    let pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
 
     {
         let _m1 = start_mockito_server(
@@ -425,8 +434,9 @@ fn popular_tags() {
     myhome.push("mockito-rusty-pin");
     let cache_path = Some(myhome);
 
-    let pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     let tags = pinboard.popular_tags("https://docs.rs/chrono/0.4.0/chrono");
     assert!(tags.is_ok());
     let tags = tags.expect("impossible");
@@ -460,8 +470,9 @@ fn test_cached_pins_tags() {
     myhome.push("mockito-rusty-pin");
     let cache_path = Some(myhome);
 
-    let mut pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     {
         pinboard.enable_fuzzy_search(false);
         let queries = ["yubikey"];
@@ -504,8 +515,9 @@ fn test_special_char_glob() {
         .with_header("content-type", "application/json")
         .with_body_from_file("tests/globtag.json")
         .create();
-    let mut pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     {
         let fields = vec![SearchType::TitleOnly];
         pinboard.enable_fuzzy_search(false);
@@ -546,8 +558,9 @@ fn issue138_1_test() {
         .with_header("content-type", "application/json")
         .with_body_from_file("tests/issue-138-tags-1.json")
         .create();
-    let mut pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     let fields = vec![
         SearchType::TitleOnly,
         SearchType::TagOnly,
@@ -615,8 +628,9 @@ fn issue138_2_test() {
         .with_header("content-type", "application/json")
         .with_body_from_file("tests/issue-138-tags-2.json")
         .create();
-    let mut pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     let fields = vec![
         SearchType::TitleOnly,
         SearchType::TagOnly,
@@ -687,8 +701,9 @@ fn test_issue7() {
         .with_header("content-type", "application/json")
         .with_body_from_file("tests/alfred-pinboard-rs-issue7-tags.json")
         .create();
-    let mut pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     // Find pins that have all keywords almost anywhere
     {
         pinboard.enable_fuzzy_search(false);
@@ -851,8 +866,9 @@ fn issue138_3_test() {
         .with_header("content-type", "application/json")
         .with_body_from_file("tests/issue-138-tags-3.json")
         .create();
-    let mut pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     let fields = vec![SearchType::TagOnly];
     {
         pinboard.enable_fuzzy_search(false);
@@ -880,8 +896,9 @@ fn search_multi_query_multi_field() {
     myhome.push("mockito-rusty-pin");
     let cache_path = Some(myhome);
 
-    let mut pinboard =
-        Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
+    let mut pinboard = Pinboard::new(include_str!("api_token.txt"), cache_path)
+        .expect("Can't setup Pinboard")
+        .pinboard;
     // Find pins that have all keywords almost anywhere
     {
         pinboard.enable_fuzzy_search(false);
@@ -1175,6 +1192,7 @@ fn test_update_cache() {
         Ok(v) => v,
         Err(e) => panic!("{e:?}"),
     };
+    let mut pinboard = pinboard.pinboard;
     let Some(pins) = pinboard.cached_data.pins.take() else { panic!("No pins found in cache!") };
     let Some(tags) = pinboard.cached_data.tags.take() else { panic!("No tags found in cache!") };
     assert!(pins.len() > IDX);
