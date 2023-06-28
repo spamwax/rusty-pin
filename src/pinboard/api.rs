@@ -268,6 +268,7 @@ impl<'api, 'pin> Api<'api> {
             .and_then(self::ApiResult::ok)
     }
 
+    /// Get timestamp of last change made to user data on Pinboard server.
     pub fn recent_update(&self) -> Result<DateTime<Utc>, Box<dyn std::error::Error>> {
         debug!("recent_update: starting.");
         self.get_api_response(
@@ -553,7 +554,7 @@ mod tests {
             .create_mockito_server(r"^/tags/get.*$", 200);
         let api = Api::new(include_str!("api_token.txt"));
         let res = api.tags_frequency();
-        let r = res.unwrap_or_else(|e| panic!("{:?}", e));
+        let r = res.unwrap_or_else(|e| panic!("{e:?}"));
         assert_eq!(94, r.len());
     }
 
@@ -565,7 +566,7 @@ mod tests {
             .create_mockito_server(r"^/tags/get.*$", 200);
         let api = Api::new(include_str!("api_token.txt"));
         let res = api.tags_frequency();
-        let r = res.unwrap_or_else(|e| panic!("{:?}", e));
+        let r = res.unwrap_or_else(|e| panic!("{e:?}"));
         if let Some(tag) = r.iter().find(|&t| t.0 == "آموزشی") {
             match tag.1 {
                 tag::TagFreq::Used(5) => {}
@@ -585,14 +586,14 @@ mod tests {
             let _m1 = "[]".create_mockito_server(r"^/tags/get.*$", 201);
             let api = Api::new(include_str!("api_token.txt"));
             let res = api.tags_frequency();
-            let r = res.unwrap_or_else(|e| panic!("{:?}", e));
+            let r = res.unwrap_or_else(|e| panic!("{e:?}"));
             assert!(r.is_empty());
         }
         {
             let _m1 = "{}".create_mockito_server(r"^/tags/get.*$", 201);
             let api = Api::new(include_str!("api_token.txt"));
             let res = api.tags_frequency();
-            let r = res.unwrap_or_else(|e| panic!("{:?}", e));
+            let r = res.unwrap_or_else(|e| panic!("{e:?}"));
             assert!(r.is_empty());
         }
     }
@@ -609,7 +610,7 @@ mod tests {
         let api = Api::new(include_str!("api_token.txt"));
         let res = api.all_pins();
 
-        assert_eq!(58, res.unwrap_or_else(|e| panic!("{:?}", e)).len());
+        assert_eq!(58, res.unwrap_or_else(|e| panic!("{e:?}")).len());
     }
 
     #[test]
@@ -621,7 +622,7 @@ mod tests {
             let api = Api::new(include_str!("api_token.txt"));
             let res = api.all_pins();
 
-            assert_eq!(0, res.unwrap_or_else(|e| panic!("{:?}", e)).len());
+            assert_eq!(0, res.unwrap_or_else(|e| panic!("{e:?}")).len());
         }
     }
 }

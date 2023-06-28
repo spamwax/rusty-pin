@@ -323,8 +323,7 @@ mod tests {
                 .unwrap()
                 .as_str()
                 .contains("지구"),
-            "Normalized and non-normalized tags should not be the same.{}",
-            r
+            "Normalized and non-normalized tags should not be the same.{r}"
         );
         // normalized "지구" should be found in normalized tag list of the pin
         assert!(

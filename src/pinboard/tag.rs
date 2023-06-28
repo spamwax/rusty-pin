@@ -63,7 +63,7 @@ impl fmt::Display for TagFreq {
         match *self {
             TagFreq::New => write!(f, "NEW TAG"),
             TagFreq::Popular => write!(f, "Popular"),
-            TagFreq::Used(n) => write!(f, "{}", n),
+            TagFreq::Used(n) => write!(f, "{n}"),
         }
     }
 }

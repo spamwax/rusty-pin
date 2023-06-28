@@ -199,7 +199,7 @@ fn list_tag_pairs() {
     assert_eq!(94, tp.as_ref().map(Vec::len).unwrap());
     for (idx, freq) in &[(0usize, 10usize), (3, 4), (93, 1)] {
         match tp.as_ref().unwrap()[*idx].1 {
-            TagFreq::Used(x) => assert_eq!(*freq, x as usize),
+            TagFreq::Used(x) => assert_eq!(*freq, x),
             _ => panic!(
                 "Wrong value for tag freq: {:?}",
                 tp.as_ref().unwrap()[*idx].1
@@ -558,12 +558,12 @@ fn issue138_1_test() {
         let queries = ["\u{c9c0}\u{ad6c}"]; // '지구'
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!("{}", e));
+            .unwrap_or_else(|e| panic!("{e}"));
         assert!(pins.is_some());
         let queries = ["지구"];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!("{}", e));
+            .unwrap_or_else(|e| panic!("{e}"));
         assert!(pins.is_some());
     }
     {
@@ -571,12 +571,12 @@ fn issue138_1_test() {
         let queries = ["\u{110c}\u{1175}\u{1100}\u{116e}"]; // '지구'
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!("{}", e));
+            .unwrap_or_else(|e| panic!("{e}"));
         assert!(pins.is_some());
         let queries = ["지구"];
         let pins = pinboard
             .search(&queries, &fields)
-            .unwrap_or_else(|e| panic!("{}", e));
+            .unwrap_or_else(|e| panic!("{e}"));
         assert!(pins.is_some());
     }
     {
@@ -585,9 +585,9 @@ fn issue138_1_test() {
         for query in queries {
             let pins = pinboard
                 .search(&[query], &fields)
-                .unwrap_or_else(|e| panic!("Finding {} paniced: {}", query, e));
-            assert!(pins.is_some(), "Couldn't find {}", query);
-            assert_eq!(1, pins.as_ref().unwrap().len(), "query: {}", query);
+                .unwrap_or_else(|e| panic!("Finding {query} paniced: {e}"));
+            assert!(pins.is_some(), "Couldn't find {query}");
+            assert_eq!(1, pins.as_ref().unwrap().len(), "query: {query}");
         }
         let query = ["진흙"];
         let pins = pinboard
@@ -628,7 +628,7 @@ fn issue138_2_test() {
         let pins = pinboard
             .search(&queries, &fields)
             .unwrap_or_else(|e| panic!("{}", e));
-        assert!(pins.is_none(), "Unexpectedly found: {:?}", queries);
+        assert!(pins.is_none(), "Unexpectedly found: {queries:?}");
         let queries = [
             "آموزشی",
             "آموزش",
@@ -643,8 +643,8 @@ fn issue138_2_test() {
         for query in queries {
             let pins = pinboard
                 .search(&[query], &fields)
-                .unwrap_or_else(|e| panic!("Finding {} paniced: {}", query, e));
-            assert!(pins.is_some(), "Couldn't find {}", query);
+                .unwrap_or_else(|e| panic!("Finding {query} paniced: {e}"));
+            assert!(pins.is_some(), "Couldn't find {query}");
             assert_eq!(1, pins.as_ref().unwrap().len());
         }
         // Search all
@@ -664,7 +664,7 @@ fn issue138_2_test() {
         let pins = pinboard
             .search(&queries, &fields)
             .unwrap_or_else(|e| panic!("{}", e));
-        assert!(pins.is_some(), "Unable to find: {:?}", queries);
+        assert!(pins.is_some(), "Unable to find: {queries:?}");
     }
 }
 
@@ -1075,7 +1075,7 @@ fn serde_update_cache() {
     fs::remove_dir_all(myhome).expect("Can't remove dir to prepare the test");
 
     let p = Pinboard::new(include_str!("api_token.txt"), cache_path);
-    let mut pinboard = p.unwrap_or_else(|e| panic!("{:?}", e));
+    let mut pinboard = p.unwrap_or_else(|e| panic!("{e:?}")).pinboard;
 
     // Get all pins directly from Pinboard.in (no caching)
     let fresh_pins = pinboard.api.all_pins().expect("impossilbe?");
@@ -1085,17 +1085,17 @@ fn serde_update_cache() {
     let cached_pins = pinboard.cached_data.pins.unwrap();
     assert_eq!(fresh_pins.len(), cached_pins.len());
 
-    for idx in 0..fresh_pins.len() {
+    for (idx, fresh_pin) in fresh_pins.iter().enumerate() {
         info!("serde_update_cache: Checking pin[{}]", idx);
         let found = cached_pins
             .iter()
-            .find(|&p| p.pin.url == fresh_pins[idx].url);
-        assert!(found.is_some(), "{:?}", fresh_pins[idx]);
+            .find(|&p| p.pin.url == fresh_pin.url);
+        assert!(found.is_some(), "{fresh_pin:?}");
         let cached_pin = found.unwrap();
         // Title
-        assert_eq!(fresh_pins[idx as usize].title, cached_pin.pin.title);
+        assert_eq!(fresh_pin.title, cached_pin.pin.title);
         assert_eq!(
-            fresh_pins[idx as usize]
+            fresh_pin
                 .title
                 .nfkd()
                 .collect::<String>()
@@ -1103,11 +1103,11 @@ fn serde_update_cache() {
             cached_pin.title_lowered
         );
         // Url
-        assert_eq!(fresh_pins[idx as usize].url, cached_pin.pin.url);
+        assert_eq!(fresh_pin.url, cached_pin.pin.url);
         // tags
-        assert_eq!(fresh_pins[idx as usize].tags, cached_pin.pin.tags);
+        assert_eq!(fresh_pin.tags, cached_pin.pin.tags);
         assert_eq!(
-            fresh_pins[idx as usize]
+            fresh_pin
                 .tags
                 .nfkd()
                 .collect::<String>()
@@ -1115,23 +1115,17 @@ fn serde_update_cache() {
             cached_pin.tag_list.join(" ")
         );
         // shared
-        assert_eq!(
-            fresh_pins[idx as usize].shared.to_lowercase(),
-            cached_pin.pin.shared
-        );
+        assert_eq!(fresh_pin.shared.to_lowercase(), cached_pin.pin.shared);
         // toread
-        assert_eq!(
-            fresh_pins[idx as usize].toread.to_lowercase(),
-            cached_pin.pin.toread
-        );
+        assert_eq!(fresh_pin.toread.to_lowercase(), cached_pin.pin.toread);
         // time
-        assert_eq!(fresh_pins[idx as usize].time, cached_pin.pin.time);
+        assert_eq!(fresh_pin.time, cached_pin.pin.time);
 
         // extended
-        if fresh_pins[idx as usize].extended.is_some() {
+        if fresh_pin.extended.is_some() {
             assert!(cached_pin.pin.extended.is_some());
             assert_eq!(
-                fresh_pins[idx as usize]
+                fresh_pin
                     .extended
                     .as_ref()
                     .unwrap()
@@ -1140,7 +1134,7 @@ fn serde_update_cache() {
                 cached_pin.pin.extended.as_ref().unwrap().as_ref()
             );
             assert_eq!(
-                fresh_pins[idx as usize]
+                fresh_pin
                     .extended
                     .as_ref()
                     .unwrap()
@@ -1177,18 +1171,12 @@ fn test_update_cache() {
 
     // Pinboard::new() will call update_cache since we remove the cache folder.
     let pb = Pinboard::new(include_str!("api_token.txt"), cache_path);
-    let mut pinboard = match pb {
+    let pinboard = match pb {
         Ok(v) => v,
-        Err(e) => panic!("{:?}", e),
+        Err(e) => panic!("{e:?}"),
     };
-    let pins = match pinboard.cached_data.pins.take() {
-        Some(v) => v,
-        None => panic!("No pins found in cache!"),
-    };
-    let tags = match pinboard.cached_data.tags.take() {
-        Some(v) => v,
-        None => panic!("No tags found in cache!"),
-    };
+    let Some(pins) = pinboard.cached_data.pins.take() else { panic!("No pins found in cache!") };
+    let Some(tags) = pinboard.cached_data.tags.take() else { panic!("No tags found in cache!") };
     assert!(pins.len() > IDX);
     assert!(tags.len() > IDX);
 

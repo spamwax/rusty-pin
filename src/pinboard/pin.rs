@@ -221,8 +221,8 @@ mod tests {
         myhome.push("mockito-rusty-pin");
         let cache_path = Some(myhome);
         let p = crate::pinboard::Pinboard::new(include_str!("api_token.txt"), cache_path)
-            .map_err(|e| format!("{:?}", e));
-        let mut pinboard = p.unwrap_or_else(|e| panic!("{:?}", e));
+            .map_err(|e| format!("{e:?}"));
+        let mut pinboard = p.unwrap_or_else(|e| panic!("{e:?}")).pinboard;
 
         pinboard.enable_tag_only_search(true);
         pinboard.enable_fuzzy_search(false);
@@ -231,14 +231,14 @@ mod tests {
         {
             let pins = pinboard
                 .search_items("Rust")
-                .unwrap_or_else(|e| panic!("{}", e));
+                .unwrap_or_else(|e| panic!("{e:?}"));
             assert!(pins.is_some());
             c1 = pins.unwrap().len();
         }
         {
             let pins = pinboard
                 .search_items("rust")
-                .unwrap_or_else(|e| panic!("{}", e));
+                .unwrap_or_else(|e| panic!("{e:?}"));
             assert!(pins.is_some());
             c2 = pins.unwrap().len();
         }
@@ -266,8 +266,8 @@ mod tests {
         myhome.push("mockito-rusty-pin");
         let cache_path = Some(myhome);
         let p = crate::pinboard::Pinboard::new(include_str!("api_token.txt"), cache_path)
-            .map_err(|e| format!("{:?}", e));
-        let mut pinboard = p.unwrap_or_else(|e| panic!("{:?}", e));
+            .map_err(|e| format!("{e:?}"));
+        let mut pinboard = p.unwrap_or_else(|e| panic!("{e:?}")).pinboard;
 
         pinboard.enable_tag_only_search(false);
         pinboard.enable_fuzzy_search(false);

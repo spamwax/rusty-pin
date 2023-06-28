@@ -305,7 +305,7 @@ mod tests {
             );
             let pins: Result<Vec<Pin>, _> = from_str(&input);
             if let Err(e) = pins {
-                println!("{:?}", e);
+                println!("{e:?}");
                 return;
             }
             assert!(pins.is_ok());
