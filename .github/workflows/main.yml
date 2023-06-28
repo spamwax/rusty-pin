@@ -23,11 +23,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        rust: [stable]
-        exclude:
-          - os: ubuntu-latest
-            rust: 1.65.0
-
+        rust: [1.65.0, stable]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -62,6 +58,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         rust: [1.65.0, stable]
     runs-on: ${{ matrix.os }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
