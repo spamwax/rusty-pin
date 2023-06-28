@@ -185,7 +185,10 @@ mod tests {
                 Deserialize::deserialize(&mut de).expect("Couldn't deserialize into pin.");
 
             assert_eq!(pin.title, "The Little Book of Rust Macros");
-            assert_eq!(pin.time(), Utc.with_ymd_and_hms(2017, 5, 22, 17, 46, 54).unwrap());
+            assert_eq!(
+                pin.time(),
+                Utc.with_ymd_and_hms(2017, 5, 22, 17, 46, 54).unwrap()
+            );
             assert_eq!(pin.tags, "Rust macros");
             assert_eq!("yes", &pin.toread);
             assert_eq!("WoW!!!", &pin.extended.expect("pin.extended can't be None"));
@@ -271,7 +274,10 @@ mod tests {
             let pin: Pin = pin.expect("impossible!");
 
             assert_eq!(pin.title, "The Little Book of Rust Macros");
-            assert_eq!(pin.time(), Utc.with_ymd_and_hms(2017, 5, 22, 17, 46, 54).unwrap());
+            assert_eq!(
+                pin.time(),
+                Utc.with_ymd_and_hms(2017, 5, 22, 17, 46, 54).unwrap()
+            );
             assert_eq!(pin.tags, "Rust macros");
             assert_eq!(
                 &pin.url,
@@ -284,7 +290,10 @@ mod tests {
             assert!(pin.is_ok());
             let pin: Pin = pin.expect("impossible");
             assert_eq!(pin.title, "tbaggery - Effortless Ctags with Git");
-            assert_eq!(pin.time(), Utc.with_ymd_and_hms(2017, 10, 9, 7, 59, 36).unwrap());
+            assert_eq!(
+                pin.time(),
+                Utc.with_ymd_and_hms(2017, 10, 9, 7, 59, 36).unwrap()
+            );
             assert_eq!(pin.tags, "git ctags vim");
             assert_eq!(
                 &pin.url,
