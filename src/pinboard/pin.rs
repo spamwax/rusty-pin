@@ -185,8 +185,8 @@ mod tests {
         assert_eq!(
             &p.url,
             "https://githuуй.com/Здравствуйт?q=13#fragment" // Url::parse("https://githuуй.com/Здравствуйт?q=13#fragment")
-                                                                         //     .expect("impossible")
-                                                                         //     .as_str()
+                                                            //     .expect("impossible")
+                                                            //     .as_str()
         );
         assert_eq!(p.tags, "tag1 tag2");
     }

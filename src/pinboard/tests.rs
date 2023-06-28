@@ -1104,19 +1104,13 @@ fn serde_update_cache() {
 
     for (idx, fresh_pin) in fresh_pins.iter().enumerate() {
         info!("serde_update_cache: Checking pin[{}]", idx);
-        let found = cached_pins
-            .iter()
-            .find(|&p| p.pin.url == fresh_pin.url);
+        let found = cached_pins.iter().find(|&p| p.pin.url == fresh_pin.url);
         assert!(found.is_some(), "{fresh_pin:?}");
         let cached_pin = found.unwrap();
         // Title
         assert_eq!(fresh_pin.title, cached_pin.pin.title);
         assert_eq!(
-            fresh_pin
-                .title
-                .nfkd()
-                .collect::<String>()
-                .to_lowercase(),
+            fresh_pin.title.nfkd().collect::<String>().to_lowercase(),
             cached_pin.title_lowered
         );
         // Url
@@ -1124,11 +1118,7 @@ fn serde_update_cache() {
         // tags
         assert_eq!(fresh_pin.tags, cached_pin.pin.tags);
         assert_eq!(
-            fresh_pin
-                .tags
-                .nfkd()
-                .collect::<String>()
-                .to_lowercase(),
+            fresh_pin.tags.nfkd().collect::<String>().to_lowercase(),
             cached_pin.tag_list.join(" ")
         );
         // shared
