@@ -1237,11 +1237,11 @@ fn bench_search_items_openpgp(b: &mut Bencher) {
 
     let mut pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
-    pinboard.enable_fuzzy_search(false);
-    pinboard.enable_tag_only_search(false);
+    pinboard.pinboard.enable_fuzzy_search(false);
+    pinboard.pinboard.enable_tag_only_search(false);
     let query = "openpgp";
     b.iter(|| {
-        let _ = pinboard
+        let _ = pinboard.pinboard
             .search_items(query)
             .unwrap_or_else(|e| panic!("{}", e));
     })
@@ -1260,8 +1260,8 @@ fn bench_search_openpgp(b: &mut Bencher) {
 
     let mut pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
-    pinboard.enable_fuzzy_search(false);
-    pinboard.enable_tag_only_search(false);
+    pinboard.pinboard.enable_fuzzy_search(false);
+    pinboard.pinboard.enable_tag_only_search(false);
     let queries = ["openpgp"];
     let fields = vec![
         SearchType::TitleOnly,
@@ -1270,7 +1270,7 @@ fn bench_search_openpgp(b: &mut Bencher) {
         SearchType::DescriptionOnly,
     ];
     b.iter(|| {
-        let _pins = pinboard
+        let _pins = pinboard.pinboard
             .search(&queries, fields.as_slice())
             .unwrap_or_else(|e| panic!("{}", e));
     });
@@ -1289,11 +1289,11 @@ fn bench_search_non_fuzzy(b: &mut Bencher) {
 
     let mut pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
-    pinboard.enable_fuzzy_search(false);
+    pinboard.pinboard.enable_fuzzy_search(false);
     let queries = ["zfs", "fr"];
     let fields = vec![];
     b.iter(|| {
-        let _pins = pinboard
+        let _pins = pinboard.pinboard
             .search(&queries, fields.as_slice())
             .unwrap_or_else(|e| panic!("{}", e));
     });
@@ -1312,11 +1312,11 @@ fn bench_search_fuzzy(b: &mut Bencher) {
 
     let mut pinboard =
         Pinboard::new(include_str!("api_token.txt"), cache_path).expect("Can't setup Pinboard");
-    pinboard.enable_fuzzy_search(true);
+    pinboard.pinboard.enable_fuzzy_search(true);
     let queries = ["zfs", "fr"];
     let fields = vec![];
     b.iter(|| {
-        let _pins = pinboard
+        let _pins = pinboard.pinboard
             .search(&queries, fields.as_slice())
             .unwrap_or_else(|e| panic!("{}", e));
     });
