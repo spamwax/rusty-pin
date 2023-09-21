@@ -1183,8 +1183,12 @@ fn test_update_cache() {
         Err(e) => panic!("{e:?}"),
     };
     let mut pinboard = pinboard.pinboard;
-    let Some(pins) = pinboard.cached_data.pins.take() else { panic!("No pins found in cache!") };
-    let Some(tags) = pinboard.cached_data.tags.take() else { panic!("No tags found in cache!") };
+    let Some(pins) = pinboard.cached_data.pins.take() else {
+        panic!("No pins found in cache!")
+    };
+    let Some(tags) = pinboard.cached_data.tags.take() else {
+        panic!("No tags found in cache!")
+    };
     assert!(pins.len() > IDX);
     assert!(tags.len() > IDX);
 
@@ -1241,7 +1245,8 @@ fn bench_search_items_openpgp(b: &mut Bencher) {
     pinboard.pinboard.enable_tag_only_search(false);
     let query = "openpgp";
     b.iter(|| {
-        let _ = pinboard.pinboard
+        let _ = pinboard
+            .pinboard
             .search_items(query)
             .unwrap_or_else(|e| panic!("{}", e));
     })
@@ -1270,7 +1275,8 @@ fn bench_search_openpgp(b: &mut Bencher) {
         SearchType::DescriptionOnly,
     ];
     b.iter(|| {
-        let _pins = pinboard.pinboard
+        let _pins = pinboard
+            .pinboard
             .search(&queries, fields.as_slice())
             .unwrap_or_else(|e| panic!("{}", e));
     });
@@ -1293,7 +1299,8 @@ fn bench_search_non_fuzzy(b: &mut Bencher) {
     let queries = ["zfs", "fr"];
     let fields = vec![];
     b.iter(|| {
-        let _pins = pinboard.pinboard
+        let _pins = pinboard
+            .pinboard
             .search(&queries, fields.as_slice())
             .unwrap_or_else(|e| panic!("{}", e));
     });
@@ -1316,7 +1323,8 @@ fn bench_search_fuzzy(b: &mut Bencher) {
     let queries = ["zfs", "fr"];
     let fields = vec![];
     b.iter(|| {
-        let _pins = pinboard.pinboard
+        let _pins = pinboard
+            .pinboard
             .search(&queries, fields.as_slice())
             .unwrap_or_else(|e| panic!("{}", e));
     });
