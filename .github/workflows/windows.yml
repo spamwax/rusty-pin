@@ -18,9 +18,10 @@ env:
 jobs:
   build_windows:
     name: Run tests on Windows
+    if: ${{ env.RELEASE_COMMIT != 'true' }}
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - uses: actions-rs/toolchain@v1
@@ -31,7 +32,6 @@ jobs:
 
       - name: Build x86_64 on Windows
         uses: actions-rs/cargo@v1
-        if: ${{ env.RELEASE_COMMIT != 'true' }}
         with:
           command: build
 
